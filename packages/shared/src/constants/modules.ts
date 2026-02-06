@@ -10,6 +10,8 @@ export interface ModuleDefinition {
   basePath: string;
   /** Which development phase this module is built in */
   phase: number;
+  /** If true, module is not shown in user-facing module lists (e.g. admin) */
+  hidden?: boolean;
 }
 
 export const MODULES: Record<ModuleId, ModuleDefinition> = {
@@ -111,6 +113,7 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
     icon: 'shield',
     basePath: '/admin',
     phase: 5,
+    hidden: true,
   },
 };
 

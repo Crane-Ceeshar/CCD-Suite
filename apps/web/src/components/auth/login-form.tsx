@@ -54,7 +54,7 @@ export function LoginForm() {
       return;
     }
 
-    router.push('/crm');
+    router.push('/dashboard');
     router.refresh();
   };
 

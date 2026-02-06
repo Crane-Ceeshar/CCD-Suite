@@ -1,26 +1,23 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter, usePathname } from 'next/navigation';
-import { MODULES, MODULE_LIST, getModulesForUserType } from '@ccd/shared';
-import type { ModuleId } from '@ccd/shared';
+import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
 import {
-  SidebarNav,
   UserAvatar,
-  ModuleIcon,
   Button,
+  SearchInput,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-  TooltipProvider,
-  type NavGroup,
 } from '@ccd/ui';
-import { LogOut, Settings, PanelLeftClose, PanelLeft, Bell } from 'lucide-react';
+import { LogOut, Settings, Bell, Shield } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
-import { useUIStore } from '@/stores/ui-store';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 
 interface DashboardShellProps {
   user: {
@@ -40,42 +37,9 @@ interface DashboardShellProps {
 
 export function DashboardShell({ user, tenant, children }: DashboardShellProps) {
   const router = useRouter();
-  const pathname = usePathname();
-  const { sidebarCollapsed, toggleSidebar } = useUIStore();
   const supabase = createClient();
-
-  const allowedModules = getModulesForUserType(user.user_type);
-
-  const moduleNavItems = allowedModules
-    .map((moduleId) => {
-      const mod = MODULES[moduleId];
-      if (!mod) return null;
-      return {
-        label: mod.name,
-        href: mod.basePath,
-        icon: <ModuleIcon moduleId={moduleId} size="sm" />,
-        active: pathname.startsWith(mod.basePath),
-      };
-    })
-    .filter(Boolean) as NavGroup['items'];
-
-  const navGroups: NavGroup[] = [
-    {
-      label: 'Modules',
-      items: moduleNavItems,
-    },
-    {
-      label: 'Settings',
-      items: [
-        {
-          label: 'Settings',
-          href: '/settings/profile',
-          icon: <Settings className="h-4 w-4" />,
-          active: pathname.startsWith('/settings'),
-        },
-      ],
-    },
-  ];
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const isAdmin = user.user_type === 'admin';
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -84,103 +48,103 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
   };
 
   return (
-    <TooltipProvider>
-      <div className="flex h-screen overflow-hidden bg-background">
-        {/* Sidebar */}
-        <aside
-          className="flex flex-col border-r bg-card transition-all duration-300"
-          style={{
-            width: sidebarCollapsed ? 'var(--sidebar-collapsed-width)' : 'var(--sidebar-width)',
-          }}
-        >
-          {/* Sidebar header */}
-          <div className="flex h-header items-center justify-between border-b px-4">
-            {!sidebarCollapsed && (
-              <span className="text-lg font-bold font-heading text-primary">
-                CCD Suite
-              </span>
-            )}
+    <div className="flex h-screen flex-col overflow-hidden bg-background">
+      {/* Top header bar */}
+      <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-md px-4 md:px-6">
+        {/* Left: Logo */}
+        <Link href="/dashboard" className="flex items-center shrink-0">
+          <Image
+            src="/logos/logo-lockup.svg"
+            alt="CCD Suite"
+            width={140}
+            height={36}
+            className="h-8 w-auto dark:hidden"
+            priority
+          />
+          <Image
+            src="/logos/logo-lockup-light.svg"
+            alt="CCD Suite"
+            width={140}
+            height={36}
+            className="h-8 w-auto hidden dark:block"
+            priority
+          />
+        </Link>
+
+        {/* Center: Search */}
+        <div className="flex-1 flex justify-center px-4 max-w-xl mx-auto">
+          <SearchInput
+            placeholder="Search modules, contacts, deals..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onClear={() => setSearchQuery('')}
+            className="w-full bg-muted/50 border-transparent focus-within:border-border focus-within:bg-background transition-all duration-200"
+          />
+        </div>
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-1 shrink-0">
+          <ThemeToggle />
+
+          {isAdmin && (
             <Button
               variant="ghost"
               size="icon"
-              onClick={toggleSidebar}
-              className="h-8 w-8"
+              className="h-9 w-9 rounded-full hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950 dark:hover:text-red-400"
+              onClick={() => router.push('/admin')}
+              aria-label="Admin Portal"
             >
-              {sidebarCollapsed ? (
-                <PanelLeft className="h-4 w-4" />
-              ) : (
-                <PanelLeftClose className="h-4 w-4" />
-              )}
+              <Shield className="h-4 w-4" />
             </Button>
-          </div>
+          )}
 
-          {/* Navigation */}
-          <SidebarNav
-            groups={navGroups}
-            collapsed={sidebarCollapsed}
-            onNavigate={(href) => router.push(href)}
-            className="flex-1"
-          />
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full relative">
+            <Bell className="h-4 w-4" />
+          </Button>
 
-          {/* Sidebar footer - user info */}
-          <div className="border-t p-4">
-            {!sidebarCollapsed ? (
-              <div className="flex items-center gap-3">
-                <UserAvatar name={user.full_name || user.email} imageUrl={user.avatar_url} size="sm" />
-                <div className="flex-1 overflow-hidden">
-                  <p className="truncate text-sm font-medium">{user.full_name || user.email}</p>
-                  <p className="truncate text-xs text-muted-foreground">{tenant.name}</p>
-                </div>
-              </div>
-            ) : (
-              <UserAvatar name={user.full_name || user.email} imageUrl={user.avatar_url} size="sm" />
-            )}
-          </div>
-        </aside>
-
-        {/* Main content area */}
-        <div className="flex flex-1 flex-col overflow-hidden">
-          {/* Header */}
-          <header className="flex h-header items-center justify-between border-b bg-card px-6">
-            <div />
-            <div className="flex items-center gap-2">
-              <Button variant="ghost" size="icon">
-                <Bell className="h-5 w-5" />
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0">
+                <UserAvatar
+                  name={user.full_name || user.email}
+                  imageUrl={user.avatar_url}
+                  size="sm"
+                />
               </Button>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                    <UserAvatar name={user.full_name || user.email} imageUrl={user.avatar_url} size="sm" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end">
-                  <DropdownMenuLabel className="font-normal">
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">{user.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{user.email}</p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => router.push('/settings/profile')}>
-                    <Settings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Sign out
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
-          </header>
-
-          {/* Page content */}
-          <main className="flex-1 overflow-auto p-6">
-            {children}
-          </main>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" sideOffset={8}>
+              <DropdownMenuLabel className="font-normal">
+                <div className="flex flex-col space-y-1">
+                  <p className="text-sm font-medium">{user.full_name}</p>
+                  <p className="text-xs text-muted-foreground">{user.email}</p>
+                  <p className="text-xs text-muted-foreground capitalize">{tenant.name}</p>
+                </div>
+              </DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => router.push('/settings/profile')}>
+                <Settings className="mr-2 h-4 w-4" />
+                Settings
+              </DropdownMenuItem>
+              {isAdmin && (
+                <DropdownMenuItem onClick={() => router.push('/admin')}>
+                  <Shield className="mr-2 h-4 w-4" />
+                  Admin Portal
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+                <LogOut className="mr-2 h-4 w-4" />
+                Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
-      </div>
-    </TooltipProvider>
+      </header>
+
+      {/* Page content — modules add their own sidebar via per-module layout.tsx */}
+      <main className="flex-1 overflow-auto">
+        {children}
+      </main>
+    </div>
   );
 }

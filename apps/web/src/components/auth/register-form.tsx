@@ -28,6 +28,7 @@ import {
   Search,
   Share2,
   LayoutGrid,
+  Briefcase,
 } from 'lucide-react';
 
 const TOTAL_STEPS = 4;
@@ -42,6 +43,15 @@ const moduleOptions = [
   { id: 'social', name: 'Social', icon: Share2, color: '#F59E0B', description: 'Social media management' },
   { id: 'portal', name: 'Portal', icon: LayoutGrid, color: '#06B6D4', description: 'Client collaboration' },
   { id: 'hr', name: 'HR', icon: Building2, color: '#F97316', description: 'People management' },
+];
+
+const roleTitleOptions = [
+  { value: 'ceo_founder', label: 'CEO / Founder' },
+  { value: 'director', label: 'Director' },
+  { value: 'head_of_department', label: 'Head of Department' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'team_lead', label: 'Team Lead' },
+  { value: 'other', label: 'Other' },
 ];
 
 const teamSizeOptions = [
@@ -78,6 +88,7 @@ export function RegisterForm() {
     orgName: '',
     teamSize: '',
     fullName: '',
+    roleTitle: '',
     email: '',
     password: '',
     selectedModules: ['crm', 'projects', 'analytics'] as string[],
@@ -111,7 +122,7 @@ export function RegisterForm() {
       case 1:
         return formData.orgName.trim().length >= 2 && formData.teamSize !== '';
       case 2:
-        return formData.fullName.trim().length >= 2;
+        return formData.fullName.trim().length >= 2 && formData.roleTitle !== '';
       case 3:
         return formData.email.includes('@') && formData.password.length >= 8;
       case 4:
@@ -157,6 +168,7 @@ export function RegisterForm() {
           full_name: formData.fullName,
           tenant_id: tenantId,
           user_type: 'admin',
+          role_title: formData.roleTitle,
         },
       },
     });
@@ -167,7 +179,7 @@ export function RegisterForm() {
       return;
     }
 
-    router.push('/crm');
+    router.push('/dashboard');
     router.refresh();
   };
 
@@ -327,6 +339,29 @@ export function RegisterForm() {
                       autoComplete="name"
                       className="pl-10 h-12 bg-white border-border/50 focus:border-ccd-blue focus:ring-ccd-blue/20 rounded-xl transition-all"
                     />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium text-foreground/70">
+                    Your role
+                  </Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {roleTitleOptions.map((option) => (
+                      <button
+                        key={option.value}
+                        type="button"
+                        onClick={() => updateField('roleTitle', option.value)}
+                        className={`flex items-center gap-2 p-3 rounded-xl text-sm font-medium transition-all duration-200 ${
+                          formData.roleTitle === option.value
+                            ? 'bg-ccd-blue text-white shadow-lg shadow-ccd-blue/20'
+                            : 'bg-white border border-border/50 text-foreground/60 hover:border-ccd-blue/30 hover:bg-ccd-blue/5'
+                        }`}
+                      >
+                        <Briefcase className="h-3.5 w-3.5 flex-shrink-0" />
+                        {option.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </>

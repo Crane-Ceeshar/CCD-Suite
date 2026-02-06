@@ -3,7 +3,7 @@ import { updateSession } from '@/lib/supabase/middleware';
 
 // Module access control mapping (mirrors @ccd/shared/constants/user-types)
 const USER_TYPE_MODULE_ACCESS: Record<string, string[]> = {
-  admin: ['crm', 'analytics', 'content', 'seo', 'social', 'client_portal', 'projects', 'finance', 'hr', 'ai', 'admin'],
+  admin: ['crm', 'analytics', 'content', 'seo', 'social', 'client_portal', 'projects', 'finance', 'hr', 'ai'],
   sales: ['crm', 'analytics', 'ai'],
   marketing: ['content', 'seo', 'social', 'analytics', 'ai'],
   project_manager: ['projects', 'analytics', 'ai'],
@@ -12,7 +12,7 @@ const USER_TYPE_MODULE_ACCESS: Record<string, string[]> = {
   client: ['client_portal'],
 };
 
-// Module routes mapped from base paths
+// Module routes mapped from base paths (admin is handled separately)
 const MODULE_ROUTES: Record<string, string> = {
   '/crm': 'crm',
   '/analytics': 'analytics',
@@ -24,7 +24,6 @@ const MODULE_ROUTES: Record<string, string> = {
   '/finance': 'finance',
   '/hr': 'hr',
   '/ai': 'ai',
-  '/admin': 'admin',
 };
 
 const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/auth/callback'];
@@ -33,7 +32,7 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Skip public routes
-  if (PUBLIC_ROUTES.some((route) => pathname.startsWith(route))) {
+  if (PUBLIC_ROUTES.some((route) => pathname === route || (route !== '/' && pathname.startsWith(route)))) {
     const { response } = await updateSession(request);
     return response;
   }
@@ -47,6 +46,27 @@ export async function middleware(request: NextRequest) {
     url.pathname = '/login';
     url.searchParams.set('redirect', pathname);
     return NextResponse.redirect(url);
+  }
+
+  // Admin portal: only admin user_type can access
+  if (pathname.startsWith('/admin')) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('user_type')
+      .eq('id', user.id)
+      .single();
+
+    if (!profile || profile.user_type !== 'admin') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
+    }
+    return response;
+  }
+
+  // Dashboard is accessible to all authenticated users
+  if (pathname.startsWith('/dashboard') || pathname.startsWith('/settings')) {
+    return response;
   }
 
   // Check module access for module routes
@@ -67,14 +87,8 @@ export async function middleware(request: NextRequest) {
     if (profile) {
       const allowedModules = USER_TYPE_MODULE_ACCESS[profile.user_type] ?? [];
       if (!allowedModules.includes(moduleId)) {
-        // Redirect to first allowed module or settings
-        const firstAllowed = allowedModules[0];
-        const redirectPath = firstAllowed
-          ? Object.entries(MODULE_ROUTES).find(([, id]) => id === firstAllowed)?.[0] ?? '/settings/profile'
-          : '/settings/profile';
-
         const url = request.nextUrl.clone();
-        url.pathname = redirectPath;
+        url.pathname = '/dashboard';
         return NextResponse.redirect(url);
       }
     }
