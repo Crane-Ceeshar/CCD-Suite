@@ -1,12 +1,12 @@
 FROM python:3.12-slim
 WORKDIR /app
 
-# Install dependencies
+# Copy project files and source together so pip install can build the package
 COPY apps/ai-services/pyproject.toml ./
-RUN pip install --no-cache-dir .
+COPY apps/ai-services/app/ ./app/
 
-# Copy source
-COPY apps/ai-services/ .
+# Install the package with all dependencies
+RUN pip install --no-cache-dir .
 
 ENV PORT=5100
 CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT}

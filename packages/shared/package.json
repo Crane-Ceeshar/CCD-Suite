@@ -11,6 +11,7 @@
     "./utils/*": "./src/utils/*.ts"
   },
   "scripts": {
+    "build": "tsc --project tsconfig.json",
     "lint": "eslint src/",
     "test": "echo 'no tests yet'"
   },
