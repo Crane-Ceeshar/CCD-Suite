@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api-gateway
+    ports:
+      - '4000:4000'
+    env_file:
+      - ../.env
+    depends_on:
+      redis:
+        condition: service_healthy
+    volumes:
+      - ../apps/api-gateway/src:/app/apps/api-gateway/src
+      - ../packages:/app/packages
+
+  rust-services:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.rust-services
+    ports:
+      - '5001:5001'
+      - '5002:5002'
+      - '5003:5003'
+    env_file:
+      - ../.env
+
+  ai-services:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.ai-services
+    ports:
+      - '5100:5100'
+    env_file:
+      - ../.env
+
+volumes:
+  redis-data:

@@ -1,0 +1,118 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* CCD Brand Colors */
+    --ccd-blue: 214 100% 33%;
+    --ccd-lime: 74 63% 45%;
+    --ccd-cream: 40 100% 95%;
+    --ccd-dark: 220 20% 15%;
+
+    /* Semantic Colors (HSL values) */
+    --background: 40 100% 95%;
+    --foreground: 220 20% 15%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 220 20% 15%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 20% 15%;
+
+    --primary: 214 100% 33%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 74 63% 45%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 14% 96%;
+    --muted-foreground: 220 8% 46%;
+
+    --accent: 220 14% 96%;
+    --accent-foreground: 220 20% 15%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 214 100% 33%;
+
+    --radius: 0.5rem;
+
+    /* Module Colors */
+    --module-crm: 214 100% 33%;
+    --module-analytics: 258 89% 66%;
+    --module-content: 330 86% 73%;
+    --module-seo: 74 63% 45%;
+    --module-social: 38 95% 53%;
+    --module-portal: 187 94% 43%;
+    --module-projects: 237 84% 60%;
+    --module-finance: 168 84% 39%;
+    --module-hr: 24 94% 53%;
+
+    /* Spacing (8px grid) */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-5: 1.25rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+    --space-10: 2.5rem;
+    --space-12: 3rem;
+    --space-16: 4rem;
+
+    /* Layout */
+    --header-height: 4rem;
+    --sidebar-width: 17.5rem;
+    --sidebar-collapsed-width: 4rem;
+  }
+
+  .dark {
+    --background: 220 20% 10%;
+    --foreground: 210 40% 98%;
+
+    --card: 220 20% 13%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 220 20% 13%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 214 100% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 74 63% 50%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 220 14% 20%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 220 14% 20%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 220 13% 22%;
+    --input: 220 13% 22%;
+    --ring: 214 100% 50%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Jeko', 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}

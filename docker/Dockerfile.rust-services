@@ -1,0 +1,41 @@
+FROM rust:1.83-slim AS builder
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*
+
+# Copy Cargo files for dependency caching
+COPY apps/rust-services/Cargo.toml ./Cargo.toml
+COPY apps/rust-services/analytics-engine/Cargo.toml ./analytics-engine/Cargo.toml
+COPY apps/rust-services/file-processor/Cargo.toml ./file-processor/Cargo.toml
+COPY apps/rust-services/realtime-gateway/Cargo.toml ./realtime-gateway/Cargo.toml
+
+# Create dummy source files for dependency caching
+RUN mkdir -p analytics-engine/src file-processor/src realtime-gateway/src && \
+    echo "fn main() {}" > analytics-engine/src/main.rs && \
+    echo "fn main() {}" > file-processor/src/main.rs && \
+    echo "fn main() {}" > realtime-gateway/src/main.rs
+
+# Build dependencies only
+RUN cargo build --release 2>/dev/null || true
+
+# Copy actual source code
+COPY apps/rust-services/ .
+
+# Rebuild with actual source
+RUN touch analytics-engine/src/main.rs file-processor/src/main.rs realtime-gateway/src/main.rs && \
+    cargo build --release
+
+# Runtime image
+FROM debian:bookworm-slim
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
+
+COPY --from=builder /app/target/release/analytics-engine ./
+COPY --from=builder /app/target/release/file-processor ./
+COPY --from=builder /app/target/release/realtime-gateway ./
+
+EXPOSE 5001 5002 5003
+
+# Run analytics engine by default (use docker-compose to override)
+CMD ["./analytics-engine"]
