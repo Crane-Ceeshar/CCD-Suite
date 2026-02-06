@@ -6,6 +6,7 @@ RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/li
 
 # Copy Cargo files for dependency caching
 COPY apps/rust-services/Cargo.toml ./Cargo.toml
+COPY apps/rust-services/Cargo.lock ./Cargo.lock
 COPY apps/rust-services/analytics-engine/Cargo.toml ./analytics-engine/Cargo.toml
 COPY apps/rust-services/file-processor/Cargo.toml ./file-processor/Cargo.toml
 COPY apps/rust-services/realtime-gateway/Cargo.toml ./realtime-gateway/Cargo.toml
