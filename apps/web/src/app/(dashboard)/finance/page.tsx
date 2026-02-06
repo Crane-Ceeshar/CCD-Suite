@@ -1,6 +1,7 @@
 import { PageHeader, StatCard, Card, CardContent, CardHeader, CardTitle } from '@ccd/ui';
 import { DollarSign, FileText, Receipt, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import { AskAiButton } from '@/components/ai/ask-ai-button';
 
 export default function FinanceDashboardPage() {
   return (
@@ -85,6 +86,8 @@ export default function FinanceDashboardPage() {
           </Card>
         </Link>
       </div>
+
+      <AskAiButton moduleContext="finance" />
     </div>
   );
 }

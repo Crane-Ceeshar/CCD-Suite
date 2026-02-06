@@ -1,6 +1,7 @@
 import { PageHeader, StatCard, Card, CardContent, CardHeader, CardTitle } from '@ccd/ui';
 import { Share2, Calendar, TrendingUp, Eye } from 'lucide-react';
 import Link from 'next/link';
+import { AskAiButton } from '@/components/ai/ask-ai-button';
 
 export default function SocialDashboardPage() {
   return (
@@ -91,6 +92,8 @@ export default function SocialDashboardPage() {
           </Card>
         </Link>
       </div>
+
+      <AskAiButton moduleContext="social" />
     </div>
   );
 }

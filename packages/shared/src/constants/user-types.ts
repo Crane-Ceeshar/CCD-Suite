@@ -3,13 +3,13 @@ import type { PredefinedUserType, ModuleId } from '../types/auth';
 export const USER_TYPE_MODULE_ACCESS: Record<PredefinedUserType, ModuleId[]> = {
   admin: [
     'crm', 'analytics', 'content', 'seo', 'social',
-    'client_portal', 'projects', 'finance', 'hr',
+    'client_portal', 'projects', 'finance', 'hr', 'ai',
   ],
-  sales: ['crm', 'analytics'],
-  marketing: ['content', 'seo', 'social', 'analytics'],
-  project_manager: ['projects', 'analytics'],
-  finance: ['finance', 'analytics'],
-  hr: ['hr', 'analytics'],
+  sales: ['crm', 'analytics', 'ai'],
+  marketing: ['content', 'seo', 'social', 'analytics', 'ai'],
+  project_manager: ['projects', 'analytics', 'ai'],
+  finance: ['finance', 'analytics', 'ai'],
+  hr: ['hr', 'analytics', 'ai'],
   client: ['client_portal'],
 };
 

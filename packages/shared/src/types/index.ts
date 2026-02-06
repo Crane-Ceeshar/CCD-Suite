@@ -10,3 +10,4 @@ export * from './hr';
 export * from './seo';
 export * from './social';
 export * from './portal';
+export * from './ai';

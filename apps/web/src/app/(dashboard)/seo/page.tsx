@@ -1,6 +1,7 @@
 import { PageHeader, StatCard, Card, CardContent, CardHeader, CardTitle } from '@ccd/ui';
 import { Search, TrendingUp, Link as LinkIcon, Shield } from 'lucide-react';
 import Link from 'next/link';
+import { AskAiButton } from '@/components/ai/ask-ai-button';
 
 export default function SEODashboardPage() {
   return (
@@ -80,6 +81,8 @@ export default function SEODashboardPage() {
           </Card>
         </Link>
       </div>
+
+      <AskAiButton moduleContext="seo" />
     </div>
   );
 }

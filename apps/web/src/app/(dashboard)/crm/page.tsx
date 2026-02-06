@@ -1,6 +1,7 @@
 import { PageHeader, StatCard, Card, CardContent, CardHeader, CardTitle } from '@ccd/ui';
 import { Users, Building2, DollarSign, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
+import { AskAiButton } from '@/components/ai/ask-ai-button';
 
 export default function CRMDashboardPage() {
   return (
@@ -82,6 +83,8 @@ export default function CRMDashboardPage() {
           </Card>
         </Link>
       </div>
+
+      <AskAiButton moduleContext="crm" />
     </div>
   );
 }

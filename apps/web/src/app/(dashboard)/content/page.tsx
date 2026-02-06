@@ -1,6 +1,7 @@
 import { PageHeader, StatCard, Card, CardContent, CardHeader, CardTitle, Button } from '@ccd/ui';
 import { PenTool, FileText, Calendar, Image as ImageIcon, Plus } from 'lucide-react';
 import Link from 'next/link';
+import { AskAiButton } from '@/components/ai/ask-ai-button';
 
 export default function ContentDashboardPage() {
   return (
@@ -36,6 +37,8 @@ export default function ContentDashboardPage() {
           </Card>
         </Link>
       </div>
+
+      <AskAiButton moduleContext="content" />
     </div>
   );
 }

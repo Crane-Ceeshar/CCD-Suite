@@ -13,9 +13,13 @@ class Settings(BaseSettings):
     supabase_url: str = ""
     supabase_service_role_key: str = ""
 
-    # AI Providers (optional)
+    # AI Providers
     openai_api_key: str = ""
     anthropic_api_key: str = ""
+
+    # Model defaults
+    default_model: str = "claude-sonnet-4-20250514"
+    max_tokens: int = 4096
 
     model_config = {"env_prefix": "AI_"}
 

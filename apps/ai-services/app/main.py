@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timezone
 
 from .config import settings
+from .routers import chat_router, generate_router, analyze_router, insights_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -11,11 +12,22 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:4000",
+        "https://*.vercel.app",
+        "https://*.craneceeshar.com",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Register routers
+app.include_router(chat_router)
+app.include_router(generate_router)
+app.include_router(analyze_router)
+app.include_router(insights_router)
 
 
 @app.get("/health")
@@ -35,4 +47,5 @@ async def ai_status():
             "openai": bool(settings.openai_api_key),
             "anthropic": bool(settings.anthropic_api_key),
         },
+        "default_model": settings.default_model,
     }

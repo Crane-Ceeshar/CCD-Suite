@@ -9,6 +9,7 @@ import {
   FolderKanban,
   Wallet,
   Building2,
+  Sparkles,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -22,6 +23,7 @@ const MODULE_ICONS: Record<string, React.ElementType> = {
   projects: FolderKanban,
   finance: Wallet,
   hr: Building2,
+  ai: Sparkles,
 };
 
 const MODULE_COLORS: Record<string, string> = {
@@ -34,6 +36,7 @@ const MODULE_COLORS: Record<string, string> = {
   projects: '#6366F1',
   finance: '#14B8A6',
   hr: '#F97316',
+  ai: '#10B981',
 };
 
 export interface ModuleIconProps extends React.HTMLAttributes<HTMLDivElement> {

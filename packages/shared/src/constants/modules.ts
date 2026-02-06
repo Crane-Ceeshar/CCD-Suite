@@ -94,6 +94,15 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
     basePath: '/hr',
     phase: 3,
   },
+  ai: {
+    id: 'ai',
+    name: 'AI Assistant',
+    description: 'AI-powered insights, content generation, and smart automations',
+    color: '#10B981',
+    icon: 'sparkles',
+    basePath: '/ai',
+    phase: 4,
+  },
 };
 
 export const MODULE_LIST = Object.values(MODULES);

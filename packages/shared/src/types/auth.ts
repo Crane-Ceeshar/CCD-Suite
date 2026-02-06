@@ -7,7 +7,8 @@ export type ModuleId =
   | 'client_portal'
   | 'projects'
   | 'finance'
-  | 'hr';
+  | 'hr'
+  | 'ai';
 
 export type PredefinedUserType =
   | 'admin'

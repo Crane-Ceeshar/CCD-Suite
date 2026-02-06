@@ -1,6 +1,7 @@
 import { PageHeader, StatCard, Card, CardContent, CardHeader, CardTitle, Button, EmptyState } from '@ccd/ui';
 import { BarChart3, TrendingUp, Users, DollarSign, Plus, LayoutDashboard } from 'lucide-react';
 import Link from 'next/link';
+import { AskAiButton } from '@/components/ai/ask-ai-button';
 
 export default function AnalyticsDashboardPage() {
   return (
@@ -30,6 +31,8 @@ export default function AnalyticsDashboardPage() {
           </Card>
         </Link>
       </div>
+
+      <AskAiButton moduleContext="analytics" />
     </div>
   );
 }
