@@ -13,6 +13,11 @@ import { projectsRoutes } from './routes/projects/index.js';
 import { analyticsRoutes } from './routes/analytics/index.js';
 import { notificationRoutes } from './routes/notifications.js';
 import { uploadRoutes } from './routes/uploads.js';
+import { financeRoutes } from './routes/finance/index.js';
+import { hrRoutes } from './routes/hr/index.js';
+import { seoRoutes } from './routes/seo/index.js';
+import { socialRoutes } from './routes/social/index.js';
+import { portalRoutes } from './routes/portal/index.js';
 
 const PORT = parseInt(process.env.API_PORT || '4000', 10);
 const HOST = process.env.API_HOST || '0.0.0.0';
@@ -54,6 +59,11 @@ async function buildApp() {
   await app.register(analyticsRoutes, { prefix: '/api/analytics' });
   await app.register(notificationRoutes, { prefix: '/api/notifications' });
   await app.register(uploadRoutes, { prefix: '/api/uploads' });
+  await app.register(financeRoutes, { prefix: '/api/finance' });
+  await app.register(hrRoutes, { prefix: '/api/hr' });
+  await app.register(seoRoutes, { prefix: '/api/seo' });
+  await app.register(socialRoutes, { prefix: '/api/social' });
+  await app.register(portalRoutes, { prefix: '/api/portal' });
 
   // Global error handler
   app.setErrorHandler((error, request, reply) => {

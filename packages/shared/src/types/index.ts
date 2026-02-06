@@ -5,3 +5,8 @@ export * from './crm';
 export * from './content';
 export * from './project';
 export * from './analytics';
+export * from './finance';
+export * from './hr';
+export * from './seo';
+export * from './social';
+export * from './portal';
