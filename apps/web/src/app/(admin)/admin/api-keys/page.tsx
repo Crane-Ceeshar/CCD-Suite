@@ -101,14 +101,14 @@ export default function AdminApiKeysPage() {
 
       {/* Revealed Key Banner */}
       {revealedKey && (
-        <Card className="border-amber-300 bg-amber-50">
+        <Card className="border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30">
           <CardContent className="py-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-amber-800">
+                <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
                   Copy your API key now — it will not be shown again
                 </p>
-                <code className="mt-1 block text-xs bg-white rounded px-2 py-1 font-mono border">
+                <code className="mt-1 block text-xs bg-card rounded px-2 py-1 font-mono border">
                   {revealedKey}
                 </code>
               </div>

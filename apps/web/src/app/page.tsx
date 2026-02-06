@@ -13,7 +13,7 @@ export default async function RootPage() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (user) {
-      redirect('/crm');
+      redirect('/dashboard');
     }
   } catch {
     // If auth check fails, fall through to landing page

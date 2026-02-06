@@ -22,16 +22,16 @@ interface ActivityEntry {
 }
 
 const ACTION_LABELS: Record<string, { label: string; color: string }> = {
-  'user.login': { label: 'Login', color: 'bg-blue-100 text-blue-700' },
-  'user.logout': { label: 'Logout', color: 'bg-gray-100 text-gray-700' },
-  'user.created': { label: 'User Created', color: 'bg-green-100 text-green-700' },
-  'user.updated': { label: 'User Updated', color: 'bg-amber-100 text-amber-700' },
-  'user.deactivated': { label: 'User Deactivated', color: 'bg-red-100 text-red-700' },
-  'tenant.updated': { label: 'Tenant Updated', color: 'bg-purple-100 text-purple-700' },
-  'settings.updated': { label: 'Settings Updated', color: 'bg-teal-100 text-teal-700' },
-  'api_key.created': { label: 'API Key Created', color: 'bg-emerald-100 text-emerald-700' },
-  'api_key.rotated': { label: 'API Key Rotated', color: 'bg-amber-100 text-amber-700' },
-  'api_key.deleted': { label: 'API Key Deleted', color: 'bg-red-100 text-red-700' },
+  'user.login': { label: 'Login', color: 'bg-blue-100 text-blue-700 dark:bg-blue-950 dark:text-blue-300' },
+  'user.logout': { label: 'Logout', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
+  'user.created': { label: 'User Created', color: 'bg-green-100 text-green-700 dark:bg-green-950 dark:text-green-300' },
+  'user.updated': { label: 'User Updated', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+  'user.deactivated': { label: 'User Deactivated', color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' },
+  'tenant.updated': { label: 'Tenant Updated', color: 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-300' },
+  'settings.updated': { label: 'Settings Updated', color: 'bg-teal-100 text-teal-700 dark:bg-teal-950 dark:text-teal-300' },
+  'api_key.created': { label: 'API Key Created', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300' },
+  'api_key.rotated': { label: 'API Key Rotated', color: 'bg-amber-100 text-amber-700 dark:bg-amber-950 dark:text-amber-300' },
+  'api_key.deleted': { label: 'API Key Deleted', color: 'bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300' },
 };
 
 export default function AdminActivityPage() {

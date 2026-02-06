@@ -154,7 +154,7 @@ export default function AdminAiConfigPage() {
                     {settings.monthly_tokens_used.toLocaleString()} / {settings.monthly_token_budget.toLocaleString()}
                   </span>
                 </div>
-                <div className="h-2 rounded-full bg-gray-200">
+                <div className="h-2 rounded-full bg-muted">
                   <div
                     className="h-2 rounded-full transition-all"
                     style={{
@@ -188,7 +188,7 @@ export default function AdminAiConfigPage() {
                   aria-checked={features[feat.key] ?? false}
                   onClick={() => setFeatures({ ...features, [feat.key]: !features[feat.key] })}
                   className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors ${
-                    features[feat.key] ? 'bg-red-500' : 'bg-gray-200'
+                    features[feat.key] ? 'bg-red-500' : 'bg-muted'
                   }`}
                 >
                   <span

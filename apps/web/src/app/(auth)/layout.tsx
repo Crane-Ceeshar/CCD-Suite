@@ -125,7 +125,7 @@ export default function AuthLayout({
       </div>
 
       {/* Right side - Auth form */}
-      <div className="flex-1 flex items-center justify-center bg-ccd-cream p-4 sm:p-8">
+      <div className="flex-1 flex items-center justify-center bg-background p-4 sm:p-8">
         <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}

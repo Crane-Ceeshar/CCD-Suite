@@ -66,7 +66,7 @@ export function LoginForm() {
     >
       {/* Header */}
       <motion.div variants={fieldVariants} className="mb-8">
-        <h2 className="text-2xl font-bold font-heading text-ccd-dark">
+        <h2 className="text-2xl font-bold font-heading text-foreground">
           Welcome back
         </h2>
         <p className="mt-2 text-foreground/50">
@@ -101,7 +101,7 @@ export function LoginForm() {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              className="pl-10 h-12 bg-white border-border/50 focus:border-ccd-blue focus:ring-ccd-blue/20 rounded-xl transition-all"
+              className="pl-10 h-12 bg-card border-border/50 focus:border-primary focus:ring-primary/20 rounded-xl transition-all"
             />
           </div>
         </motion.div>
@@ -128,7 +128,7 @@ export function LoginForm() {
               onChange={(e) => setPassword(e.target.value)}
               required
               autoComplete="current-password"
-              className="pl-10 pr-10 h-12 bg-white border-border/50 focus:border-ccd-blue focus:ring-ccd-blue/20 rounded-xl transition-all"
+              className="pl-10 pr-10 h-12 bg-card border-border/50 focus:border-primary focus:ring-primary/20 rounded-xl transition-all"
             />
             <button
               type="button"
@@ -168,7 +168,7 @@ export function LoginForm() {
             <div className="w-full border-t border-border/50" />
           </div>
           <div className="relative flex justify-center">
-            <span className="bg-ccd-cream px-4 text-xs text-foreground/30 uppercase tracking-wider">
+            <span className="bg-background px-4 text-xs text-foreground/30 uppercase tracking-wider">
               or
             </span>
           </div>
@@ -179,7 +179,7 @@ export function LoginForm() {
           <Button
             type="button"
             variant="outline"
-            className="w-full h-12 rounded-xl border-border/50 bg-white hover:bg-muted/50 transition-all text-foreground/70 font-medium"
+            className="w-full h-12 rounded-xl border-border/50 bg-card hover:bg-muted/50 transition-all text-foreground/70 font-medium"
           >
             <svg className="mr-2 h-5 w-5" viewBox="0 0 24 24">
               <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>

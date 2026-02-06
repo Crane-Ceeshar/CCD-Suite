@@ -70,7 +70,7 @@ export function ForgotPasswordForm() {
         >
           <CheckCircle2 className="h-8 w-8 text-ccd-lime" />
         </motion.div>
-        <h2 className="text-2xl font-bold font-heading text-ccd-dark mb-2">
+        <h2 className="text-2xl font-bold font-heading text-foreground mb-2">
           Check your email
         </h2>
         <p className="text-foreground/50 mb-8">
@@ -79,7 +79,7 @@ export function ForgotPasswordForm() {
         <Link href="/login">
           <Button
             variant="outline"
-            className="rounded-xl border-border/50 bg-white hover:bg-muted/50"
+            className="rounded-xl border-border/50 bg-card hover:bg-muted/50"
           >
             <ArrowLeft className="mr-2 h-4 w-4" />
             Back to sign in
@@ -96,7 +96,7 @@ export function ForgotPasswordForm() {
       animate="visible"
     >
       <motion.div variants={fieldVariants} className="mb-8">
-        <h2 className="text-2xl font-bold font-heading text-ccd-dark">
+        <h2 className="text-2xl font-bold font-heading text-foreground">
           Reset password
         </h2>
         <p className="mt-2 text-foreground/50">
@@ -130,7 +130,7 @@ export function ForgotPasswordForm() {
               required
               autoComplete="email"
               autoFocus
-              className="pl-10 h-12 bg-white border-border/50 focus:border-ccd-blue focus:ring-ccd-blue/20 rounded-xl transition-all"
+              className="pl-10 h-12 bg-card border-border/50 focus:border-primary focus:ring-primary/20 rounded-xl transition-all"
             />
           </div>
         </motion.div>

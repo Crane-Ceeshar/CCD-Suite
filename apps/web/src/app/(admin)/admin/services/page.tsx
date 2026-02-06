@@ -13,10 +13,10 @@ interface ServiceHealth {
 }
 
 const STATUS_CONFIG = {
-  healthy: { icon: CheckCircle2, color: 'text-green-600', bg: 'bg-green-50', dot: 'bg-green-500', label: 'Healthy' },
-  degraded: { icon: AlertTriangle, color: 'text-amber-600', bg: 'bg-amber-50', dot: 'bg-amber-500', label: 'Degraded' },
-  down: { icon: XCircle, color: 'text-red-600', bg: 'bg-red-50', dot: 'bg-red-500', label: 'Down' },
-  unknown: { icon: HelpCircle, color: 'text-gray-400', bg: 'bg-gray-50', dot: 'bg-gray-400', label: 'Unknown' },
+  healthy: { icon: CheckCircle2, color: 'text-green-600 dark:text-green-400', bg: 'bg-green-50 dark:bg-green-950/30', dot: 'bg-green-500', label: 'Healthy' },
+  degraded: { icon: AlertTriangle, color: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-950/30', dot: 'bg-amber-500', label: 'Degraded' },
+  down: { icon: XCircle, color: 'text-red-600 dark:text-red-400', bg: 'bg-red-50 dark:bg-red-950/30', dot: 'bg-red-500', label: 'Down' },
+  unknown: { icon: HelpCircle, color: 'text-gray-400', bg: 'bg-gray-50 dark:bg-gray-800/30', dot: 'bg-gray-400', label: 'Unknown' },
 };
 
 const SERVICE_LABELS: Record<string, string> = {

@@ -261,7 +261,7 @@ export function RegisterForm() {
             {step === 1 && (
               <>
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold font-heading text-ccd-dark">
+                  <h2 className="text-2xl font-bold font-heading text-foreground">
                     Set up your organization
                   </h2>
                   <p className="mt-1 text-foreground/50 text-sm">
@@ -282,7 +282,7 @@ export function RegisterForm() {
                       onChange={(e) => updateField('orgName', e.target.value)}
                       required
                       autoFocus
-                      className="pl-10 h-12 bg-white border-border/50 focus:border-ccd-blue focus:ring-ccd-blue/20 rounded-xl transition-all"
+                      className="pl-10 h-12 bg-card border-border/50 focus:border-primary focus:ring-primary/20 rounded-xl transition-all"
                     />
                   </div>
                 </div>
@@ -300,7 +300,7 @@ export function RegisterForm() {
                         className={`p-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                           formData.teamSize === option.value
                             ? 'bg-ccd-blue text-white shadow-lg shadow-ccd-blue/20'
-                            : 'bg-white border border-border/50 text-foreground/60 hover:border-ccd-blue/30 hover:bg-ccd-blue/5'
+                            : 'bg-card border border-border/50 text-foreground/60 hover:border-primary/30 hover:bg-primary/5'
                         }`}
                       >
                         {option.label}
@@ -315,7 +315,7 @@ export function RegisterForm() {
             {step === 2 && (
               <>
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold font-heading text-ccd-dark">
+                  <h2 className="text-2xl font-bold font-heading text-foreground">
                     About you
                   </h2>
                   <p className="mt-1 text-foreground/50 text-sm">
@@ -337,7 +337,7 @@ export function RegisterForm() {
                       required
                       autoFocus
                       autoComplete="name"
-                      className="pl-10 h-12 bg-white border-border/50 focus:border-ccd-blue focus:ring-ccd-blue/20 rounded-xl transition-all"
+                      className="pl-10 h-12 bg-card border-border/50 focus:border-primary focus:ring-primary/20 rounded-xl transition-all"
                     />
                   </div>
                 </div>
@@ -355,7 +355,7 @@ export function RegisterForm() {
                         className={`flex items-center gap-2 p-3 rounded-xl text-sm font-medium transition-all duration-200 ${
                           formData.roleTitle === option.value
                             ? 'bg-ccd-blue text-white shadow-lg shadow-ccd-blue/20'
-                            : 'bg-white border border-border/50 text-foreground/60 hover:border-ccd-blue/30 hover:bg-ccd-blue/5'
+                            : 'bg-card border border-border/50 text-foreground/60 hover:border-primary/30 hover:bg-primary/5'
                         }`}
                       >
                         <Briefcase className="h-3.5 w-3.5 flex-shrink-0" />
@@ -371,7 +371,7 @@ export function RegisterForm() {
             {step === 3 && (
               <>
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold font-heading text-ccd-dark">
+                  <h2 className="text-2xl font-bold font-heading text-foreground">
                     Create your account
                   </h2>
                   <p className="mt-1 text-foreground/50 text-sm">
@@ -394,7 +394,7 @@ export function RegisterForm() {
                       required
                       autoFocus
                       autoComplete="email"
-                      className="pl-10 h-12 bg-white border-border/50 focus:border-ccd-blue focus:ring-ccd-blue/20 rounded-xl transition-all"
+                      className="pl-10 h-12 bg-card border-border/50 focus:border-primary focus:ring-primary/20 rounded-xl transition-all"
                     />
                   </div>
                 </div>
@@ -413,7 +413,7 @@ export function RegisterForm() {
                       required
                       minLength={8}
                       autoComplete="new-password"
-                      className="pl-10 pr-10 h-12 bg-white border-border/50 focus:border-ccd-blue focus:ring-ccd-blue/20 rounded-xl transition-all"
+                      className="pl-10 pr-10 h-12 bg-card border-border/50 focus:border-primary focus:ring-primary/20 rounded-xl transition-all"
                     />
                     <button
                       type="button"
@@ -450,7 +450,7 @@ export function RegisterForm() {
             {step === 4 && (
               <>
                 <div className="mb-4">
-                  <h2 className="text-2xl font-bold font-heading text-ccd-dark">
+                  <h2 className="text-2xl font-bold font-heading text-foreground">
                     Choose your modules
                   </h2>
                   <p className="mt-1 text-foreground/50 text-sm">
@@ -469,8 +469,8 @@ export function RegisterForm() {
                         onClick={() => toggleModule(mod.id)}
                         className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-200 ${
                           isSelected
-                            ? 'bg-white shadow-lg border-2 scale-[1.02]'
-                            : 'bg-white/50 border border-border/30 hover:border-border/50 hover:bg-white/80'
+                            ? 'bg-card shadow-lg border-2 scale-[1.02]'
+                            : 'bg-card/50 border border-border/30 hover:border-border/50 hover:bg-card/80'
                         }`}
                         style={
                           isSelected ? { borderColor: mod.color } : {}
@@ -519,7 +519,7 @@ export function RegisterForm() {
             type="button"
             variant="outline"
             onClick={goBack}
-            className="h-12 px-5 rounded-xl border-border/50 bg-white hover:bg-muted/50 transition-all"
+            className="h-12 px-5 rounded-xl border-border/50 bg-card hover:bg-muted/50 transition-all"
           >
             <ArrowLeft className="mr-1 h-4 w-4" />
             Back

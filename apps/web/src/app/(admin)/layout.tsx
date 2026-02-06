@@ -10,8 +10,10 @@ export default async function AdminLayout({
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
+  // If not authenticated, render children directly (login page is the only
+  // unauthenticated page that reaches here via middleware PUBLIC_ROUTES)
   if (!user) {
-    redirect('/login');
+    return <>{children}</>;
   }
 
   // Fetch user profile with tenant info
@@ -22,12 +24,12 @@ export default async function AdminLayout({
     .single();
 
   if (!profile) {
-    redirect('/login');
+    redirect('/admin/login');
   }
 
   // Only admins can access the admin portal
   if (profile.user_type !== 'admin') {
-    redirect('/dashboard');
+    redirect('/admin/login');
   }
 
   return (

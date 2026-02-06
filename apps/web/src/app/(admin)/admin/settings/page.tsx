@@ -132,7 +132,7 @@ export default function AdminSettingsPage() {
                   type="checkbox"
                   checked={enabledModules.includes(mod.id)}
                   onChange={() => toggleModule(mod.id)}
-                  className="h-4 w-4 rounded border-gray-300 accent-red-600"
+                  className="h-4 w-4 rounded border-input accent-red-600"
                 />
                 <div>
                   <span className="text-sm font-medium">{mod.name}</span>

@@ -26,7 +26,7 @@ const MODULE_ROUTES: Record<string, string> = {
   '/ai': 'ai',
 };
 
-const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/auth/callback'];
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/admin/login'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -43,13 +43,34 @@ export async function middleware(request: NextRequest) {
   // Redirect unauthenticated users to login
   if (!user) {
     const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    url.searchParams.set('redirect', pathname);
+    // Admin routes redirect to admin login
+    if (pathname.startsWith('/admin')) {
+      url.pathname = '/admin/login';
+    } else {
+      url.pathname = '/login';
+      url.searchParams.set('redirect', pathname);
+    }
     return NextResponse.redirect(url);
   }
 
   // Admin portal: only admin user_type can access
   if (pathname.startsWith('/admin')) {
+    // If already authenticated admin visiting /admin/login, redirect to /admin
+    if (pathname === '/admin/login') {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('user_type')
+        .eq('id', user.id)
+        .single();
+
+      if (profile?.user_type === 'admin') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/admin';
+        return NextResponse.redirect(url);
+      }
+      return response;
+    }
+
     const { data: profile } = await supabase
       .from('profiles')
       .select('user_type')
@@ -58,7 +79,7 @@ export async function middleware(request: NextRequest) {
 
     if (!profile || profile.user_type !== 'admin') {
       const url = request.nextUrl.clone();
-      url.pathname = '/dashboard';
+      url.pathname = '/admin/login';
       return NextResponse.redirect(url);
     }
     return response;
