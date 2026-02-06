@@ -132,18 +132,16 @@ export function RegisterForm() {
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/^-|-$/g, '');
 
-    const { data: tenant, error: tenantError } = await supabase
-      .from('tenants')
-      .insert({
-        name: formData.orgName,
-        slug: orgSlug,
-        settings: {
+    // Create tenant via secure RPC function (bypasses RLS for unauthenticated registration)
+    const { data: tenantId, error: tenantError } = await supabase
+      .rpc('register_tenant', {
+        p_tenant_name: formData.orgName,
+        p_tenant_slug: orgSlug,
+        p_settings: {
           team_size: formData.teamSize,
           selected_modules: formData.selectedModules,
         },
-      })
-      .select()
-      .single();
+      });
 
     if (tenantError) {
       setError(tenantError.message);
@@ -157,7 +155,7 @@ export function RegisterForm() {
       options: {
         data: {
           full_name: formData.fullName,
-          tenant_id: tenant.id,
+          tenant_id: tenantId,
           user_type: 'admin',
         },
       },
