@@ -1,5 +1,5 @@
 import { PageHeader, StatCard, Card, CardContent, CardHeader, CardTitle, Button } from '@ccd/ui';
-import { PenTool, FileText, Calendar, Image, Plus } from 'lucide-react';
+import { PenTool, FileText, Calendar, Image as ImageIcon, Plus } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ContentDashboardPage() {
@@ -14,7 +14,7 @@ export default function ContentDashboardPage() {
         <StatCard label="Total Items" value="0" icon={<FileText className="h-5 w-5 text-muted-foreground" />} moduleColor="#EC4899" />
         <StatCard label="Published" value="0" icon={<PenTool className="h-5 w-5 text-muted-foreground" />} moduleColor="#EC4899" />
         <StatCard label="Scheduled" value="0" icon={<Calendar className="h-5 w-5 text-muted-foreground" />} moduleColor="#EC4899" />
-        <StatCard label="In Review" value="0" icon={<Image className="h-5 w-5 text-muted-foreground" />} moduleColor="#EC4899" />
+        <StatCard label="In Review" value="0" icon={<ImageIcon className="h-5 w-5 text-muted-foreground" />} moduleColor="#EC4899" />
       </div>
       <div className="grid gap-4 md:grid-cols-3">
         <Link href="/content/calendar">

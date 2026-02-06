@@ -17,18 +17,18 @@ export default async function ModulePage({ params }: ModulePageProps) {
     notFound();
   }
 
-  const module = MODULES[moduleId as ModuleId];
+  const currentModule = MODULES[moduleId as ModuleId];
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title={module.name}
-        description={module.description}
+        title={currentModule.name}
+        description={currentModule.description}
       />
       <EmptyState
         icon={<LayoutGrid className="h-6 w-6 text-muted-foreground" />}
-        title={`${module.name} Module`}
-        description={`The ${module.name} module is being built. Check back soon.`}
+        title={`${currentModule.name} Module`}
+        description={`The ${currentModule.name} module is being built. Check back soon.`}
       />
     </div>
   );
