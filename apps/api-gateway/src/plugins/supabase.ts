@@ -13,7 +13,12 @@ async function supabase(fastify: FastifyInstance) {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseServiceKey) {
-    throw new Error('Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    fastify.log.warn(
+      'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY — Supabase client not initialised. ' +
+      'Health endpoint will still respond but all authenticated routes will fail.'
+    );
+    fastify.decorate('supabase', null as unknown as SupabaseClient);
+    return;
   }
 
   const client = createClient(supabaseUrl, supabaseServiceKey, {
