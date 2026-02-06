@@ -87,7 +87,22 @@ export default function DashboardPage() {
   const firstName = user.full_name?.split(' ')[0] || 'there';
 
   return (
-    <div className="p-6 md:p-8 lg:p-10 max-w-7xl mx-auto">
+    <div className="p-6 md:p-8 lg:p-10 max-w-7xl mx-auto relative">
+      {/* CCD Pattern background decoration */}
+      <div className="fixed inset-0 pointer-events-none opacity-[0.02] dark:opacity-[0.03]">
+        <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+          <defs>
+            <pattern id="ccd-dashboard-pattern" x="0" y="0" width="288" height="246" patternUnits="userSpaceOnUse">
+              <path fill="currentColor" d="M83.75,0L0,123l143.94-38.85-60.19-19.16V0Z"/>
+              <path fill="currentColor" d="M204.13,123L287.87,0l-143.94,38.85,60.19,19.16v64.99Z"/>
+              <path fill="currentColor" d="M60.19,246l83.75-123L0,161.85l60.19,19.16v64.99Z"/>
+              <path fill="currentColor" d="M227.68,123l-83.75,123,143.94-38.85-60.19-19.16v-64.99Z"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#ccd-dashboard-pattern)" />
+        </svg>
+      </div>
+
       {/* Welcome Banner */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
@@ -95,7 +110,7 @@ export default function DashboardPage() {
         transition={{ duration: 0.4 }}
         className="mb-8 rounded-2xl bg-gradient-to-br from-primary/5 via-background to-secondary/5 border border-border/50 p-6 md:p-8 relative overflow-hidden"
       >
-        {/* Decorative element */}
+        {/* Decorative CCD logo watermark */}
         <div className="absolute top-0 right-0 w-64 h-64 opacity-[0.03]">
           <svg viewBox="0 0 525 448.86" className="w-full h-full">
             <path fill="currentColor" d="M525,0l-210.32,140.44c-9.99.44-19.05-2.32-29.3-2.4-46.8-.26-88.04,18.28-117.71,47.65L0,142.58,525,0h0Z"/>

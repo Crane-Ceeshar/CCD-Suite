@@ -67,7 +67,7 @@ export function FeaturesSection() {
           transition={{ duration: 0.6 }}
           className="text-center mb-16 lg:mb-20"
         >
-          <span className="inline-flex px-3 py-1 rounded-full bg-ccd-blue/5 text-sm font-medium text-ccd-blue mb-4">
+          <span className="inline-flex px-3 py-1 rounded-full bg-ccd-blue/10 text-sm font-medium text-ccd-blue mb-4">
             Why CCD Suite
           </span>
           <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold font-heading text-ccd-dark">

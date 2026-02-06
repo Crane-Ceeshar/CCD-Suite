@@ -31,8 +31,22 @@ const footerLinks = {
 
 export function LandingFooter() {
   return (
-    <footer className="bg-ccd-dark text-white">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+    <footer className="bg-ccd-dark text-white relative overflow-hidden">
+      {/* Subtle CCD pattern background */}
+      <div className="absolute inset-0 opacity-[0.02]">
+        <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+          <defs>
+            <pattern id="ccd-footer-pattern" x="0" y="0" width="288" height="246" patternUnits="userSpaceOnUse">
+              <path fill="#fff" d="M83.75,0L0,123l143.94-38.85-60.19-19.16V0Z"/>
+              <path fill="#fff" d="M204.13,123L287.87,0l-143.94,38.85,60.19,19.16v64.99Z"/>
+              <path fill="#fff" d="M60.19,246l83.75-123L0,161.85l60.19,19.16v64.99Z"/>
+              <path fill="#fff" d="M227.68,123l-83.75,123,143.94-38.85-60.19-19.16v-64.99Z"/>
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#ccd-footer-pattern)" />
+        </svg>
+      </div>
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="py-16 lg:py-20">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8">
             {/* Brand column */}

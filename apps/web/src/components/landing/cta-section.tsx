@@ -32,12 +32,18 @@ export function CTASection() {
               transition={{ duration: 45, repeat: Infinity, ease: 'linear' }}
               className="absolute -bottom-1/2 -left-1/4 w-[500px] h-[500px] rounded-full border border-white/5"
             />
-            {/* Pattern overlay */}
-            <div className="absolute top-0 right-0 w-64 h-64 opacity-5">
-              <svg viewBox="0 0 525 448.86" className="w-full h-full">
-                <path fill="#fff" d="M525,0l-210.32,140.44c-9.99.44-19.05-2.32-29.3-2.4-46.8-.26-88.04,18.28-117.71,47.65L0,142.58,525,0h0Z"/>
-                <polygon fill="#fff" points="525 0 219.53 448.86 235.08 253.87 525 0"/>
-                <path fill="#fff" d="M274.44,177.18c-10.5,8.7-22.66,19.13-34.68,27.38h0c-.88.63-1.73,1.22-2.65,1.81-8.18,5.27-19.38,9.1-22.26-3.91-.26-1.14-.41-2.28-.48-3.35-.88-14.59,13.52-26.75,26.79-29.92,10.1-2.43,23.03-.66,31.29,5.86.52.41,1.47,1.51,1.99,2.14h0Z"/>
+            {/* CCD Pattern tiled overlay */}
+            <div className="absolute inset-0 opacity-[0.04]">
+              <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+                <defs>
+                  <pattern id="ccd-cta-pattern" x="0" y="0" width="288" height="246" patternUnits="userSpaceOnUse">
+                    <path fill="#fff" d="M83.75,0L0,123l143.94-38.85-60.19-19.16V0Z"/>
+                    <path fill="#fff" d="M204.13,123L287.87,0l-143.94,38.85,60.19,19.16v64.99Z"/>
+                    <path fill="#fff" d="M60.19,246l83.75-123L0,161.85l60.19,19.16v64.99Z"/>
+                    <path fill="#fff" d="M227.68,123l-83.75,123,143.94-38.85-60.19-19.16v-64.99Z"/>
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#ccd-cta-pattern)" />
               </svg>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@ccd/ui';
 import { Menu, X } from 'lucide-react';
@@ -37,22 +38,16 @@ export function LandingNav() {
       >
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between lg:h-20">
-            {/* Logo */}
+            {/* Logo — switches between light and dark variants */}
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="relative">
-                <svg
-                  viewBox="0 0 525 448.86"
-                  className="h-8 w-8 lg:h-9 lg:w-9 transition-transform duration-300 group-hover:scale-110"
-                  aria-hidden="true"
-                >
-                  <path fill="#194ca1" d="M525,0l-210.32,140.44c-9.99.44-19.05-2.32-29.3-2.4-46.8-.26-88.04,18.28-117.71,47.65L0,142.58,525,0h0Z"/>
-                  <polygon fill="#194ca1" points="525 0 219.53 448.86 235.08 253.87 525 0"/>
-                  <path fill="#194ca1" d="M274.44,177.18c-10.5,8.7-22.66,19.13-34.68,27.38h0c-.88.63-1.73,1.22-2.65,1.81-8.18,5.27-19.38,9.1-22.26-3.91-.26-1.14-.41-2.28-.48-3.35-.88-14.59,13.52-26.75,26.79-29.92,10.1-2.43,23.03-.66,31.29,5.86.52.41,1.47,1.51,1.99,2.14h0Z"/>
-                </svg>
-              </div>
-              <span className="text-xl font-bold font-heading text-ccd-blue tracking-tight">
-                CCD Suite
-              </span>
+              <Image
+                src={scrolled ? '/logos/logo-lockup.svg' : '/logos/logo-lockup-light.svg'}
+                alt="CCD Suite"
+                width={160}
+                height={42}
+                className="h-8 lg:h-9 w-auto transition-all duration-300 group-hover:opacity-80"
+                priority
+              />
             </Link>
 
             {/* Desktop Navigation */}
@@ -61,7 +56,11 @@ export function LandingNav() {
                 <a
                   key={link.href}
                   href={link.href}
-                  className="px-4 py-2 text-sm font-medium text-foreground/70 hover:text-ccd-blue transition-colors rounded-lg hover:bg-ccd-blue/5"
+                  className={`px-4 py-2 text-sm font-medium transition-colors rounded-lg ${
+                    scrolled
+                      ? 'text-foreground/70 hover:text-ccd-blue hover:bg-ccd-blue/5'
+                      : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }`}
                 >
                   {link.label}
                 </a>
@@ -71,7 +70,13 @@ export function LandingNav() {
             {/* Desktop CTA */}
             <div className="hidden lg:flex items-center gap-3">
               <Link href="/login">
-                <Button variant="ghost" className="text-foreground/70 hover:text-ccd-blue">
+                <Button
+                  variant="ghost"
+                  className={scrolled
+                    ? 'text-foreground/70 hover:text-ccd-blue'
+                    : 'text-white/70 hover:text-white hover:bg-white/10'
+                  }
+                >
                   Sign In
                 </Button>
               </Link>
@@ -85,7 +90,11 @@ export function LandingNav() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="lg:hidden p-2 rounded-lg hover:bg-ccd-blue/5 transition-colors"
+              className={`lg:hidden p-2 rounded-lg transition-colors ${
+                scrolled
+                  ? 'hover:bg-ccd-blue/5'
+                  : 'text-white hover:bg-white/10'
+              }`}
               aria-label="Toggle menu"
             >
               {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
