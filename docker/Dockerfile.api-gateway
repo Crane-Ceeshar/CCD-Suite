@@ -15,6 +15,8 @@ RUN pnpm install --frozen-lockfile
 COPY packages/ ./packages/
 COPY apps/api-gateway/ ./apps/api-gateway/
 
+# Build shared package first, then api-gateway
+RUN pnpm --filter @ccd/shared build && pnpm --filter @ccd/api-gateway build
+
 WORKDIR /app/apps/api-gateway
-EXPOSE 4000
-CMD ["pnpm", "dev"]
+CMD ["node", "dist/index.js"]

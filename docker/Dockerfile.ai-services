@@ -8,5 +8,5 @@ RUN pip install --no-cache-dir .
 # Copy source
 COPY apps/ai-services/ .
 
-EXPOSE 5100
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "5100"]
+ENV PORT=5100
+CMD uvicorn app.main:app --host 0.0.0.0 --port ${PORT}

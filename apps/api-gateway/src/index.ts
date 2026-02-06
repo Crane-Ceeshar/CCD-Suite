@@ -19,7 +19,7 @@ import { seoRoutes } from './routes/seo/index.js';
 import { socialRoutes } from './routes/social/index.js';
 import { portalRoutes } from './routes/portal/index.js';
 
-const PORT = parseInt(process.env.API_PORT || '4000', 10);
+const PORT = parseInt(process.env.PORT || process.env.API_PORT || '4000', 10);
 const HOST = process.env.API_HOST || '0.0.0.0';
 
 async function buildApp() {

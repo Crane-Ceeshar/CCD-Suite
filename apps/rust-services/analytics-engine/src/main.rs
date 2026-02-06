@@ -26,7 +26,8 @@ async fn main() -> std::io::Result<()> {
         )
         .init();
 
-    let port = std::env::var("RUST_ANALYTICS_PORT")
+    let port = std::env::var("PORT")
+        .or_else(|_| std::env::var("RUST_ANALYTICS_PORT"))
         .unwrap_or_else(|_| "5001".to_string())
         .parse::<u16>()
         .expect("Invalid port");
