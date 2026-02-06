@@ -1,11 +1,13 @@
 'use client';
 
 import { ModuleShell } from '@/components/layout/module-shell';
-import { LayoutDashboard, FolderOpen } from 'lucide-react';
+import { LayoutDashboard, FolderOpen, FileArchive, MessageSquare } from 'lucide-react';
 
 const navItems = [
   { label: 'Dashboard', href: '/portal', icon: <LayoutDashboard /> },
   { label: 'Projects', href: '/portal/projects', icon: <FolderOpen /> },
+  { label: 'Files', href: '/portal/files', icon: <FileArchive /> },
+  { label: 'Messages', href: '/portal/messages', icon: <MessageSquare /> },
 ];
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {

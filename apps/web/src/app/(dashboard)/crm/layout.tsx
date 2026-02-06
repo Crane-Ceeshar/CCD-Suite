@@ -1,14 +1,28 @@
 'use client';
 
 import { ModuleShell } from '@/components/layout/module-shell';
-import { LayoutDashboard, GitBranch, Users, Building2, DollarSign } from 'lucide-react';
+import {
+  LayoutDashboard,
+  DollarSign,
+  UserCheck,
+  Users,
+  Building2,
+  FolderKanban,
+  Package,
+  Activity,
+  GitBranch,
+} from 'lucide-react';
 
 const navItems = [
-  { label: 'Dashboard', href: '/crm', icon: <LayoutDashboard /> },
-  { label: 'Pipeline', href: '/crm/pipeline', icon: <GitBranch /> },
-  { label: 'Contacts', href: '/crm/contacts', icon: <Users /> },
-  { label: 'Companies', href: '/crm/companies', icon: <Building2 /> },
+  { label: 'Sales Dashboard', href: '/crm', icon: <LayoutDashboard /> },
   { label: 'Deals', href: '/crm/deals', icon: <DollarSign /> },
+  { label: 'Leads', href: '/crm/leads', icon: <UserCheck /> },
+  { label: 'Contacts', href: '/crm/contacts', icon: <Users /> },
+  { label: 'Accounts', href: '/crm/companies', icon: <Building2 /> },
+  { label: 'Pipeline', href: '/crm/pipeline', icon: <GitBranch /> },
+  { label: 'Client Projects', href: '/crm/projects', icon: <FolderKanban /> },
+  { label: 'Products & Services', href: '/crm/products', icon: <Package /> },
+  { label: 'Activities', href: '/crm/activities', icon: <Activity /> },
 ];
 
 export default function CRMLayout({ children }: { children: React.ReactNode }) {

@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@ccd/ui';
-import { LogOut, Settings, Bell } from 'lucide-react';
+import { LogOut, Settings, Bell, HelpCircle, UserPlus } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
@@ -82,13 +82,33 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
+          <Button
+            variant="outline"
+            size="sm"
+            className="hidden md:flex items-center gap-1.5 h-8 rounded-lg text-xs font-medium border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/40 transition-all"
+          >
+            <UserPlus className="h-3.5 w-3.5" />
+            Invite
+          </Button>
+
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground"
+            title="Help & Support"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </Button>
+
           <ThemeToggle />
 
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full relative">
+          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full relative text-muted-foreground hover:text-foreground">
             <Bell className="h-4 w-4" />
             <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary animate-pulse" />
           </Button>
+
+          <div className="w-px h-6 bg-border/60 mx-0.5 hidden md:block" />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
