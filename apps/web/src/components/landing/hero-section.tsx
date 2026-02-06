@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { Button } from '@ccd/ui';
 import { ArrowRight, Play, Sparkles, ChevronDown } from 'lucide-react';
@@ -80,25 +79,13 @@ export function HeroSection() {
           ))}
         </div>
 
-        {/* Hero content */}
-        <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center">
+        {/* Hero content — padded to clear the fixed nav */}
+        <div className="relative z-10 mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 text-center pt-20 lg:pt-24">
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
           >
-            {/* Large CCD logo */}
-            <motion.div variants={itemVariants} className="mb-10 flex justify-center">
-              <Image
-                src="/logos/logo-lockup-light.svg"
-                alt="CCD Suite"
-                width={320}
-                height={84}
-                className="h-16 sm:h-20 lg:h-24 w-auto"
-                priority
-              />
-            </motion.div>
-
             {/* Badge */}
             <motion.div variants={itemVariants} className="mb-8">
               <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-ccd-cream/80 backdrop-blur-sm">
