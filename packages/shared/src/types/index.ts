@@ -11,3 +11,4 @@ export * from './seo';
 export * from './social';
 export * from './portal';
 export * from './ai';
+export * from './admin';

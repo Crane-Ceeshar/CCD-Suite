@@ -19,6 +19,7 @@ import { seoRoutes } from './routes/seo/index.js';
 import { socialRoutes } from './routes/social/index.js';
 import { portalRoutes } from './routes/portal/index.js';
 import { aiRoutes } from './routes/ai/index.js';
+import { adminRoutes } from './routes/admin/index.js';
 
 const PORT = parseInt(process.env.PORT || process.env.API_PORT || '4000', 10);
 const HOST = process.env.API_HOST || '0.0.0.0';
@@ -66,6 +67,7 @@ async function buildApp() {
   await app.register(socialRoutes, { prefix: '/api/social' });
   await app.register(portalRoutes, { prefix: '/api/portal' });
   await app.register(aiRoutes, { prefix: '/api/ai' });
+  await app.register(adminRoutes, { prefix: '/api/admin' });
 
   // Global error handler
   app.setErrorHandler((error, request, reply) => {

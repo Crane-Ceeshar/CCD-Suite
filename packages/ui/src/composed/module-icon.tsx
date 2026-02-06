@@ -10,6 +10,7 @@ import {
   Wallet,
   Building2,
   Sparkles,
+  Shield,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -24,6 +25,7 @@ const MODULE_ICONS: Record<string, React.ElementType> = {
   finance: Wallet,
   hr: Building2,
   ai: Sparkles,
+  admin: Shield,
 };
 
 const MODULE_COLORS: Record<string, string> = {
@@ -37,6 +39,7 @@ const MODULE_COLORS: Record<string, string> = {
   finance: '#14B8A6',
   hr: '#F97316',
   ai: '#10B981',
+  admin: '#DC2626',
 };
 
 export interface ModuleIconProps extends React.HTMLAttributes<HTMLDivElement> {

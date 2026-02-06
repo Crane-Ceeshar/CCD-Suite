@@ -103,6 +103,15 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
     basePath: '/ai',
     phase: 4,
   },
+  admin: {
+    id: 'admin',
+    name: 'Admin',
+    description: 'System administration, user management, and service monitoring',
+    color: '#DC2626',
+    icon: 'shield',
+    basePath: '/admin',
+    phase: 5,
+  },
 };
 
 export const MODULE_LIST = Object.values(MODULES);

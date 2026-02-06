@@ -3,7 +3,7 @@ import { updateSession } from '@/lib/supabase/middleware';
 
 // Module access control mapping (mirrors @ccd/shared/constants/user-types)
 const USER_TYPE_MODULE_ACCESS: Record<string, string[]> = {
-  admin: ['crm', 'analytics', 'content', 'seo', 'social', 'client_portal', 'projects', 'finance', 'hr', 'ai'],
+  admin: ['crm', 'analytics', 'content', 'seo', 'social', 'client_portal', 'projects', 'finance', 'hr', 'ai', 'admin'],
   sales: ['crm', 'analytics', 'ai'],
   marketing: ['content', 'seo', 'social', 'analytics', 'ai'],
   project_manager: ['projects', 'analytics', 'ai'],
@@ -24,6 +24,7 @@ const MODULE_ROUTES: Record<string, string> = {
   '/finance': 'finance',
   '/hr': 'hr',
   '/ai': 'ai',
+  '/admin': 'admin',
 };
 
 const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/auth/callback'];

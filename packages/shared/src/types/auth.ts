@@ -8,7 +8,8 @@ export type ModuleId =
   | 'projects'
   | 'finance'
   | 'hr'
-  | 'ai';
+  | 'ai'
+  | 'admin';
 
 export type PredefinedUserType =
   | 'admin'
