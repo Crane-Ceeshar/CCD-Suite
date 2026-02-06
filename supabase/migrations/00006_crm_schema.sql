@@ -178,15 +178,3 @@ create policy "Tenant isolation for activities"
   on public.activities for all
   using (tenant_id = public.get_current_tenant_id());
 
--- ============================================================
--- Seed default pipeline for demo tenant
--- ============================================================
-insert into public.pipelines (id, tenant_id, name, is_default)
-values ('00000000-0000-0000-0000-000000000010', '00000000-0000-0000-0000-000000000001', 'Sales Pipeline', true);
-
-insert into public.pipeline_stages (pipeline_id, name, position, color, probability) values
-  ('00000000-0000-0000-0000-000000000010', 'Lead', 0, '#94a3b8', 10),
-  ('00000000-0000-0000-0000-000000000010', 'Qualified', 1, '#3b82f6', 25),
-  ('00000000-0000-0000-0000-000000000010', 'Proposal', 2, '#8b5cf6', 50),
-  ('00000000-0000-0000-0000-000000000010', 'Negotiation', 3, '#f59e0b', 75),
-  ('00000000-0000-0000-0000-000000000010', 'Closed Won', 4, '#22c55e', 100);
