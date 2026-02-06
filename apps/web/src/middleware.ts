@@ -25,7 +25,7 @@ const MODULE_ROUTES: Record<string, string> = {
   '/hr': 'hr',
 };
 
-const PUBLIC_ROUTES = ['/login', '/register', '/forgot-password', '/auth/callback'];
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/auth/callback'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
