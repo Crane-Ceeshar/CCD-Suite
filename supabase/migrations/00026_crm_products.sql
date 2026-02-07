@@ -46,4 +46,4 @@ create trigger trg_set_product_tenant
 create trigger trg_products_updated_at
   before update on public.products
   for each row
-  execute function public.update_updated_at();
+  execute function extensions.moddatetime(updated_at);
