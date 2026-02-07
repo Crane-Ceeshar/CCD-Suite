@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/client';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '';
 
 async function getAuthHeaders(): Promise<Record<string, string>> {
   const supabase = createClient();
