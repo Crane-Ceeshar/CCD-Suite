@@ -10,29 +10,54 @@ interface ServiceHealth {
 
 async function checkService(
   name: string,
-  url: string | undefined
+  baseUrl: string | undefined
 ): Promise<ServiceHealth> {
   const now = new Date().toISOString();
 
-  if (!url) {
+  if (!baseUrl) {
     return { service: name, status: 'unknown', latency_ms: null, last_checked: now };
   }
 
-  try {
-    const start = Date.now();
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5000);
+  const base = baseUrl.replace(/\/$/, '');
 
-    const res = await fetch(url, { signal: controller.signal });
-    clearTimeout(timeout);
+  // Try /health first, then fall back to root URL
+  for (const path of ['/health', '/']) {
+    try {
+      const start = Date.now();
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 5000);
 
-    const latency = Date.now() - start;
-    const status = res.ok ? (latency > 2000 ? 'degraded' : 'healthy') : 'down';
+      const res = await fetch(`${base}${path}`, {
+        signal: controller.signal,
+        redirect: 'follow',
+      });
+      clearTimeout(timeout);
 
-    return { service: name, status, latency_ms: latency, last_checked: now };
-  } catch {
-    return { service: name, status: 'down', latency_ms: null, last_checked: now };
+      const latency = Date.now() - start;
+
+      if (res.ok) {
+        return {
+          service: name,
+          status: latency > 2000 ? 'degraded' : 'healthy',
+          latency_ms: latency,
+          last_checked: now,
+        };
+      }
+
+      // If /health returned non-ok, try root next
+      if (path === '/health') continue;
+
+      // Root also returned non-ok — service is reachable but not healthy
+      return { service: name, status: 'degraded', latency_ms: latency, last_checked: now };
+    } catch {
+      // If /health threw (connection error), try root
+      if (path === '/health') continue;
+
+      return { service: name, status: 'down', latency_ms: null, last_checked: now };
+    }
   }
+
+  return { service: name, status: 'down', latency_ms: null, last_checked: now };
 }
 
 export async function GET() {
@@ -64,26 +89,11 @@ export async function GET() {
   const realtimeGatewayUrl = process.env.RAILWAY_REALTIME_GATEWAY_URL || process.env.REALTIME_GATEWAY_URL;
 
   const serviceChecks = await Promise.all([
-    checkService(
-      'api-gateway',
-      apiGatewayUrl ? `${apiGatewayUrl.replace(/\/$/, '')}/health` : undefined
-    ),
-    checkService(
-      'ai-services',
-      aiServicesUrl ? `${aiServicesUrl.replace(/\/$/, '')}/health` : undefined
-    ),
-    checkService(
-      'file-processor',
-      fileProcessorUrl ? `${fileProcessorUrl.replace(/\/$/, '')}/health` : undefined
-    ),
-    checkService(
-      'analytics-engine',
-      analyticsEngineUrl ? `${analyticsEngineUrl.replace(/\/$/, '')}/health` : undefined
-    ),
-    checkService(
-      'realtime-gateway',
-      realtimeGatewayUrl ? `${realtimeGatewayUrl.replace(/\/$/, '')}/health` : undefined
-    ),
+    checkService('api-gateway', apiGatewayUrl),
+    checkService('ai-services', aiServicesUrl),
+    checkService('file-processor', fileProcessorUrl),
+    checkService('analytics-engine', analyticsEngineUrl),
+    checkService('realtime-gateway', realtimeGatewayUrl),
   ]);
 
   const allServices: ServiceHealth[] = [
