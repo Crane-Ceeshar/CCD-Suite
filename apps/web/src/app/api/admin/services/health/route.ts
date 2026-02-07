@@ -6,6 +6,7 @@ interface ServiceHealth {
   status: 'healthy' | 'degraded' | 'down' | 'unknown';
   latency_ms: number | null;
   last_checked: string;
+  detail?: string;
 }
 
 async function checkService(
@@ -15,10 +16,16 @@ async function checkService(
   const now = new Date().toISOString();
 
   if (!baseUrl) {
-    return { service: name, status: 'unknown', latency_ms: null, last_checked: now };
+    return { service: name, status: 'unknown', latency_ms: null, last_checked: now, detail: 'No URL configured' };
   }
 
-  const base = baseUrl.replace(/\/$/, '');
+  // Ensure URL has protocol
+  let base = baseUrl.replace(/\/$/, '');
+  if (!base.startsWith('http://') && !base.startsWith('https://')) {
+    base = `https://${base}`;
+  }
+
+  const errors: string[] = [];
 
   // Try multiple health endpoints:
   // - /health (standard for most services)
@@ -28,11 +35,12 @@ async function checkService(
     try {
       const start = Date.now();
       const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 5000);
+      const timeout = setTimeout(() => controller.abort(), 8000);
 
       const res = await fetch(`${base}${path}`, {
         signal: controller.signal,
         redirect: 'follow',
+        cache: 'no-store',
       });
       clearTimeout(timeout);
 
@@ -45,12 +53,16 @@ async function checkService(
           status: latency > 2000 ? 'degraded' : 'healthy',
           latency_ms: latency,
           last_checked: now,
+          detail: `OK via ${path}`,
         };
       }
 
-      // Non-OK response (e.g. 404) — service is reachable, just no endpoint here.
-      // Try the next path for a proper health check.
-      if (path !== '/') continue;
+      // Non-OK but got an HTTP response — service IS reachable
+      // For /health and /api/health, try next path for a proper 200
+      if (path !== '/') {
+        errors.push(`${path} → ${res.status}`);
+        continue;
+      }
 
       // Even root returned non-OK, but we got a response — service IS running
       return {
@@ -58,17 +70,27 @@ async function checkService(
         status: latency > 2000 ? 'degraded' : 'healthy',
         latency_ms: latency,
         last_checked: now,
+        detail: `Reachable (${res.status} on all paths)`,
       };
-    } catch {
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      errors.push(`${path} → ${msg}`);
+
       // Connection failed — try next path before giving up
       if (path !== '/') continue;
 
       // All paths failed to connect — service is truly down
-      return { service: name, status: 'down', latency_ms: null, last_checked: now };
+      return {
+        service: name,
+        status: 'down',
+        latency_ms: null,
+        last_checked: now,
+        detail: `${base} — ${errors.join('; ')}`,
+      };
     }
   }
 
-  return { service: name, status: 'down', latency_ms: null, last_checked: now };
+  return { service: name, status: 'down', latency_ms: null, last_checked: now, detail: errors.join('; ') };
 }
 
 export async function GET() {

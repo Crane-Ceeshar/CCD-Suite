@@ -10,6 +10,7 @@ interface ServiceHealth {
   status: 'healthy' | 'degraded' | 'down' | 'unknown';
   latency_ms: number | null;
   last_checked: string;
+  detail?: string;
 }
 
 const STATUS_CONFIG = {
@@ -91,7 +92,7 @@ export default function AdminServicesPage() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="space-y-1">
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
                     <span>
                       Latency: {svc.latency_ms !== null ? `${svc.latency_ms}ms` : '—'}
@@ -100,6 +101,11 @@ export default function AdminServicesPage() {
                       Checked: {new Date(svc.last_checked).toLocaleTimeString()}
                     </span>
                   </div>
+                  {svc.detail && (
+                    <p className="text-[10px] text-muted-foreground/70 truncate" title={svc.detail}>
+                      {svc.detail}
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             );
