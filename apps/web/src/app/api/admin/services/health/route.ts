@@ -56,9 +56,12 @@ export async function GET() {
   };
 
   // Check external services — look for Railway URLs in env vars
-  // Users should set these in Vercel env: RAILWAY_API_GATEWAY_URL, RAILWAY_AI_SERVICES_URL
+  // Users should set these in Vercel env: RAILWAY_*_URL
   const apiGatewayUrl = process.env.RAILWAY_API_GATEWAY_URL || process.env.API_GATEWAY_URL;
   const aiServicesUrl = process.env.RAILWAY_AI_SERVICES_URL || process.env.AI_SERVICES_URL;
+  const fileProcessorUrl = process.env.RAILWAY_FILE_PROCESSOR_URL || process.env.FILE_PROCESSOR_URL;
+  const analyticsEngineUrl = process.env.RAILWAY_ANALYTICS_ENGINE_URL || process.env.ANALYTICS_ENGINE_URL;
+  const realtimeGatewayUrl = process.env.RAILWAY_REALTIME_GATEWAY_URL || process.env.REALTIME_GATEWAY_URL;
 
   const serviceChecks = await Promise.all([
     checkService(
@@ -68,6 +71,18 @@ export async function GET() {
     checkService(
       'ai-services',
       aiServicesUrl ? `${aiServicesUrl.replace(/\/$/, '')}/health` : undefined
+    ),
+    checkService(
+      'file-processor',
+      fileProcessorUrl ? `${fileProcessorUrl.replace(/\/$/, '')}/health` : undefined
+    ),
+    checkService(
+      'analytics-engine',
+      analyticsEngineUrl ? `${analyticsEngineUrl.replace(/\/$/, '')}/health` : undefined
+    ),
+    checkService(
+      'realtime-gateway',
+      realtimeGatewayUrl ? `${realtimeGatewayUrl.replace(/\/$/, '')}/health` : undefined
     ),
   ]);
 

@@ -19,7 +19,13 @@ import {
   LogOut,
   LayoutDashboard,
   Users,
+  Building2,
   Server,
+  ShieldAlert,
+  BarChart3,
+  Megaphone,
+  ToggleLeft,
+  Mail,
   Settings,
   BrainCircuit,
   KeyRound,
@@ -28,15 +34,37 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { AnnouncementBanner } from '@/components/ui/announcement-banner';
 
-const NAV_ITEMS = [
-  { href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true },
-  { href: '/admin/users', label: 'Users', icon: Users },
-  { href: '/admin/services', label: 'Services', icon: Server },
-  { href: '/admin/settings', label: 'Settings', icon: Settings },
-  { href: '/admin/ai-config', label: 'AI Config', icon: BrainCircuit },
-  { href: '/admin/api-keys', label: 'API Keys', icon: KeyRound },
-  { href: '/admin/activity', label: 'Activity', icon: Activity },
+interface NavSection {
+  label: string;
+  items: Array<{ href: string; label: string; icon: React.ComponentType<{ className?: string }>; exact?: boolean }>;
+}
+
+const NAV_SECTIONS: NavSection[] = [
+  {
+    label: 'Platform',
+    items: [
+      { href: '/admin', label: 'Overview', icon: LayoutDashboard, exact: true },
+      { href: '/admin/users', label: 'Users', icon: Users },
+      { href: '/admin/tenants', label: 'Tenants', icon: Building2 },
+      { href: '/admin/services', label: 'Services', icon: Server },
+      { href: '/admin/security', label: 'Security', icon: ShieldAlert },
+      { href: '/admin/analytics', label: 'Analytics', icon: BarChart3 },
+    ],
+  },
+  {
+    label: 'Configuration',
+    items: [
+      { href: '/admin/announcements', label: 'Announcements', icon: Megaphone },
+      { href: '/admin/feature-flags', label: 'Flags', icon: ToggleLeft },
+      { href: '/admin/email-templates', label: 'Emails', icon: Mail },
+      { href: '/admin/settings', label: 'Settings', icon: Settings },
+      { href: '/admin/ai-config', label: 'AI Config', icon: BrainCircuit },
+      { href: '/admin/api-keys', label: 'API Keys', icon: KeyRound },
+      { href: '/admin/activity', label: 'Activity', icon: Activity },
+    ],
+  },
 ];
 
 interface AdminShellProps {
@@ -130,31 +158,35 @@ export function AdminShell({ user, tenant, children }: AdminShellProps) {
           className="w-56 flex-shrink-0 border-r bg-gradient-to-b from-card/80 to-card/50 overflow-y-auto"
         >
           <nav className="flex flex-col gap-1 p-3">
-            <div className="px-3 py-2 mb-1">
-              <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-                Administration
-              </p>
-            </div>
-            {NAV_ITEMS.map((item) => {
-              const isActive = item.exact
-                ? pathname === item.href
-                : pathname.startsWith(item.href) && !item.exact;
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={cn(
-                    'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
-                    isActive
-                      ? 'bg-red-50 text-red-700 shadow-sm border-l-2 border-red-600 dark:bg-red-950/80 dark:text-red-300 dark:border-red-400'
-                      : 'text-muted-foreground hover:bg-muted hover:text-foreground border-l-2 border-transparent'
-                  )}
-                >
-                  <item.icon className={cn('h-4 w-4', isActive && 'text-red-600 dark:text-red-400')} />
-                  {item.label}
-                </Link>
-              );
-            })}
+            {NAV_SECTIONS.map((section) => (
+              <React.Fragment key={section.label}>
+                <div className="px-3 py-2 mb-1 mt-2 first:mt-0">
+                  <p className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+                    {section.label}
+                  </p>
+                </div>
+                {section.items.map((item) => {
+                  const isActive = item.exact
+                    ? pathname === item.href
+                    : pathname.startsWith(item.href) && !item.exact;
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
+                        isActive
+                          ? 'bg-red-50 text-red-700 shadow-sm border-l-2 border-red-600 dark:bg-red-950/80 dark:text-red-300 dark:border-red-400'
+                          : 'text-muted-foreground hover:bg-muted hover:text-foreground border-l-2 border-transparent'
+                      )}
+                    >
+                      <item.icon className={cn('h-4 w-4', isActive && 'text-red-600 dark:text-red-400')} />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </React.Fragment>
+            ))}
           </nav>
 
           {/* Tenant info + version at bottom */}
@@ -171,6 +203,7 @@ export function AdminShell({ user, tenant, children }: AdminShellProps) {
 
         {/* Main content */}
         <main className="flex-1 overflow-auto p-6">
+          <AnnouncementBanner />
           {children}
         </main>
       </div>

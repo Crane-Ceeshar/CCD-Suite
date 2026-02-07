@@ -12,17 +12,25 @@ export async function GET(request: NextRequest) {
   const page = Math.max(1, parseInt(searchParams.get('page') ?? '1', 10));
   const perPage = Math.min(100, Math.max(1, parseInt(searchParams.get('per_page') ?? '25', 10)));
   const offset = (page - 1) * perPage;
+  const startDate = searchParams.get('start_date');
+  const endDate = searchParams.get('end_date');
 
-  // Get total count (platform-wide)
-  const { count: total } = await serviceClient
+  // Get total count (platform-wide) with optional date filtering
+  let countQuery = serviceClient
     .from('activity_logs')
     .select('id', { count: 'exact', head: true });
+  if (startDate) countQuery = countQuery.gte('created_at', `${startDate}T00:00:00.000Z`);
+  if (endDate) countQuery = countQuery.lte('created_at', `${endDate}T23:59:59.999Z`);
+  const { count: total } = await countQuery;
 
-  // Get paginated logs (without the broken profiles join)
-  const { data: logs, error: queryError } = await serviceClient
+  // Get paginated logs with optional date filtering
+  let logsQuery = serviceClient
     .from('activity_logs')
     .select('id, user_id, action, resource_type, resource_id, details, created_at')
-    .order('created_at', { ascending: false })
+    .order('created_at', { ascending: false });
+  if (startDate) logsQuery = logsQuery.gte('created_at', `${startDate}T00:00:00.000Z`);
+  if (endDate) logsQuery = logsQuery.lte('created_at', `${endDate}T23:59:59.999Z`);
+  const { data: logs, error: queryError } = await logsQuery
     .range(offset, offset + perPage - 1);
 
   if (queryError) {
