@@ -20,8 +20,11 @@ async function checkService(
 
   const base = baseUrl.replace(/\/$/, '');
 
-  // Try /health first, then fall back to root URL
-  for (const path of ['/health', '/']) {
+  // Try multiple health endpoints:
+  // - /health (standard for most services)
+  // - /api/health (api-gateway uses Fastify with /api prefix)
+  // - / (final fallback — any response means the service is alive)
+  for (const path of ['/health', '/api/health', '/']) {
     try {
       const start = Date.now();
       const controller = new AbortController();
@@ -35,6 +38,7 @@ async function checkService(
 
       const latency = Date.now() - start;
 
+      // 200 OK from a health endpoint — fully healthy
       if (res.ok) {
         return {
           service: name,
@@ -44,15 +48,22 @@ async function checkService(
         };
       }
 
-      // If /health returned non-ok, try root next
-      if (path === '/health') continue;
+      // Non-OK response (e.g. 404) — service is reachable, just no endpoint here.
+      // Try the next path for a proper health check.
+      if (path !== '/') continue;
 
-      // Root also returned non-ok — service is reachable but not healthy
-      return { service: name, status: 'degraded', latency_ms: latency, last_checked: now };
+      // Even root returned non-OK, but we got a response — service IS running
+      return {
+        service: name,
+        status: latency > 2000 ? 'degraded' : 'healthy',
+        latency_ms: latency,
+        last_checked: now,
+      };
     } catch {
-      // If /health threw (connection error), try root
-      if (path === '/health') continue;
+      // Connection failed — try next path before giving up
+      if (path !== '/') continue;
 
+      // All paths failed to connect — service is truly down
       return { service: name, status: 'down', latency_ms: null, last_checked: now };
     }
   }
