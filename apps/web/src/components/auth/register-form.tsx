@@ -10,6 +10,7 @@ import {
   Label,
 } from '@ccd/ui';
 import { createClient } from '@/lib/supabase/client';
+import { OtpInput } from './otp-input';
 import {
   Building2,
   User,
@@ -130,6 +131,10 @@ export function RegisterForm() {
   const [showPassword, setShowPassword] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [showOtp, setShowOtp] = React.useState(false);
+  const [otpCode, setOtpCode] = React.useState('');
+  const [otpLoading, setOtpLoading] = React.useState(false);
+  const [resendCooldown, setResendCooldown] = React.useState(0);
 
   const [formData, setFormData] = React.useState({
     plan: hasPlanFromUrl ? preselectedPlan! : '',
@@ -265,8 +270,54 @@ export function RegisterForm() {
       return;
     }
 
+    // Show OTP verification screen instead of redirecting
+    setLoading(false);
+    setShowOtp(true);
+    setResendCooldown(60);
+  };
+
+  // Resend cooldown timer
+  React.useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setTimeout(() => setResendCooldown((c) => c - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
+
+  const handleVerifyOtp = async () => {
+    setError(null);
+    setOtpLoading(true);
+
+    const supabase = createClient();
+    const { error: verifyError } = await supabase.auth.verifyOtp({
+      email: formData.email,
+      token: otpCode,
+      type: 'signup',
+    });
+
+    if (verifyError) {
+      setError(verifyError.message);
+      setOtpLoading(false);
+      return;
+    }
+
     router.push('/dashboard');
     router.refresh();
+  };
+
+  const handleResendOtp = async () => {
+    setError(null);
+    const supabase = createClient();
+    const { error: resendError } = await supabase.auth.resend({
+      type: 'signup',
+      email: formData.email,
+    });
+
+    if (resendError) {
+      setError(resendError.message);
+      return;
+    }
+
+    setResendCooldown(60);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -275,6 +326,79 @@ export function RegisterForm() {
       goNext();
     }
   };
+
+  // OTP verification screen
+  if (showOtp) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+        className="text-center"
+      >
+        <motion.div
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.2, type: 'spring', stiffness: 200, damping: 15 }}
+          className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-ccd-blue/10 mb-6"
+        >
+          <Mail className="h-8 w-8 text-ccd-blue" />
+        </motion.div>
+
+        <h2 className="text-2xl font-bold font-heading text-foreground mb-2">
+          Verify your email
+        </h2>
+        <p className="text-foreground/50 mb-8">
+          We sent a 6-digit code to <strong className="text-foreground/70">{formData.email}</strong>
+        </p>
+
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mb-6 rounded-xl bg-destructive/10 border border-destructive/20 p-4 text-sm text-destructive"
+          >
+            {error}
+          </motion.div>
+        )}
+
+        <div className="mb-6">
+          <OtpInput value={otpCode} onChange={setOtpCode} disabled={otpLoading} />
+        </div>
+
+        <Button
+          type="button"
+          onClick={handleVerifyOtp}
+          disabled={otpLoading || otpCode.length < 6}
+          className="w-full h-12 bg-ccd-blue hover:bg-ccd-blue/90 text-white rounded-xl shadow-lg shadow-ccd-blue/20 hover:shadow-ccd-blue/30 transition-all duration-300 hover:scale-[1.02] disabled:opacity-50 disabled:hover:scale-100 text-base font-medium mb-4"
+        >
+          {otpLoading ? (
+            <div className="flex items-center gap-2">
+              <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              Verifying...
+            </div>
+          ) : (
+            'Verify & Continue'
+          )}
+        </Button>
+
+        <p className="text-sm text-foreground/50">
+          Didn&apos;t receive the code?{' '}
+          {resendCooldown > 0 ? (
+            <span className="text-foreground/40">Resend in {resendCooldown}s</span>
+          ) : (
+            <button
+              type="button"
+              onClick={handleResendOtp}
+              className="text-ccd-blue hover:text-ccd-blue/80 font-medium transition-colors"
+            >
+              Resend code
+            </button>
+          )}
+        </p>
+      </motion.div>
+    );
+  }
 
   return (
     <div onKeyDown={handleKeyDown}>
