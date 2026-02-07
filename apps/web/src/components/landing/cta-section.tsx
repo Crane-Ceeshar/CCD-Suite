@@ -85,7 +85,7 @@ export function CTASection() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="border-white/30 text-white hover:bg-white/10 text-base px-8 py-6"
+                  className="border-2 border-white/60 text-white hover:border-white/80 hover:bg-white/10 text-base px-8 py-6"
                 >
                   Learn About Crane & Ceeshar
                 </Button>

@@ -53,7 +53,7 @@ const item = {
 };
 
 export default function DashboardPage() {
-  const [user, setUser] = React.useState<{ full_name: string; user_type: string; role_title?: string } | null>(null);
+  const [user, setUser] = React.useState<{ full_name: string; user_type: string; role_title?: string; tenants?: { settings?: { modules_enabled?: string[] } } } | null>(null);
   const [mounted, setMounted] = React.useState(false);
 
   React.useEffect(() => {
@@ -63,11 +63,11 @@ export default function DashboardPage() {
       if (data.user) {
         supabase
           .from('profiles')
-          .select('full_name, user_type, role_title')
+          .select('full_name, user_type, role_title, tenant_id, tenants(settings)')
           .eq('id', data.user.id)
           .single()
           .then(({ data: profile }) => {
-            if (profile) setUser(profile);
+            if (profile) setUser(profile as any);
           });
       }
     });
@@ -81,8 +81,12 @@ export default function DashboardPage() {
     );
   }
 
-  const allowedModules = getModulesForUserType(user.user_type)
+  const roleModules = getModulesForUserType(user.user_type)
     .filter((id) => id !== 'admin');
+  const tenantModules: string[] = user.tenants?.settings?.modules_enabled ?? [];
+  const allowedModules = tenantModules.length > 0
+    ? roleModules.filter((id) => tenantModules.includes(id))
+    : roleModules;
 
   const firstName = user.full_name?.split(' ')[0] || 'there';
 

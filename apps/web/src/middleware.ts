@@ -4,6 +4,7 @@ import { updateSession } from '@/lib/supabase/middleware';
 // Module access control mapping (mirrors @ccd/shared/constants/user-types)
 const USER_TYPE_MODULE_ACCESS: Record<string, string[]> = {
   admin: ['crm', 'analytics', 'content', 'seo', 'social', 'client_portal', 'projects', 'finance', 'hr', 'ai'],
+  owner: ['crm', 'analytics', 'content', 'seo', 'social', 'client_portal', 'projects', 'finance', 'hr', 'ai'],
   sales: ['crm', 'analytics', 'ai'],
   marketing: ['content', 'seo', 'social', 'analytics', 'ai'],
   project_manager: ['projects', 'analytics', 'ai'],
@@ -53,7 +54,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
-  // Admin portal: only admin user_type can access
+  // Admin portal: only platform admin user_type can access (not 'owner')
   if (pathname.startsWith('/admin')) {
     // If already authenticated admin visiting /admin/login, redirect to /admin
     if (pathname === '/admin/login') {
@@ -98,16 +99,20 @@ export async function middleware(request: NextRequest) {
   if (moduleRoute) {
     const [, moduleId] = moduleRoute;
 
-    // Get user profile for user_type
+    // Get user profile with tenant info for module checking
     const { data: profile } = await supabase
       .from('profiles')
-      .select('user_type')
+      .select('user_type, tenant_id, tenants(settings)')
       .eq('id', user.id)
       .single();
 
     if (profile) {
-      const allowedModules = USER_TYPE_MODULE_ACCESS[profile.user_type] ?? [];
-      if (!allowedModules.includes(moduleId)) {
+      const allowedByRole = USER_TYPE_MODULE_ACCESS[profile.user_type] ?? [];
+      const tenantData = profile.tenants as { settings?: { modules_enabled?: string[] } } | null;
+      const tenantModules: string[] = tenantData?.settings?.modules_enabled ?? [];
+
+      // Module must be allowed by both user role AND tenant subscription
+      if (!allowedByRole.includes(moduleId) || (tenantModules.length > 0 && !tenantModules.includes(moduleId))) {
         const url = request.nextUrl.clone();
         url.pathname = '/dashboard';
         return NextResponse.redirect(url);

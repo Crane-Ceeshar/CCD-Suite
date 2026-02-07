@@ -13,13 +13,14 @@ const plans = [
     description: 'Perfect for small agencies getting started.',
     features: [
       'Up to 5 team members',
-      '3 core modules (CRM, Projects, Content)',
+      'Choose any 3 modules',
       '1,000 contacts',
       '5 GB storage',
       'Email support',
       'Basic analytics',
     ],
     cta: 'Start Free Trial',
+    href: '/register?plan=starter',
     popular: false,
   },
   {
@@ -37,6 +38,7 @@ const plans = [
       'Custom branding',
     ],
     cta: 'Start Free Trial',
+    href: '/register?plan=professional',
     popular: true,
   },
   {
@@ -54,7 +56,24 @@ const plans = [
       'SSO & advanced security',
       'API access & webhooks',
     ],
-    cta: 'Contact Sales',
+    cta: 'Start Free Trial',
+    href: '/register?plan=enterprise',
+    popular: false,
+  },
+  {
+    name: 'Custom',
+    price: null,
+    description: 'Build exactly the suite your agency needs.',
+    features: [
+      'Pick any number of modules',
+      'Flexible team size',
+      'Custom storage & contacts',
+      'Priority support',
+      'Custom integrations',
+      'Tailored onboarding',
+    ],
+    cta: 'Start Free Trial',
+    href: '/register?plan=custom',
     popular: false,
   },
 ];
@@ -86,16 +105,16 @@ export function PricingSection() {
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-3 gap-6 lg:gap-8 max-w-5xl mx-auto">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5 lg:gap-6 max-w-6xl mx-auto">
           {plans.map((plan, i) => (
             <motion.div
               key={plan.name}
               initial={{ opacity: 0, y: 40 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ delay: i * 0.15, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
-              className={`relative rounded-2xl p-8 transition-all duration-500 ${
+              transition={{ delay: i * 0.1, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+              className={`relative rounded-2xl p-6 lg:p-7 transition-all duration-500 flex flex-col ${
                 plan.popular
-                  ? 'bg-ccd-blue text-white shadow-2xl shadow-ccd-blue/25 scale-105 border-0'
+                  ? 'bg-ccd-blue text-white shadow-2xl shadow-ccd-blue/25 lg:scale-[1.03] border-0'
                   : 'bg-white border border-border/50 hover:shadow-xl'
               }`}
             >
@@ -108,31 +127,37 @@ export function PricingSection() {
                 </div>
               )}
 
-              <div className="mb-6">
-                <h3 className={`text-xl font-bold font-heading ${plan.popular ? 'text-white' : 'text-ccd-dark'}`}>
+              <div className="mb-5">
+                <h3 className={`text-lg font-bold font-heading ${plan.popular ? 'text-white' : 'text-ccd-dark'}`}>
                   {plan.name}
                 </h3>
-                <p className={`mt-1 text-sm ${plan.popular ? 'text-white/70' : 'text-foreground/50'}`}>
+                <p className={`mt-1 text-sm leading-relaxed ${plan.popular ? 'text-white/70' : 'text-foreground/50'}`}>
                   {plan.description}
                 </p>
               </div>
 
-              <div className="mb-8">
-                <span className={`text-4xl font-bold font-heading ${plan.popular ? 'text-white' : 'text-ccd-dark'}`}>
-                  ${plan.price}
-                </span>
-                <span className={`text-sm ${plan.popular ? 'text-white/60' : 'text-foreground/40'}`}>
-                  /user/month
-                </span>
+              <div className="mb-6">
+                {plan.price !== null ? (
+                  <>
+                    <span className={`text-3xl font-bold font-heading ${plan.popular ? 'text-white' : 'text-ccd-dark'}`}>
+                      ${plan.price}
+                    </span>
+                    <span className={`text-sm ${plan.popular ? 'text-white/60' : 'text-foreground/40'}`}>
+                      /user/month
+                    </span>
+                  </>
+                ) : (
+                  <span className={`text-3xl font-bold font-heading ${plan.popular ? 'text-white' : 'text-ccd-dark'}`}>
+                    Custom
+                  </span>
+                )}
               </div>
 
-              <ul className="space-y-3 mb-8">
+              <ul className="space-y-2.5 mb-7 flex-1">
                 {plan.features.map((feature) => (
-                  <li key={feature} className="flex items-start gap-3">
+                  <li key={feature} className="flex items-start gap-2.5">
                     <Check
-                      className={`h-4 w-4 mt-0.5 shrink-0 ${
-                        plan.popular ? 'text-ccd-lime' : 'text-ccd-lime'
-                      }`}
+                      className="h-4 w-4 mt-0.5 shrink-0 text-ccd-lime"
                     />
                     <span className={`text-sm ${plan.popular ? 'text-white/80' : 'text-foreground/60'}`}>
                       {feature}
@@ -141,7 +166,7 @@ export function PricingSection() {
                 ))}
               </ul>
 
-              <Link href="/register">
+              <Link href={plan.href}>
                 <Button
                   className={`w-full group ${
                     plan.popular

@@ -5,6 +5,10 @@ export const USER_TYPE_MODULE_ACCESS: Record<PredefinedUserType, ModuleId[]> = {
     'crm', 'analytics', 'content', 'seo', 'social',
     'client_portal', 'projects', 'finance', 'hr', 'ai',
   ],
+  owner: [
+    'crm', 'analytics', 'content', 'seo', 'social',
+    'client_portal', 'projects', 'finance', 'hr', 'ai',
+  ],
   sales: ['crm', 'analytics', 'ai'],
   marketing: ['content', 'seo', 'social', 'analytics', 'ai'],
   project_manager: ['projects', 'analytics', 'ai'],
@@ -15,6 +19,7 @@ export const USER_TYPE_MODULE_ACCESS: Record<PredefinedUserType, ModuleId[]> = {
 
 export const USER_TYPE_LABELS: Record<PredefinedUserType, string> = {
   admin: 'Admin',
+  owner: 'Owner',
   sales: 'Sales',
   marketing: 'Marketing',
   project_manager: 'Project Manager',
@@ -50,6 +55,6 @@ export function hasModuleAccess(
 }
 
 export const PREDEFINED_USER_TYPES: PredefinedUserType[] = [
-  'admin', 'sales', 'marketing', 'project_manager',
+  'admin', 'owner', 'sales', 'marketing', 'project_manager',
   'finance', 'hr', 'client',
 ];

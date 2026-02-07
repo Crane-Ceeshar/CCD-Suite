@@ -164,18 +164,18 @@ function LogoHero() {
 function ContentSection() {
   return (
     <section className="relative py-24 lg:py-32 overflow-hidden">
-      {/* Dark gradient background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0a1628] via-ccd-dark to-[#0f1a35]" />
+      {/* Light gradient background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-white via-ccd-cream/50 to-ccd-cream" />
 
       {/* Subtle pattern */}
       <div className="absolute inset-0 opacity-[0.03]">
         <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
           <defs>
             <pattern id="ccd-content-pattern" x="0" y="0" width="288" height="246" patternUnits="userSpaceOnUse">
-              <path fill="#fff" d="M83.75,0L0,123l143.94-38.85-60.19-19.16V0Z"/>
-              <path fill="#fff" d="M204.13,123L287.87,0l-143.94,38.85,60.19,19.16v64.99Z"/>
-              <path fill="#fff" d="M60.19,246l83.75-123L0,161.85l60.19,19.16v64.99Z"/>
-              <path fill="#fff" d="M227.68,123l-83.75,123,143.94-38.85-60.19-19.16v-64.99Z"/>
+              <path fill="#194ca1" d="M83.75,0L0,123l143.94-38.85-60.19-19.16V0Z"/>
+              <path fill="#194ca1" d="M204.13,123L287.87,0l-143.94,38.85,60.19,19.16v64.99Z"/>
+              <path fill="#194ca1" d="M60.19,246l83.75-123L0,161.85l60.19,19.16v64.99Z"/>
+              <path fill="#194ca1" d="M227.68,123l-83.75,123,143.94-38.85-60.19-19.16v-64.99Z"/>
             </pattern>
           </defs>
           <rect width="100%" height="100%" fill="url(#ccd-content-pattern)" />
@@ -191,7 +191,7 @@ function ContentSection() {
         >
           {/* Badge */}
           <motion.div variants={contentItemVariants} className="mb-8">
-            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm font-medium text-ccd-cream/80 backdrop-blur-sm">
+            <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-ccd-blue/5 border border-ccd-blue/15 text-sm font-medium text-ccd-blue backdrop-blur-sm">
               <Sparkles className="h-4 w-4 text-ccd-lime" />
               9 Integrated Modules
               <span className="flex h-2 w-2 relative">
@@ -204,17 +204,17 @@ function ContentSection() {
           {/* Headline */}
           <motion.h1
             variants={contentItemVariants}
-            className="text-4xl sm:text-5xl lg:text-7xl font-bold font-heading tracking-tight text-white leading-[1.1]"
+            className="text-4xl sm:text-5xl lg:text-7xl font-bold font-heading tracking-tight text-ccd-dark leading-[1.1]"
           >
             Everything Your Agency{' '}
             <span className="relative inline-block">
-              <span className="relative z-10 text-ccd-lime">Needs</span>
+              <span className="relative z-10 text-ccd-blue">Needs</span>
               <motion.span
                 initial={{ scaleX: 0 }}
                 whileInView={{ scaleX: 1 }}
                 viewport={{ once: true }}
                 transition={{ delay: 0.6, duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                className="absolute bottom-1 sm:bottom-2 left-0 right-0 h-2 sm:h-3 bg-ccd-lime/20 -z-0 origin-left rounded"
+                className="absolute bottom-1 sm:bottom-2 left-0 right-0 h-2 sm:h-3 bg-ccd-blue/20 -z-0 origin-left rounded"
               />
             </span>
             {', '}
@@ -225,7 +225,7 @@ function ContentSection() {
           {/* Subtitle */}
           <motion.p
             variants={contentItemVariants}
-            className="mt-6 text-lg sm:text-xl text-white/50 max-w-2xl mx-auto leading-relaxed"
+            className="mt-6 text-lg sm:text-xl text-foreground/60 max-w-2xl mx-auto leading-relaxed"
           >
             9 powerful modules. One unified platform. CCD Suite brings CRM, analytics,
             content, projects, finance, and more together with AI at the core.
@@ -248,7 +248,7 @@ function ContentSection() {
             <Button
               variant="outline"
               size="lg"
-              className="text-base px-8 py-6 border-white/20 text-white hover:border-white/40 hover:bg-white/5 transition-all duration-300"
+              className="text-base px-8 py-6 border-2 border-ccd-blue/30 text-ccd-blue hover:border-ccd-blue/50 hover:bg-ccd-blue/5 transition-all duration-300"
             >
               <Play className="mr-2 h-4 w-4 fill-current" />
               Watch Demo
@@ -264,14 +264,14 @@ function ContentSection() {
               {[1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className="w-10 h-10 rounded-full border-2 border-ccd-dark bg-gradient-to-br from-ccd-blue/30 to-ccd-blue/60 flex items-center justify-center text-xs font-bold text-white/80"
+                  className="w-10 h-10 rounded-full border-2 border-white bg-gradient-to-br from-ccd-blue/30 to-ccd-blue/60 flex items-center justify-center text-xs font-bold text-white/80"
                 >
                   {String.fromCharCode(64 + i)}
                 </div>
               ))}
             </div>
-            <p className="text-sm text-white/40">
-              Trusted by <span className="font-semibold text-white/60">500+</span> agencies worldwide
+            <p className="text-sm text-foreground/40">
+              Trusted by <span className="font-semibold text-foreground/60">500+</span> agencies worldwide
             </p>
           </motion.div>
         </motion.div>

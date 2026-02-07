@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -29,9 +29,13 @@ import {
   Share2,
   LayoutGrid,
   Briefcase,
+  Sparkles,
+  Settings2,
+  Crown,
+  Zap,
 } from 'lucide-react';
 
-const TOTAL_STEPS = 4;
+const ALL_MODULE_IDS = ['crm', 'analytics', 'content', 'projects', 'finance', 'seo', 'social', 'portal', 'hr'];
 
 const moduleOptions = [
   { id: 'crm', name: 'CRM', icon: Users, color: '#0047AB', description: 'Client relationships & sales' },
@@ -43,6 +47,42 @@ const moduleOptions = [
   { id: 'social', name: 'Social', icon: Share2, color: '#F59E0B', description: 'Social media management' },
   { id: 'portal', name: 'Portal', icon: LayoutGrid, color: '#06B6D4', description: 'Client collaboration' },
   { id: 'hr', name: 'HR', icon: Building2, color: '#F97316', description: 'People management' },
+];
+
+const planOptions = [
+  {
+    id: 'starter',
+    name: 'Starter',
+    price: '$29',
+    desc: 'Choose any 3 modules',
+    icon: Zap,
+    color: '#14B8A6',
+  },
+  {
+    id: 'professional',
+    name: 'Professional',
+    price: '$59',
+    desc: 'All 9 modules included',
+    icon: Sparkles,
+    color: '#194ca1',
+    popular: true,
+  },
+  {
+    id: 'enterprise',
+    name: 'Enterprise',
+    price: '$99',
+    desc: 'Full suite + advanced features',
+    icon: Crown,
+    color: '#8B5CF6',
+  },
+  {
+    id: 'custom',
+    name: 'Custom',
+    price: 'Custom',
+    desc: 'Pick any modules you want',
+    icon: Settings2,
+    color: '#F59E0B',
+  },
 ];
 
 const roleTitleOptions = [
@@ -78,6 +118,13 @@ const slideVariants = {
 
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const preselectedPlan = searchParams.get('plan');
+
+  // If plan is pre-selected from pricing page, skip the plan step
+  const hasPlanFromUrl = ['starter', 'professional', 'enterprise', 'custom'].includes(preselectedPlan || '');
+  const TOTAL_STEPS = hasPlanFromUrl ? 4 : 5;
+
   const [step, setStep] = React.useState(1);
   const [direction, setDirection] = React.useState(1);
   const [showPassword, setShowPassword] = React.useState(false);
@@ -85,26 +132,42 @@ export function RegisterForm() {
   const [loading, setLoading] = React.useState(false);
 
   const [formData, setFormData] = React.useState({
+    plan: hasPlanFromUrl ? preselectedPlan! : '',
     orgName: '',
     teamSize: '',
     fullName: '',
     roleTitle: '',
     email: '',
     password: '',
-    selectedModules: ['crm', 'projects', 'analytics'] as string[],
+    selectedModules: [] as string[],
   });
+
+  // Auto-select all modules when Professional/Enterprise is chosen
+  React.useEffect(() => {
+    if (formData.plan === 'professional' || formData.plan === 'enterprise') {
+      setFormData((prev) => ({ ...prev, selectedModules: [...ALL_MODULE_IDS] }));
+    } else if (formData.plan === 'starter' && formData.selectedModules.length > 3) {
+      setFormData((prev) => ({ ...prev, selectedModules: prev.selectedModules.slice(0, 3) }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.plan]);
 
   const updateField = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const toggleModule = (moduleId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      selectedModules: prev.selectedModules.includes(moduleId)
-        ? prev.selectedModules.filter((m) => m !== moduleId)
-        : [...prev.selectedModules, moduleId],
-    }));
+    setFormData((prev) => {
+      const isSelected = prev.selectedModules.includes(moduleId);
+      if (isSelected) {
+        return { ...prev, selectedModules: prev.selectedModules.filter((m) => m !== moduleId) };
+      }
+      // Enforce max 3 for starter plan
+      if (prev.plan === 'starter' && prev.selectedModules.length >= 3) {
+        return prev;
+      }
+      return { ...prev, selectedModules: [...prev.selectedModules, moduleId] };
+    });
   };
 
   const goNext = () => {
@@ -117,20 +180,42 @@ export function RegisterForm() {
     setStep((s) => Math.max(s - 1, 1));
   };
 
-  const canProceed = () => {
-    switch (step) {
-      case 1:
-        return formData.orgName.trim().length >= 2 && formData.teamSize !== '';
-      case 2:
-        return formData.fullName.trim().length >= 2 && formData.roleTitle !== '';
-      case 3:
-        return formData.email.includes('@') && formData.password.length >= 8;
-      case 4:
-        return formData.selectedModules.length > 0;
-      default:
-        return false;
-    }
+  // Map displayed step number to actual content
+  // If plan pre-selected: steps 1-4 = org, details, account, modules
+  // If no plan pre-selected: steps 1-5 = plan, org, details, account, modules
+  const getContentStep = () => {
+    if (hasPlanFromUrl) return step; // 1=org, 2=details, 3=account, 4=modules
+    return step; // 1=plan, 2=org, 3=details, 4=account, 5=modules
   };
+
+  const contentStep = getContentStep();
+
+  // Determine which content to show based on plan URL state
+  const isPlanStep = !hasPlanFromUrl && contentStep === 1;
+  const isOrgStep = hasPlanFromUrl ? contentStep === 1 : contentStep === 2;
+  const isDetailsStep = hasPlanFromUrl ? contentStep === 2 : contentStep === 3;
+  const isAccountStep = hasPlanFromUrl ? contentStep === 3 : contentStep === 4;
+  const isModuleStep = hasPlanFromUrl ? contentStep === 4 : contentStep === 5;
+
+  const getStepLabel = () => {
+    if (isPlanStep) return 'Choose Plan';
+    if (isOrgStep) return 'Organization';
+    if (isDetailsStep) return 'Your Details';
+    if (isAccountStep) return 'Account Setup';
+    if (isModuleStep) return 'Choose Modules';
+    return '';
+  };
+
+  const canProceed = () => {
+    if (isPlanStep) return formData.plan !== '';
+    if (isOrgStep) return formData.orgName.trim().length >= 2 && formData.teamSize !== '';
+    if (isDetailsStep) return formData.fullName.trim().length >= 2 && formData.roleTitle !== '';
+    if (isAccountStep) return formData.email.includes('@') && formData.password.length >= 8;
+    if (isModuleStep) return formData.selectedModules.length > 0;
+    return false;
+  };
+
+  const isAllModulesReadOnly = formData.plan === 'professional' || formData.plan === 'enterprise';
 
   const handleSubmit = async () => {
     setError(null);
@@ -152,6 +237,7 @@ export function RegisterForm() {
           team_size: formData.teamSize,
           selected_modules: formData.selectedModules,
         },
+        p_plan: formData.plan,
       });
 
     if (tenantError) {
@@ -167,7 +253,7 @@ export function RegisterForm() {
         data: {
           full_name: formData.fullName,
           tenant_id: tenantId,
-          user_type: 'admin',
+          user_type: 'owner',
           role_title: formData.roleTitle,
         },
       },
@@ -199,10 +285,7 @@ export function RegisterForm() {
             Step {step} of {TOTAL_STEPS}
           </span>
           <span className="text-xs text-foreground/30">
-            {step === 1 && 'Organization'}
-            {step === 2 && 'Your Details'}
-            {step === 3 && 'Account Setup'}
-            {step === 4 && 'Choose Modules'}
+            {getStepLabel()}
           </span>
         </div>
         <div className="h-1.5 bg-border/30 rounded-full overflow-hidden">
@@ -257,8 +340,77 @@ export function RegisterForm() {
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="space-y-5"
           >
-            {/* Step 1: Organization */}
-            {step === 1 && (
+            {/* Plan Selection Step */}
+            {isPlanStep && (
+              <>
+                <div className="mb-4">
+                  <h2 className="text-2xl font-bold font-heading text-foreground">
+                    Choose your plan
+                  </h2>
+                  <p className="mt-1 text-foreground/50 text-sm">
+                    All plans include a 14-day free trial. No credit card required.
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {planOptions.map((plan) => {
+                    const isSelected = formData.plan === plan.id;
+                    const IconComp = plan.icon;
+                    return (
+                      <button
+                        key={plan.id}
+                        type="button"
+                        onClick={() => updateField('plan', plan.id)}
+                        className={`relative flex flex-col items-start gap-2 p-4 rounded-xl transition-all duration-200 text-left ${
+                          isSelected
+                            ? 'bg-card shadow-lg border-2 scale-[1.01]'
+                            : 'bg-card/50 border border-border/30 hover:border-border/50 hover:bg-card/80'
+                        }`}
+                        style={isSelected ? { borderColor: plan.color } : {}}
+                      >
+                        {plan.popular && (
+                          <span className="absolute -top-2 right-2 px-2 py-0.5 rounded-full bg-ccd-blue text-white text-[10px] font-bold">
+                            Popular
+                          </span>
+                        )}
+                        {isSelected && (
+                          <motion.div
+                            initial={{ scale: 0 }}
+                            animate={{ scale: 1 }}
+                            className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: plan.color }}
+                          >
+                            <Check className="h-3 w-3 text-white" />
+                          </motion.div>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <div
+                            className="p-1.5 rounded-lg"
+                            style={{ backgroundColor: `${plan.color}15` }}
+                          >
+                            <IconComp className="h-4 w-4" style={{ color: plan.color }} />
+                          </div>
+                          <div>
+                            <span className={`text-sm font-semibold ${isSelected ? 'text-foreground' : 'text-foreground/70'}`}>
+                              {plan.name}
+                            </span>
+                            <span className={`text-xs ml-1.5 ${isSelected ? 'text-foreground/60' : 'text-foreground/40'}`}>
+                              {plan.price}/mo
+                            </span>
+                          </div>
+                        </div>
+                        <p className={`text-xs ${isSelected ? 'text-foreground/60' : 'text-foreground/40'}`}>
+                          {plan.desc}
+                        </p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
+            {/* Organization Step */}
+            {isOrgStep && (
               <>
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold font-heading text-foreground">
@@ -311,15 +463,15 @@ export function RegisterForm() {
               </>
             )}
 
-            {/* Step 2: Personal details */}
-            {step === 2 && (
+            {/* Personal details Step */}
+            {isDetailsStep && (
               <>
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold font-heading text-foreground">
                     About you
                   </h2>
                   <p className="mt-1 text-foreground/50 text-sm">
-                    You&apos;ll be the admin for {formData.orgName || 'your organization'}
+                    You&apos;ll be the owner of {formData.orgName || 'your organization'}
                   </p>
                 </div>
 
@@ -367,8 +519,8 @@ export function RegisterForm() {
               </>
             )}
 
-            {/* Step 3: Account credentials */}
-            {step === 3 && (
+            {/* Account credentials Step */}
+            {isAccountStep && (
               <>
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold font-heading text-foreground">
@@ -446,15 +598,19 @@ export function RegisterForm() {
               </>
             )}
 
-            {/* Step 4: Module selection */}
-            {step === 4 && (
+            {/* Module selection Step */}
+            {isModuleStep && (
               <>
                 <div className="mb-4">
                   <h2 className="text-2xl font-bold font-heading text-foreground">
-                    Choose your modules
+                    {isAllModulesReadOnly ? 'Your modules' : 'Choose your modules'}
                   </h2>
                   <p className="mt-1 text-foreground/50 text-sm">
-                    Select the modules you want to start with. You can change this later.
+                    {formData.plan === 'starter'
+                      ? 'Select up to 3 modules for your Starter plan.'
+                      : isAllModulesReadOnly
+                      ? 'Your plan includes all 9 modules.'
+                      : 'Select the modules you want. You can change this later.'}
                   </p>
                 </div>
 
@@ -462,14 +618,19 @@ export function RegisterForm() {
                   {moduleOptions.map((mod) => {
                     const isSelected = formData.selectedModules.includes(mod.id);
                     const IconComp = mod.icon;
+                    const isDisabled = isAllModulesReadOnly ||
+                      (formData.plan === 'starter' && !isSelected && formData.selectedModules.length >= 3);
                     return (
                       <button
                         key={mod.id}
                         type="button"
-                        onClick={() => toggleModule(mod.id)}
+                        onClick={() => !isAllModulesReadOnly && toggleModule(mod.id)}
+                        disabled={isAllModulesReadOnly}
                         className={`relative flex flex-col items-center gap-1.5 p-3 rounded-xl transition-all duration-200 ${
                           isSelected
                             ? 'bg-card shadow-lg border-2 scale-[1.02]'
+                            : isDisabled
+                            ? 'bg-muted/30 border border-border/20 opacity-50 cursor-not-allowed'
                             : 'bg-card/50 border border-border/30 hover:border-border/50 hover:bg-card/80'
                         }`}
                         style={
@@ -505,6 +666,7 @@ export function RegisterForm() {
 
                 <p className="text-xs text-foreground/40 text-center mt-2">
                   {formData.selectedModules.length} module{formData.selectedModules.length !== 1 ? 's' : ''} selected
+                  {formData.plan === 'starter' && ` (max 3)`}
                 </p>
               </>
             )}
@@ -550,7 +712,7 @@ export function RegisterForm() {
               </div>
             ) : (
               <>
-                Launch CCD Suite
+                Start Free Trial
                 <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </>
             )}

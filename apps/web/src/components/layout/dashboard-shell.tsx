@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@ccd/ui';
-import { LogOut, Settings, Bell, HelpCircle, UserPlus } from 'lucide-react';
+import { LogOut, Settings, Bell, HelpCircle, UserPlus, Clock, Zap } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 
@@ -31,6 +31,8 @@ interface DashboardShellProps {
     id: string;
     name: string;
     slug: string;
+    trial_ends_at?: string | null;
+    settings?: { modules_enabled?: string[] };
   };
   children: React.ReactNode;
 }
@@ -39,6 +41,18 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
   const router = useRouter();
   const supabase = createClient();
   const [searchQuery, setSearchQuery] = React.useState('');
+
+  // Trial banner calculation
+  const trialDaysRemaining = React.useMemo(() => {
+    if (!tenant.trial_ends_at) return null;
+    const now = new Date();
+    const end = new Date(tenant.trial_ends_at);
+    const diff = end.getTime() - now.getTime();
+    if (diff <= 0) return 0;
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  }, [tenant.trial_ends_at]);
+
+  const showTrialBanner = trialDaysRemaining !== null && trialDaysRemaining > 0;
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -142,6 +156,26 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
           </DropdownMenu>
         </div>
       </header>
+
+      {/* Trial banner */}
+      {showTrialBanner && (
+        <div className="flex items-center justify-center gap-3 px-4 py-2.5 bg-gradient-to-r from-amber-500/10 via-amber-500/15 to-amber-500/10 border-b border-amber-500/20">
+          <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
+          <p className="text-sm text-amber-800 dark:text-amber-300">
+            <span className="font-semibold">Free trial:</span>{' '}
+            {trialDaysRemaining} day{trialDaysRemaining !== 1 ? 's' : ''} remaining
+          </p>
+          <Link href="/settings/billing">
+            <Button
+              size="sm"
+              className="h-7 px-3 text-xs bg-amber-600 hover:bg-amber-700 text-white gap-1.5"
+            >
+              <Zap className="h-3 w-3" />
+              Upgrade Now
+            </Button>
+          </Link>
+        </div>
+      )}
 
       {/* Page content — modules add their own sidebar via per-module layout.tsx */}
       <main className="flex-1 overflow-auto">

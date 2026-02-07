@@ -13,6 +13,7 @@ export type ModuleId =
 
 export type PredefinedUserType =
   | 'admin'
+  | 'owner'
   | 'sales'
   | 'marketing'
   | 'project_manager'

@@ -11,6 +11,7 @@ export interface Tenant {
   settings: TenantSettings;
   max_users: number;
   is_active: boolean;
+  trial_ends_at: string | null;
   created_at: string;
   updated_at: string;
 }
