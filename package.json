@@ -13,9 +13,11 @@
     "db:reset": "supabase db reset",
     "db:seed": "supabase db seed",
     "docker:up": "docker compose -f docker/docker-compose.yml up -d",
-    "docker:down": "docker compose -f docker/docker-compose.yml down"
+    "docker:down": "docker compose -f docker/docker-compose.yml down",
+    "setup:admin": "tsx scripts/setup-admin.ts"
   },
   "devDependencies": {
+    "tsx": "^4.19.0",
     "turbo": "^2.4.0",
     "typescript": "^5.7.0"
   },
@@ -25,6 +27,8 @@
   },
   "packageManager": "pnpm@10.6.1",
   "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }
