@@ -13,13 +13,17 @@ export async function GET() {
     .order('created_at', { ascending: false });
 
   if (queryError) {
+    // Table may not exist yet if migrations haven't been applied
+    if (queryError.code === '42P01') {
+      return NextResponse.json({ success: true, data: [] });
+    }
     return NextResponse.json(
       { success: false, error: { message: queryError.message } },
       { status: 500 }
     );
   }
 
-  return NextResponse.json({ success: true, data });
+  return NextResponse.json({ success: true, data: data ?? [] });
 }
 
 export async function POST(request: NextRequest) {
