@@ -141,6 +141,18 @@ export default function ProductsPage() {
     }
   }
 
+  async function handleReorder(reorderedItems: ProductRow[]) {
+    setProducts(reorderedItems);
+    try {
+      await apiPost('/api/crm/reorder', {
+        table: 'products',
+        items: reorderedItems.map((item, i) => ({ id: item.id, sort_order: i })),
+      });
+    } catch {
+      loadProducts();
+    }
+  }
+
   async function handleDelete(id: string) {
     if (!confirm('Delete this product?')) return;
     try {
@@ -223,6 +235,8 @@ export default function ProductsPage() {
           keyExtractor={(p) => p.id}
           emptyMessage="No products found. Add your first product to get started."
           loading={loading}
+          draggable={true}
+          onReorder={handleReorder}
         />
       </div>
 

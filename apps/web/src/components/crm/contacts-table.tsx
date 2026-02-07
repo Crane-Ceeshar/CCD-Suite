@@ -17,7 +17,7 @@ import {
 } from '@ccd/ui';
 import { formatDate } from '@ccd/shared';
 import { Pencil, Trash2, Download } from 'lucide-react';
-import { apiGet, apiDelete, apiPatch } from '@/lib/api';
+import { apiGet, apiPost, apiDelete, apiPatch } from '@/lib/api';
 import { exportToCsv } from '@/components/crm/csv-import-dialog';
 import Link from 'next/link';
 
@@ -67,6 +67,18 @@ export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
   React.useEffect(() => {
     loadContacts();
   }, [loadContacts, onRefresh]);
+
+  async function handleReorder(reorderedItems: ContactRow[]) {
+    setContacts(reorderedItems);
+    try {
+      await apiPost('/api/crm/reorder', {
+        table: 'contacts',
+        items: reorderedItems.map((item, i) => ({ id: item.id, sort_order: i })),
+      });
+    } catch {
+      loadContacts();
+    }
+  }
 
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this contact?')) return;
@@ -225,7 +237,7 @@ export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
         </div>
       )}
 
-      <DataTable columns={columns} data={contacts} keyExtractor={(c) => c.id} emptyMessage="No contacts found. Add your first contact to get started." loading={loading} />
+      <DataTable columns={columns} data={contacts} keyExtractor={(c) => c.id} emptyMessage="No contacts found. Add your first contact to get started." loading={loading} draggable={true} onReorder={handleReorder} />
     </div>
   );
 }

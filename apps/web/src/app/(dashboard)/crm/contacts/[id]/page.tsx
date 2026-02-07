@@ -23,10 +23,23 @@ import {
   Pencil,
   ArrowLeft,
   Loader2,
+  Send,
+  ExternalLink,
 } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
 import { ContactDialog } from '@/components/crm/contact-dialog';
+import { EmailComposeDialog } from '@/components/crm/email-compose-dialog';
+import { PortalInviteButton } from '@/components/crm/portal-invite-button';
+import { PortalChat } from '@/components/crm/portal-chat';
+import { CreatePortalProjectDialog } from '@/components/crm/create-portal-project-dialog';
+
+interface PortalProject {
+  id: string;
+  name: string;
+  status: string;
+  created_at: string;
+}
 
 interface ContactDetail {
   id: string;
@@ -41,6 +54,7 @@ interface ContactDetail {
   notes: string | null;
   created_at: string;
   updated_at: string;
+  portal_projects: PortalProject[];
 }
 
 interface DealRow {
@@ -62,6 +76,12 @@ interface ActivityRow {
   is_completed: boolean;
   scheduled_at: string | null;
   created_at: string;
+  email_metadata?: {
+    subject: string;
+    to: string;
+    sent_at: string;
+    body_preview?: string;
+  } | null;
   [key: string]: unknown;
 }
 
@@ -77,7 +97,9 @@ export default function ContactDetailPage() {
   const [activities, setActivities] = React.useState<ActivityRow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<'overview' | 'deals' | 'activities'>('overview');
+  const [emailDialogOpen, setEmailDialogOpen] = React.useState(false);
+  const [portalDialogOpen, setPortalDialogOpen] = React.useState(false);
+  const [activeTab, setActiveTab] = React.useState<'overview' | 'deals' | 'activities' | 'emails' | 'portal'>('overview');
 
   const loadContact = React.useCallback(async () => {
     try {
@@ -126,6 +148,9 @@ export default function ContactDetailPage() {
   }
 
   const fullName = `${contact.first_name} ${contact.last_name}`;
+
+  // Filter email activities
+  const emailActivities = activities.filter((a) => a.type === 'email' && a.email_metadata);
 
   const dealColumns: Column<DealRow>[] = [
     { key: 'title', header: 'Deal', sortable: true },
@@ -191,6 +216,8 @@ export default function ContactDetailPage() {
     { key: 'overview' as const, label: 'Overview' },
     { key: 'deals' as const, label: `Deals (${deals.length})` },
     { key: 'activities' as const, label: `Activities (${activities.length})` },
+    { key: 'emails' as const, label: `Emails (${emailActivities.length})` },
+    { key: 'portal' as const, label: `Portal (${contact.portal_projects.length})` },
   ];
 
   return (
@@ -209,6 +236,19 @@ export default function ContactDetailPage() {
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
+            {contact.email && (
+              <Button variant="outline" onClick={() => setEmailDialogOpen(true)}>
+                <Mail className="mr-2 h-4 w-4" />
+                Email
+              </Button>
+            )}
+            <PortalInviteButton
+              contactId={contact.id}
+              contactEmail={contact.email}
+              contactName={fullName}
+              portalProjects={contact.portal_projects}
+              onInviteSent={loadContact}
+            />
             <Button onClick={() => setDialogOpen(true)}>
               <Pencil className="mr-2 h-4 w-4" />
               Edit
@@ -347,6 +387,122 @@ export default function ContactDetailPage() {
         />
       )}
 
+      {activeTab === 'emails' && (
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-sm font-medium text-muted-foreground">
+              {emailActivities.length} email{emailActivities.length !== 1 ? 's' : ''} sent
+            </h3>
+            {contact.email && (
+              <Button size="sm" onClick={() => setEmailDialogOpen(true)}>
+                <Send className="mr-2 h-3.5 w-3.5" />
+                Compose
+              </Button>
+            )}
+          </div>
+          {emailActivities.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Mail className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">No emails sent to this contact yet.</p>
+                {contact.email && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="mt-3"
+                    onClick={() => setEmailDialogOpen(true)}
+                  >
+                    Send First Email
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {emailActivities.map((a) => (
+                <Card key={a.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium">{a.email_metadata?.subject ?? a.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          To: {a.email_metadata?.to ?? contact.email}
+                        </p>
+                        {a.email_metadata?.body_preview && (
+                          <p className="text-xs text-muted-foreground/70 line-clamp-2">
+                            {a.email_metadata.body_preview}
+                          </p>
+                        )}
+                      </div>
+                      <span className="text-xs text-muted-foreground shrink-0">
+                        {formatDate(a.email_metadata?.sent_at ?? a.created_at)}
+                      </span>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeTab === 'portal' && (
+        <div className="space-y-4">
+          {contact.portal_projects.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <ExternalLink className="h-8 w-8 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-sm text-muted-foreground">
+                  No portal projects linked to this contact.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => setPortalDialogOpen(true)}
+                >
+                  Create Portal Project
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
+              {/* Portal Projects List */}
+              <div className="grid gap-4 md:grid-cols-2">
+                {contact.portal_projects.map((project) => (
+                  <Card key={project.id} className="hover:shadow-sm transition-shadow">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-medium">{project.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Created {formatDate(project.created_at)}
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <StatusBadge status={project.status} />
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => router.push(`/portal/projects/${project.id}`)}
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+
+              {/* Chat for the first portal project */}
+              <PortalChat portalProjectId={contact.portal_projects[0].id} />
+            </>
+          )}
+        </div>
+      )}
+
+      {/* Dialogs */}
       <ContactDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
@@ -355,6 +511,32 @@ export default function ContactDetailPage() {
           setDialogOpen(false);
           loadContact();
         }}
+      />
+
+      {contact.email && (
+        <EmailComposeDialog
+          open={emailDialogOpen}
+          onOpenChange={setEmailDialogOpen}
+          contactId={contact.id}
+          contactEmail={contact.email}
+          contactName={fullName}
+          onSuccess={() => {
+            // Reload activities to show the new email
+            apiGet<ActivityRow[]>(`/api/crm/activities?contact_id=${id}`).then((res) => {
+              setActivities(res.data);
+            });
+          }}
+        />
+      )}
+
+      <CreatePortalProjectDialog
+        open={portalDialogOpen}
+        onOpenChange={setPortalDialogOpen}
+        contactId={contact.id}
+        contactName={fullName}
+        contactEmail={contact.email}
+        companyId={contact.company_id}
+        onSuccess={() => loadContact()}
       />
     </div>
   );

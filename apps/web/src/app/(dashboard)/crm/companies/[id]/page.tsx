@@ -23,6 +23,7 @@ import {
   Pencil,
   ArrowLeft,
   Loader2,
+  ExternalLink,
 } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
@@ -79,6 +80,14 @@ interface ActivityRow {
   [key: string]: unknown;
 }
 
+interface PortalProject {
+  id: string;
+  name: string;
+  status: string;
+  created_at: string;
+  contact?: { id: string; first_name: string; last_name: string } | null;
+}
+
 type CompanyForDialog = Parameters<typeof CompanyDialog>[0]['company'];
 
 export default function CompanyDetailPage() {
@@ -90,9 +99,10 @@ export default function CompanyDetailPage() {
   const [contacts, setContacts] = React.useState<ContactRow[]>([]);
   const [deals, setDeals] = React.useState<DealRow[]>([]);
   const [activities, setActivities] = React.useState<ActivityRow[]>([]);
+  const [portalProjects, setPortalProjects] = React.useState<PortalProject[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [activeTab, setActiveTab] = React.useState<'overview' | 'contacts' | 'deals' | 'activities'>('overview');
+  const [activeTab, setActiveTab] = React.useState<'overview' | 'contacts' | 'deals' | 'activities' | 'portal'>('overview');
 
   const loadCompany = React.useCallback(async () => {
     try {
@@ -109,14 +119,16 @@ export default function CompanyDetailPage() {
       await loadCompany();
 
       try {
-        const [contactsRes, dealsRes, activitiesRes] = await Promise.all([
+        const [contactsRes, dealsRes, activitiesRes, portalRes] = await Promise.all([
           apiGet<ContactRow[]>(`/api/crm/contacts?company_id=${id}`),
           apiGet<DealRow[]>(`/api/crm/deals?company_id=${id}`),
           apiGet<ActivityRow[]>(`/api/crm/activities?company_id=${id}`),
+          apiGet<PortalProject[]>(`/api/portal/projects?company_id=${id}`).catch(() => ({ data: [] as PortalProject[] })),
         ]);
         setContacts(contactsRes.data);
         setDeals(dealsRes.data);
         setActivities(activitiesRes.data);
+        setPortalProjects(portalRes.data);
       } catch {
         /* ignore */
       } finally {
@@ -213,6 +225,7 @@ export default function CompanyDetailPage() {
     { key: 'contacts' as const, label: `Contacts (${contacts.length})` },
     { key: 'deals' as const, label: `Deals (${deals.length})` },
     { key: 'activities' as const, label: `Activities (${activities.length})` },
+    { key: 'portal' as const, label: `Portal (${portalProjects.length})` },
   ];
 
   return (
@@ -401,6 +414,47 @@ export default function CompanyDetailPage() {
           keyExtractor={(a) => a.id}
           emptyMessage="No activities for this company."
         />
+      )}
+
+      {activeTab === 'portal' && (
+        <div className="space-y-4">
+          {portalProjects.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-sm text-muted-foreground">
+                  No portal projects linked to contacts at this company.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            portalProjects.map((project) => (
+              <Card key={project.id} className="transition-shadow hover:shadow-sm">
+                <CardContent className="flex items-center justify-between p-4">
+                  <div>
+                    <p className="text-sm font-medium">{project.name}</p>
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                      <StatusBadge status={project.status} />
+                      {project.contact && (
+                        <span>
+                          Contact: {project.contact.first_name} {project.contact.last_name}
+                        </span>
+                      )}
+                      <span>{formatDate(project.created_at)}</span>
+                    </div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => router.push(`/portal/projects/${project.id}`)}
+                  >
+                    <ExternalLink className="mr-2 h-3 w-3" />
+                    Open
+                  </Button>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
       )}
 
       <CompanyDialog

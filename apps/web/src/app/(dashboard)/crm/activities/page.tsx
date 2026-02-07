@@ -21,9 +21,27 @@ import {
   ListTodo,
   CheckCircle2,
   Circle,
+  GripVertical,
 } from 'lucide-react';
-import { apiGet, apiPatch } from '@/lib/api';
+import { apiGet, apiPatch, apiPost } from '@/lib/api';
 import { ActivityDialog } from '@/components/crm/activity-dialog';
+import {
+  DndContext,
+  DragOverlay,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragStartEvent,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+  arrayMove,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface ActivityRow {
   id: string;
@@ -55,12 +73,144 @@ const TYPE_COLORS: Record<string, string> = {
   task: 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400',
 };
 
+/* ------------------------------------------------------------------ */
+/*  Sortable Activity Card                                             */
+/* ------------------------------------------------------------------ */
+function SortableActivityCard({
+  activity,
+  onToggleComplete,
+  formatTime,
+}: {
+  activity: ActivityRow;
+  onToggleComplete: (a: ActivityRow) => void;
+  formatTime: (s: string) => string;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    setActivatorNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: activity.id });
+
+  const style: React.CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.3 : 1,
+  };
+
+  return (
+    <Card ref={setNodeRef} style={style} className="transition-shadow hover:shadow-sm">
+      <CardContent className="p-4">
+        <div className="flex items-start gap-3">
+          {/* Drag handle */}
+          <button
+            ref={setActivatorNodeRef}
+            {...attributes}
+            {...listeners}
+            className="mt-0.5 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none rounded p-1 hover:bg-muted"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="h-4 w-4 text-muted-foreground/50" />
+          </button>
+
+          {/* Complete toggle */}
+          <button
+            className="mt-0.5 flex-shrink-0"
+            onClick={() => onToggleComplete(activity)}
+          >
+            {activity.is_completed ? (
+              <CheckCircle2 className="h-5 w-5 text-green-600" />
+            ) : (
+              <Circle className="h-5 w-5 text-muted-foreground/40 hover:text-muted-foreground" />
+            )}
+          </button>
+
+          {/* Type icon */}
+          <div className={`flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0 ${TYPE_COLORS[activity.type] ?? 'bg-muted text-muted-foreground'}`}>
+            {TYPE_ICONS[activity.type] ?? <StickyNote className="h-4 w-4" />}
+          </div>
+
+          {/* Content */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2">
+              <p className={`text-sm font-medium ${activity.is_completed ? 'line-through text-muted-foreground' : ''}`}>
+                {activity.title}
+              </p>
+              <Badge variant="secondary" className="text-[10px]">
+                {activity.type}
+              </Badge>
+            </div>
+            {activity.description && (
+              <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                {activity.description}
+              </p>
+            )}
+            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground/70">
+              {activity.deal && <span>Deal: {activity.deal.title}</span>}
+              {activity.contact && (
+                <span>
+                  Contact: {activity.contact.first_name} {activity.contact.last_name}
+                </span>
+              )}
+              {activity.company && <span>Company: {activity.company.name}</span>}
+            </div>
+          </div>
+
+          {/* Time */}
+          <div className="text-xs text-muted-foreground flex-shrink-0">
+            {activity.scheduled_at
+              ? new Date(activity.scheduled_at).toLocaleDateString()
+              : formatTime(activity.created_at)}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function ActivitiesPage() {
   const [activities, setActivities] = React.useState<ActivityRow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [activeTab, setActiveTab] = React.useState('all');
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [refreshKey, setRefreshKey] = React.useState(0);
+  const [activeItem, setActiveItem] = React.useState<ActivityRow | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } })
+  );
+
+  const activityIds = React.useMemo(() => activities.map((a) => a.id), [activities]);
+
+  function handleDragStart(event: DragStartEvent) {
+    const item = activities.find((a) => a.id === (event.active.id as string));
+    if (item) setActiveItem(item);
+  }
+
+  async function handleDragEnd(event: DragEndEvent) {
+    setActiveItem(null);
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = activityIds.indexOf(active.id as string);
+    const newIndex = activityIds.indexOf(over.id as string);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(activities, oldIndex, newIndex);
+    setActivities(reordered);
+
+    try {
+      await apiPost('/api/crm/reorder', {
+        table: 'activities',
+        items: reordered.map((item, i) => ({ id: item.id, sort_order: i })),
+      });
+    } catch {
+      setRefreshKey((k) => k + 1);
+    }
+  }
 
   const loadActivities = React.useCallback(async () => {
     setLoading(true);
@@ -139,65 +289,42 @@ export default function ActivitiesPage() {
               <p className="text-sm text-muted-foreground">No activities found</p>
             </div>
           ) : (
-            <div className="space-y-3">
-              {activities.map((activity) => (
-                <Card key={activity.id} className="transition-shadow hover:shadow-sm">
-                  <CardContent className="p-4">
-                    <div className="flex items-start gap-3">
-                      {/* Complete toggle */}
-                      <button
-                        className="mt-0.5 flex-shrink-0"
-                        onClick={() => toggleComplete(activity)}
-                      >
-                        {activity.is_completed ? (
-                          <CheckCircle2 className="h-5 w-5 text-green-600" />
-                        ) : (
-                          <Circle className="h-5 w-5 text-muted-foreground/40 hover:text-muted-foreground" />
-                        )}
-                      </button>
-
-                      {/* Type icon */}
-                      <div className={`flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0 ${TYPE_COLORS[activity.type] ?? 'bg-muted text-muted-foreground'}`}>
-                        {TYPE_ICONS[activity.type] ?? <StickyNote className="h-4 w-4" />}
-                      </div>
-
-                      {/* Content */}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className={`text-sm font-medium ${activity.is_completed ? 'line-through text-muted-foreground' : ''}`}>
-                            {activity.title}
-                          </p>
-                          <Badge variant="secondary" className="text-[10px]">
-                            {activity.type}
-                          </Badge>
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragStart={handleDragStart}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext items={activityIds} strategy={verticalListSortingStrategy}>
+                <div className="space-y-3">
+                  {activities.map((activity) => (
+                    <SortableActivityCard
+                      key={activity.id}
+                      activity={activity}
+                      onToggleComplete={toggleComplete}
+                      formatTime={formatTime}
+                    />
+                  ))}
+                </div>
+              </SortableContext>
+              <DragOverlay>
+                {activeItem ? (
+                  <Card className="shadow-xl ring-2 ring-primary/30">
+                    <CardContent className="p-4">
+                      <div className="flex items-start gap-3">
+                        <GripVertical className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <div className={`flex h-8 w-8 items-center justify-center rounded-full flex-shrink-0 ${TYPE_COLORS[activeItem.type] ?? 'bg-muted text-muted-foreground'}`}>
+                          {TYPE_ICONS[activeItem.type] ?? <StickyNote className="h-4 w-4" />}
                         </div>
-                        {activity.description && (
-                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                            {activity.description}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground/70">
-                          {activity.deal && <span>Deal: {activity.deal.title}</span>}
-                          {activity.contact && (
-                            <span>
-                              Contact: {activity.contact.first_name} {activity.contact.last_name}
-                            </span>
-                          )}
-                          {activity.company && <span>Company: {activity.company.name}</span>}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium">{activeItem.title}</p>
                         </div>
                       </div>
-
-                      {/* Time */}
-                      <div className="text-xs text-muted-foreground flex-shrink-0">
-                        {activity.scheduled_at
-                          ? new Date(activity.scheduled_at).toLocaleDateString()
-                          : formatTime(activity.created_at)}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+                    </CardContent>
+                  </Card>
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           )}
         </TabsContent>
       </Tabs>

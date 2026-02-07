@@ -23,7 +23,17 @@ export async function GET(
     );
   }
 
-  return NextResponse.json({ success: true, data });
+  // Fetch linked portal projects for this contact
+  const { data: portalProjects } = await supabase
+    .from('portal_projects')
+    .select('id, name, status, created_at')
+    .eq('contact_id', id)
+    .order('created_at', { ascending: false });
+
+  return NextResponse.json({
+    success: true,
+    data: { ...data, portal_projects: portalProjects ?? [] },
+  });
 }
 
 export async function PATCH(

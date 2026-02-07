@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from('contacts')
     .select('*, company:companies(id, name)', { count: 'exact' })
+    .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 

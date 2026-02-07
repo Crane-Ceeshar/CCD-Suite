@@ -53,7 +53,7 @@ export function LoginForm() {
     setLoading(true);
 
     const supabase = createClient();
-    const { error } = await supabase.auth.signInWithPassword({
+    const { data: authData, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -62,6 +62,31 @@ export function LoginForm() {
       setError(error.message);
       setLoading(false);
       return;
+    }
+
+    // Fetch user's tenant slug for subdomain redirect
+    const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'ccdsuite.com';
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+    if (authData.user && !isLocalhost) {
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('tenant_id, tenants(slug)')
+          .eq('id', authData.user.id)
+          .single();
+
+        const tenantData = profile?.tenants as { slug?: string } | null;
+        const slug = tenantData?.slug;
+
+        if (slug) {
+          // Redirect to organization subdomain
+          window.location.href = `https://${slug}.${baseDomain}/dashboard`;
+          return;
+        }
+      } catch {
+        // Fall through to default redirect
+      }
     }
 
     router.push('/dashboard');

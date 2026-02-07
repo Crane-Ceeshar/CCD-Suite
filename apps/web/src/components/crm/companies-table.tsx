@@ -16,7 +16,7 @@ import {
 } from '@ccd/ui';
 import { formatDate } from '@ccd/shared';
 import { Building2, Pencil, Trash2, Download } from 'lucide-react';
-import { apiGet, apiDelete, apiPatch } from '@/lib/api';
+import { apiGet, apiPost, apiDelete, apiPatch } from '@/lib/api';
 import { exportToCsv } from '@/components/crm/csv-import-dialog';
 import Link from 'next/link';
 
@@ -68,6 +68,18 @@ export function CompaniesTable({ onEdit, onRefresh }: CompaniesTableProps) {
   React.useEffect(() => {
     loadCompanies();
   }, [loadCompanies, onRefresh]);
+
+  async function handleReorder(reorderedItems: CompanyRow[]) {
+    setCompanies(reorderedItems);
+    try {
+      await apiPost('/api/crm/reorder', {
+        table: 'companies',
+        items: reorderedItems.map((item, i) => ({ id: item.id, sort_order: i })),
+      });
+    } catch {
+      loadCompanies();
+    }
+  }
 
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this company?')) return;
@@ -218,7 +230,7 @@ export function CompaniesTable({ onEdit, onRefresh }: CompaniesTableProps) {
         </div>
       )}
 
-      <DataTable columns={columns} data={companies} keyExtractor={(c) => c.id} emptyMessage="No companies found. Add your first company to get started." loading={loading} />
+      <DataTable columns={columns} data={companies} keyExtractor={(c) => c.id} emptyMessage="No companies found. Add your first company to get started." loading={loading} draggable={true} onReorder={handleReorder} />
     </div>
   );
 }

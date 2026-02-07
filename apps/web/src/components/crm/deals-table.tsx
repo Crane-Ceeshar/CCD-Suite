@@ -71,6 +71,17 @@ export function DealsTable({ onEdit, onRefresh }: DealsTableProps) {
     loadDeals();
   }, [loadDeals, onRefresh]);
 
+  async function handleReorder(reorderedItems: DealRow[]) {
+    setDeals(reorderedItems);
+    try {
+      await Promise.all(
+        reorderedItems.map((item, i) => apiPatch(`/api/crm/deals/${item.id}`, { position: i }))
+      );
+    } catch {
+      loadDeals();
+    }
+  }
+
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this deal?')) return;
     try {
@@ -227,7 +238,7 @@ export function DealsTable({ onEdit, onRefresh }: DealsTableProps) {
         </div>
       )}
 
-      <DataTable columns={columns} data={deals} keyExtractor={(deal) => deal.id} emptyMessage="No deals found. Create your first deal to get started." loading={loading} />
+      <DataTable columns={columns} data={deals} keyExtractor={(deal) => deal.id} emptyMessage="No deals found. Create your first deal to get started." loading={loading} draggable={true} onReorder={handleReorder} />
     </div>
   );
 }

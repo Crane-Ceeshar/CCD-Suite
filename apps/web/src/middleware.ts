@@ -31,6 +31,25 @@ const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/auth/ca
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const hostname = request.headers.get('host') || '';
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'ccdsuite.com';
+
+  // ── Subdomain detection ──
+  // Parse subdomain (skip localhost and dev environments)
+  let tenantSlug: string | null = null;
+  const isLocalhost = hostname.startsWith('localhost') || hostname.startsWith('127.0.0.1');
+
+  if (!isLocalhost && hostname !== baseDomain && hostname !== `www.${baseDomain}`) {
+    const sub = hostname.replace(`.${baseDomain}`, '');
+    if (sub && sub !== hostname && !sub.includes('.')) {
+      tenantSlug = sub;
+    }
+  }
+
+  // Dev fallback: support ?tenant=slug query param
+  if (!tenantSlug && isLocalhost) {
+    tenantSlug = request.nextUrl.searchParams.get('tenant');
+  }
 
   // Skip public routes
   if (PUBLIC_ROUTES.some((route) => pathname === route || (route !== '/' && pathname.startsWith(route)))) {
@@ -52,6 +71,54 @@ export async function middleware(request: NextRequest) {
       url.searchParams.set('redirect', pathname);
     }
     return NextResponse.redirect(url);
+  }
+
+  // ── Subdomain tenant verification ──
+  if (tenantSlug) {
+    // Verify the subdomain tenant exists
+    const { data: tenant } = await supabase
+      .from('tenants')
+      .select('id, slug')
+      .eq('slug', tenantSlug)
+      .maybeSingle();
+
+    if (!tenant) {
+      // Invalid subdomain — redirect to base domain
+      const url = request.nextUrl.clone();
+      url.host = isLocalhost ? hostname : baseDomain;
+      url.pathname = '/dashboard';
+      return NextResponse.redirect(url);
+    }
+
+    // Verify the authenticated user belongs to this tenant
+    const { data: userProfile } = await supabase
+      .from('profiles')
+      .select('tenant_id')
+      .eq('id', user.id)
+      .single();
+
+    if (userProfile && userProfile.tenant_id !== tenant.id) {
+      // User doesn't belong to this tenant — redirect to their correct subdomain
+      const { data: userTenant } = await supabase
+        .from('tenants')
+        .select('slug')
+        .eq('id', userProfile.tenant_id)
+        .single();
+
+      if (userTenant?.slug) {
+        const url = request.nextUrl.clone();
+        if (isLocalhost) {
+          url.searchParams.set('tenant', userTenant.slug);
+        } else {
+          url.host = `${userTenant.slug}.${baseDomain}`;
+        }
+        url.pathname = '/dashboard';
+        return NextResponse.redirect(url);
+      }
+    }
+
+    // Set tenant slug header for downstream use
+    response.headers.set('x-tenant-slug', tenantSlug);
   }
 
   // Admin portal: only platform admin user_type can access (not 'owner')
