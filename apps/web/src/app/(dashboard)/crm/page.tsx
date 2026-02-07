@@ -1,9 +1,38 @@
+'use client';
+
+import * as React from 'react';
 import { PageHeader, StatCard, Card, CardContent, CardHeader, CardTitle } from '@ccd/ui';
 import { Users, Building2, DollarSign, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
-import { AskAiButton } from '@/components/ai/ask-ai-button';
+import { apiGet } from '@/lib/api';
+import { CrmSearch } from '@/components/crm/crm-search';
+
+interface CrmStats {
+  deals: number;
+  pipeline_value: number;
+  contacts: number;
+  companies: number;
+  win_rate: number;
+}
 
 export default function CRMDashboardPage() {
+  const [stats, setStats] = React.useState<CrmStats | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    async function load() {
+      try {
+        const res = await apiGet<CrmStats>('/api/crm/stats');
+        setStats(res.data);
+      } catch {
+        setStats({ deals: 0, pipeline_value: 0, contacts: 0, companies: 0, win_rate: 0 });
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, []);
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -11,33 +40,38 @@ export default function CRMDashboardPage() {
         description="Manage your clients, deals, and sales pipeline"
       />
 
+      {/* Global Search */}
+      <div className="max-w-lg">
+        <CrmSearch />
+      </div>
+
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total Deals"
-          value="0"
-          change="Pipeline value: $0"
+          value={loading ? '...' : String(stats?.deals ?? 0)}
+          change={`Pipeline value: $${(stats?.pipeline_value ?? 0).toLocaleString()}`}
           trend="neutral"
           icon={<DollarSign className="h-5 w-5 text-muted-foreground" />}
           moduleColor="#0047AB"
         />
         <StatCard
           label="Contacts"
-          value="0"
+          value={loading ? '...' : String(stats?.contacts ?? 0)}
           trend="neutral"
           icon={<Users className="h-5 w-5 text-muted-foreground" />}
           moduleColor="#0047AB"
         />
         <StatCard
           label="Companies"
-          value="0"
+          value={loading ? '...' : String(stats?.companies ?? 0)}
           trend="neutral"
           icon={<Building2 className="h-5 w-5 text-muted-foreground" />}
           moduleColor="#0047AB"
         />
         <StatCard
           label="Win Rate"
-          value="0%"
+          value={loading ? '...' : `${stats?.win_rate ?? 0}%`}
           trend="neutral"
           icon={<TrendingUp className="h-5 w-5 text-muted-foreground" />}
           moduleColor="#0047AB"
@@ -83,8 +117,6 @@ export default function CRMDashboardPage() {
           </Card>
         </Link>
       </div>
-
-      <AskAiButton moduleContext="crm" />
     </div>
   );
 }

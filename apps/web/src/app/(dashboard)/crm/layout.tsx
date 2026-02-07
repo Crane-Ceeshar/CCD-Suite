@@ -1,6 +1,7 @@
 'use client';
 
 import { ModuleShell } from '@/components/layout/module-shell';
+import { AskAiButton } from '@/components/ai/ask-ai-button';
 import {
   LayoutDashboard,
   DollarSign,
@@ -29,6 +30,7 @@ export default function CRMLayout({ children }: { children: React.ReactNode }) {
   return (
     <ModuleShell moduleId="crm" navItems={navItems}>
       {children}
+      <AskAiButton moduleContext="crm" />
     </ModuleShell>
   );
 }
