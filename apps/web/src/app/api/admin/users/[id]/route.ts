@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/supabase/admin';
+import { requireAdmin, createAdminServiceClient } from '@/lib/supabase/admin';
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error, supabase, profile } = await requireAdmin();
+  const { error, profile } = await requireAdmin();
   if (error) return error;
+
+  // Use service role client to update any user (platform-wide)
+  const serviceClient = createAdminServiceClient();
 
   const { id } = await params;
   const body = await request.json();
@@ -25,12 +28,11 @@ export async function PATCH(
     );
   }
 
-  const { data: updated, error: updateError } = await supabase
+  const { data: updated, error: updateError } = await serviceClient
     .from('profiles')
     .update(updates)
     .eq('id', id)
-    .eq('tenant_id', profile.tenant_id)
-    .select('id, email, full_name, avatar_url, user_type, is_active, created_at')
+    .select('id, email, full_name, avatar_url, user_type, is_active, created_at, tenants(name)')
     .single();
 
   if (updateError || !updated) {
@@ -40,9 +42,9 @@ export async function PATCH(
     );
   }
 
-  // Log activity
+  // Log activity using service client
   const action = is_active === false ? 'user.deactivated' : 'user.updated';
-  await supabase.from('activity_logs').insert({
+  await serviceClient.from('activity_logs').insert({
     tenant_id: profile.tenant_id,
     user_id: profile.id,
     action,

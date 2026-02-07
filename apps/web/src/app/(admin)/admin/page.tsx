@@ -12,10 +12,10 @@ import {
 import {
   Users,
   UserCheck,
-  Blocks,
+  Building2,
   Activity,
   Server,
-  Shield,
+  Blocks,
   Loader2,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -34,6 +34,7 @@ export default function AdminOverviewPage() {
   const [stats, setStats] = React.useState<{
     total_users: number;
     active_users: number;
+    total_tenants: number;
     total_modules_enabled: number;
     recent_activity_count: number;
   } | null>(null);
@@ -43,6 +44,7 @@ export default function AdminOverviewPage() {
     apiGet<{
       total_users: number;
       active_users: number;
+      total_tenants: number;
       total_modules_enabled: number;
       recent_activity_count: number;
     }>('/api/admin/overview')
@@ -78,9 +80,9 @@ export default function AdminOverviewPage() {
             moduleColor={MODULE_COLOR}
           />
           <StatCard
-            label="Modules Enabled"
-            value={stats?.total_modules_enabled ?? 0}
-            icon={<Blocks className="h-5 w-5 text-muted-foreground" />}
+            label="Organisations"
+            value={stats?.total_tenants ?? 0}
+            icon={<Building2 className="h-5 w-5 text-muted-foreground" />}
             moduleColor={MODULE_COLOR}
           />
           <StatCard

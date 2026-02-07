@@ -1,14 +1,16 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/supabase/admin';
+import { requireAdmin, createAdminServiceClient } from '@/lib/supabase/admin';
 
 export async function GET() {
-  const { error, supabase, profile } = await requireAdmin();
+  const { error } = await requireAdmin();
   if (error) return error;
 
-  const { data: users, error: queryError } = await supabase
+  // Use service role client for platform-wide user listing (bypasses RLS)
+  const serviceClient = createAdminServiceClient();
+
+  const { data: users, error: queryError } = await serviceClient
     .from('profiles')
-    .select('id, email, full_name, avatar_url, user_type, is_active, created_at')
-    .eq('tenant_id', profile.tenant_id)
+    .select('id, email, full_name, avatar_url, user_type, is_active, created_at, tenants(name)')
     .order('created_at', { ascending: false });
 
   if (queryError) {

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { requireAdmin } from '@/lib/supabase/admin';
+import { requireAdmin, createAdminServiceClient } from '@/lib/supabase/admin';
 
 interface ServiceHealth {
   service: string;
@@ -36,12 +36,14 @@ async function checkService(
 }
 
 export async function GET() {
-  const { error, supabase } = await requireAdmin();
+  const { error } = await requireAdmin();
   if (error) return error;
+
+  const serviceClient = createAdminServiceClient();
 
   // Check Supabase health via a simple query
   const supabaseStart = Date.now();
-  const { error: dbError } = await supabase
+  const { error: dbError } = await serviceClient
     .from('tenants')
     .select('id', { count: 'exact', head: true });
   const supabaseLatency = Date.now() - supabaseStart;
@@ -53,15 +55,30 @@ export async function GET() {
     last_checked: new Date().toISOString(),
   };
 
-  // Check external services if URLs are configured
+  // Check external services — look for Railway URLs in env vars
+  // Users should set these in Vercel env: RAILWAY_API_GATEWAY_URL, RAILWAY_AI_SERVICES_URL
+  const apiGatewayUrl = process.env.RAILWAY_API_GATEWAY_URL || process.env.API_GATEWAY_URL;
+  const aiServicesUrl = process.env.RAILWAY_AI_SERVICES_URL || process.env.AI_SERVICES_URL;
+
   const serviceChecks = await Promise.all([
-    checkService('api-gateway', process.env.API_GATEWAY_URL ? `${process.env.API_GATEWAY_URL}/health` : undefined),
-    checkService('ai-services', process.env.AI_SERVICES_URL ? `${process.env.AI_SERVICES_URL}/health` : undefined),
+    checkService(
+      'api-gateway',
+      apiGatewayUrl ? `${apiGatewayUrl.replace(/\/$/, '')}/health` : undefined
+    ),
+    checkService(
+      'ai-services',
+      aiServicesUrl ? `${aiServicesUrl.replace(/\/$/, '')}/health` : undefined
+    ),
   ]);
 
   const allServices: ServiceHealth[] = [
     // Next.js server is always healthy if we got this far
-    { service: 'web-app', status: 'healthy', latency_ms: 0, last_checked: new Date().toISOString() },
+    {
+      service: 'web-app',
+      status: 'healthy',
+      latency_ms: 0,
+      last_checked: new Date().toISOString(),
+    },
     supabaseHealth,
     ...serviceChecks,
   ];

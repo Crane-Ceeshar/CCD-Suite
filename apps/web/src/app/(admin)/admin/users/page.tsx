@@ -21,10 +21,12 @@ interface UserProfile {
   user_type: string;
   is_active: boolean;
   created_at: string;
+  tenants: { name: string } | null;
 }
 
 const USER_TYPE_LABELS: Record<string, string> = {
   admin: 'Admin',
+  owner: 'Owner',
   sales: 'Sales',
   marketing: 'Marketing',
   project_manager: 'Project Manager',
@@ -155,6 +157,7 @@ export default function AdminUsersPage() {
                 <tr className="border-b bg-muted/50">
                   <th className="text-left font-medium p-3">Name</th>
                   <th className="text-left font-medium p-3">Email</th>
+                  <th className="text-left font-medium p-3">Organisation</th>
                   <th className="text-left font-medium p-3">Role</th>
                   <th className="text-left font-medium p-3">Status</th>
                   <th className="text-left font-medium p-3">Joined</th>
@@ -166,6 +169,7 @@ export default function AdminUsersPage() {
                   <tr key={user.id} className="border-b last:border-0 hover:bg-muted/30">
                     <td className="p-3 font-medium">{user.full_name}</td>
                     <td className="p-3 text-muted-foreground">{user.email}</td>
+                    <td className="p-3 text-muted-foreground">{user.tenants?.name ?? '—'}</td>
                     <td className="p-3">
                       <select
                         value={user.user_type}
