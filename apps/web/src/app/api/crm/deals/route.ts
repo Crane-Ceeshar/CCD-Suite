@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { error, supabase, user } = await requireAuth();
+  const { error, supabase, user, profile } = await requireAuth();
   if (error) return error;
 
   const body = await request.json();
@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
   const { data, error: insertError } = await supabase
     .from('deals')
     .insert({
+      tenant_id: profile.tenant_id,
       pipeline_id: body.pipeline_id,
       stage_id: body.stage_id,
       title: body.title,

@@ -37,7 +37,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { error, supabase, user } = await requireAuth();
+  const { error, supabase, user, profile } = await requireAuth();
   if (error) return error;
 
   const body = await request.json();
@@ -45,6 +45,7 @@ export async function POST(request: NextRequest) {
   const { data, error: insertError } = await supabase
     .from('companies')
     .insert({
+      tenant_id: profile.tenant_id,
       name: body.name,
       industry: body.industry ?? null,
       website: body.website ?? null,
