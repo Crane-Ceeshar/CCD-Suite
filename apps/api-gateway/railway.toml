@@ -1,0 +1,16 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "docker/Dockerfile.api-gateway"
+watchPatterns = [
+  "apps/api-gateway/**",
+  "packages/shared/**",
+  "packages/config/**",
+  "docker/Dockerfile.api-gateway",
+  "pnpm-lock.yaml",
+]
+
+[deploy]
+healthcheckPath = "/api/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3

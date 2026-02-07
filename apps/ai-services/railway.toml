@@ -1,0 +1,13 @@
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "docker/Dockerfile.ai-services"
+watchPatterns = [
+  "apps/ai-services/**",
+  "docker/Dockerfile.ai-services",
+]
+
+[deploy]
+healthcheckPath = "/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 3
