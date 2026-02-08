@@ -1,6 +1,7 @@
 'use client';
 
 import { ModuleShell } from '@/components/layout/module-shell';
+import { ContentSettingsDialog } from '@/components/content/content-settings-dialog';
 import { LayoutDashboard, Library, Calendar, FileEdit, LayoutTemplate, CheckCircle } from 'lucide-react';
 
 const navItems = [
@@ -14,7 +15,13 @@ const navItems = [
 
 export default function ContentLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="content" navItems={navItems} settingsHref="/content/settings">
+    <ModuleShell
+      moduleId="content"
+      navItems={navItems}
+      renderSettings={({ open, onOpenChange }) => (
+        <ContentSettingsDialog open={open} onOpenChange={onOpenChange} />
+      )}
+    >
       {children}
     </ModuleShell>
   );

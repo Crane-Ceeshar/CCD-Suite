@@ -1,6 +1,7 @@
 'use client';
 
 import { ModuleShell } from '@/components/layout/module-shell';
+import { HrSettingsDialog } from '@/components/hr/hr-settings-dialog';
 import { LayoutDashboard, Users, Building, CalendarOff, Wallet, Clock } from 'lucide-react';
 
 const navItems = [
@@ -14,7 +15,13 @@ const navItems = [
 
 export default function HRLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="hr" navItems={navItems} settingsHref="/hr/settings">
+    <ModuleShell
+      moduleId="hr"
+      navItems={navItems}
+      renderSettings={({ open, onOpenChange }) => (
+        <HrSettingsDialog open={open} onOpenChange={onOpenChange} />
+      )}
+    >
       {children}
     </ModuleShell>
   );

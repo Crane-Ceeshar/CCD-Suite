@@ -1,6 +1,7 @@
 'use client';
 
 import { ModuleShell } from '@/components/layout/module-shell';
+import { SocialSettingsDialog } from '@/components/social/social-settings-dialog';
 import { LayoutDashboard, Edit, FileText, Megaphone, Globe, MessageCircle } from 'lucide-react';
 
 const navItems = [
@@ -14,7 +15,13 @@ const navItems = [
 
 export default function SocialLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="social" navItems={navItems} settingsHref="/social/settings">
+    <ModuleShell
+      moduleId="social"
+      navItems={navItems}
+      renderSettings={({ open, onOpenChange }) => (
+        <SocialSettingsDialog open={open} onOpenChange={onOpenChange} />
+      )}
+    >
       {children}
     </ModuleShell>
   );

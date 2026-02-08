@@ -1,6 +1,7 @@
 'use client';
 
 import { ModuleShell } from '@/components/layout/module-shell';
+import { FinanceSettingsDialog } from '@/components/finance/finance-settings-dialog';
 import { LayoutDashboard, FileText, Receipt, CreditCard, TrendingUp, Calculator } from 'lucide-react';
 
 const navItems = [
@@ -14,7 +15,13 @@ const navItems = [
 
 export default function FinanceLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="finance" navItems={navItems} settingsHref="/finance/settings">
+    <ModuleShell
+      moduleId="finance"
+      navItems={navItems}
+      renderSettings={({ open, onOpenChange }) => (
+        <FinanceSettingsDialog open={open} onOpenChange={onOpenChange} />
+      )}
+    >
       {children}
     </ModuleShell>
   );

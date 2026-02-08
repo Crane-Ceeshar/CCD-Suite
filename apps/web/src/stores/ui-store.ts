@@ -5,11 +5,17 @@ interface UIState {
   sidebarCollapsed: boolean;
   mobileMenuOpen: boolean;
   theme: 'light' | 'dark' | 'system';
+  sidebarDensity: 'compact' | 'default';
+  dateFormat: string;
+  timeFormat: '12h' | '24h';
   toggleSidebar: () => void;
   setSidebarCollapsed: (collapsed: boolean) => void;
   setMobileMenuOpen: (open: boolean) => void;
   toggleMobileMenu: () => void;
   setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  setSidebarDensity: (density: 'compact' | 'default') => void;
+  setDateFormat: (format: string) => void;
+  setTimeFormat: (format: '12h' | '24h') => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -18,6 +24,9 @@ export const useUIStore = create<UIState>()(
       sidebarCollapsed: false,
       mobileMenuOpen: false,
       theme: 'light',
+      sidebarDensity: 'default',
+      dateFormat: 'MM/DD/YYYY',
+      timeFormat: '12h',
       toggleSidebar: () =>
         set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed })),
       setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
@@ -25,12 +34,18 @@ export const useUIStore = create<UIState>()(
       toggleMobileMenu: () =>
         set((state) => ({ mobileMenuOpen: !state.mobileMenuOpen })),
       setTheme: (theme) => set({ theme }),
+      setSidebarDensity: (sidebarDensity) => set({ sidebarDensity }),
+      setDateFormat: (dateFormat) => set({ dateFormat }),
+      setTimeFormat: (timeFormat) => set({ timeFormat }),
     }),
     {
       name: 'ccd-ui-preferences',
       partialize: (state) => ({
         sidebarCollapsed: state.sidebarCollapsed,
         theme: state.theme,
+        sidebarDensity: state.sidebarDensity,
+        dateFormat: state.dateFormat,
+        timeFormat: state.timeFormat,
       }),
     }
   )

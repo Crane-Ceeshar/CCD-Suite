@@ -1,6 +1,7 @@
 'use client';
 
 import { ModuleShell } from '@/components/layout/module-shell';
+import { SeoSettingsDialog } from '@/components/seo/seo-settings-dialog';
 import { LayoutDashboard, FolderSearch, Key, ClipboardCheck, TrendingUp, Swords } from 'lucide-react';
 
 const navItems = [
@@ -14,7 +15,13 @@ const navItems = [
 
 export default function SEOLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="seo" navItems={navItems} settingsHref="/seo/settings">
+    <ModuleShell
+      moduleId="seo"
+      navItems={navItems}
+      renderSettings={({ open, onOpenChange }) => (
+        <SeoSettingsDialog open={open} onOpenChange={onOpenChange} />
+      )}
+    >
       {children}
     </ModuleShell>
   );

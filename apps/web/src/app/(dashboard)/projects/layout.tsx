@@ -1,6 +1,7 @@
 'use client';
 
 import { ModuleShell } from '@/components/layout/module-shell';
+import { ProjectsSettingsDialog } from '@/components/projects/projects-settings-dialog';
 import { LayoutDashboard, Kanban, List, GanttChart, Clock, Zap } from 'lucide-react';
 
 const navItems = [
@@ -14,7 +15,13 @@ const navItems = [
 
 export default function ProjectsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="projects" navItems={navItems} settingsHref="/projects/settings">
+    <ModuleShell
+      moduleId="projects"
+      navItems={navItems}
+      renderSettings={({ open, onOpenChange }) => (
+        <ProjectsSettingsDialog open={open} onOpenChange={onOpenChange} />
+      )}
+    >
       {children}
     </ModuleShell>
   );

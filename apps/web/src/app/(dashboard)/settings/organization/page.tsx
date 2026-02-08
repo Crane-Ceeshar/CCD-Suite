@@ -11,11 +11,12 @@ import {
   Input,
   Label,
   Badge,
+  Separator,
   toast,
   CcdLoader,
   CcdSpinner,
 } from '@ccd/ui';
-import { Building2, Globe, Copy, Check, Save } from 'lucide-react';
+import { Building2, Globe, Copy, Check, Save, Trash2 } from 'lucide-react';
 import { apiGet, apiPatch } from '@/lib/api';
 
 interface OrgData {
@@ -258,6 +259,27 @@ export default function OrganizationSettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Danger Zone */}
+      <Separator />
+
+      <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-1">
+            <h3 className="text-base font-semibold text-destructive flex items-center gap-2">
+              <Trash2 className="h-4 w-4" />
+              Delete Organization
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Permanently delete this organization and all its data. This action cannot be undone.
+            </p>
+          </div>
+          <Button variant="destructive" disabled>
+            <Trash2 className="mr-2 h-4 w-4" />
+            Delete Organization
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }

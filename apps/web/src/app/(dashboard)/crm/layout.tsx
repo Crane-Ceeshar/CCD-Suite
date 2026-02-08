@@ -2,6 +2,7 @@
 
 import { ModuleShell } from '@/components/layout/module-shell';
 import { AskAiButton } from '@/components/ai/ask-ai-button';
+import { CrmSettingsDialog } from '@/components/crm/crm-settings-dialog';
 import {
   LayoutDashboard,
   DollarSign,
@@ -28,7 +29,13 @@ const navItems = [
 
 export default function CRMLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="crm" navItems={navItems} settingsHref="/crm/settings">
+    <ModuleShell
+      moduleId="crm"
+      navItems={navItems}
+      renderSettings={({ open, onOpenChange }) => (
+        <CrmSettingsDialog open={open} onOpenChange={onOpenChange} />
+      )}
+    >
       {children}
       <AskAiButton moduleContext="crm" />
     </ModuleShell>

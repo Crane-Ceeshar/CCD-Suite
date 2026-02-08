@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
 import { requireTenantAdmin } from '@/lib/supabase/tenant-admin';
+import { createAdminServiceClient } from '@/lib/supabase/admin';
 
 export async function GET(request: NextRequest) {
   const { error, supabase, profile } = await requireAuth();
@@ -80,6 +81,14 @@ export async function PATCH(request: NextRequest) {
 
   const settingKey = `${moduleName}.${key}`;
 
+  // Fetch existing value for diff logging
+  const { data: oldSetting } = await supabase
+    .from('system_settings')
+    .select('value')
+    .eq('tenant_id', profile.tenant_id)
+    .eq('key', settingKey)
+    .maybeSingle();
+
   // Upsert into system_settings
   const { data: existing } = await supabase
     .from('system_settings')
@@ -115,6 +124,29 @@ export async function PATCH(request: NextRequest) {
       { success: false, error: { message: result.error.message } },
       { status: 500 }
     );
+  }
+
+  // Compute shallow diff and log changes
+  const adminClient = createAdminServiceClient();
+  const oldVal = oldSetting?.value ?? {};
+  const changes: Record<string, { old: unknown; new: unknown }> = {};
+  if (typeof value === 'object' && value && typeof oldVal === 'object' && oldVal) {
+    for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
+      const oldV = (oldVal as Record<string, unknown>)[k];
+      if (JSON.stringify(v) !== JSON.stringify(oldV)) {
+        changes[k] = { old: oldV, new: v };
+      }
+    }
+  }
+  if (Object.keys(changes).length > 0) {
+    await adminClient.from('activity_logs').insert({
+      tenant_id: profile.tenant_id,
+      user_id: user.id,
+      action: 'settings.updated',
+      resource_type: 'system_settings',
+      resource_id: null,
+      details: { module: moduleName, key, changes },
+    });
   }
 
   return NextResponse.json({ success: true, data: result.data });

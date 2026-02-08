@@ -13,3 +13,4 @@ export { StatusBadge, STATUS_STYLES, type StatusBadgeProps } from './status-badg
 export { SidebarNav, type SidebarNavProps, type NavItem, type NavGroup } from './sidebar-nav';
 export { CcdLoader } from './ccd-loader';
 export { CcdSpinner } from './ccd-spinner';
+export { ModuleSettingsDialog, type ModuleSettingsDialogProps, type ModuleSettingsTab } from './module-settings-dialog';

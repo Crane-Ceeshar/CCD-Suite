@@ -1,6 +1,7 @@
 'use client';
 
 import { ModuleShell } from '@/components/layout/module-shell';
+import { PortalSettingsDialog } from '@/components/portal/portal-settings-dialog';
 import { LayoutDashboard, FolderOpen, FileArchive, MessageSquare } from 'lucide-react';
 
 const navItems = [
@@ -12,7 +13,13 @@ const navItems = [
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="client_portal" navItems={navItems} settingsHref="/portal/settings">
+    <ModuleShell
+      moduleId="client_portal"
+      navItems={navItems}
+      renderSettings={({ open, onOpenChange }) => (
+        <PortalSettingsDialog open={open} onOpenChange={onOpenChange} />
+      )}
+    >
       {children}
     </ModuleShell>
   );

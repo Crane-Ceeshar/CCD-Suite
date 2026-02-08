@@ -1,6 +1,7 @@
 'use client';
 
 import { ModuleShell } from '@/components/layout/module-shell';
+import { AnalyticsSettingsDialog } from '@/components/analytics/analytics-settings-dialog';
 import { LayoutDashboard, FileBarChart, BarChart3, Database } from 'lucide-react';
 
 const navItems = [
@@ -12,7 +13,13 @@ const navItems = [
 
 export default function AnalyticsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="analytics" navItems={navItems} settingsHref="/analytics/settings">
+    <ModuleShell
+      moduleId="analytics"
+      navItems={navItems}
+      renderSettings={({ open, onOpenChange }) => (
+        <AnalyticsSettingsDialog open={open} onOpenChange={onOpenChange} />
+      )}
+    >
       {children}
     </ModuleShell>
   );
