@@ -175,6 +175,12 @@ export function DealsTable({ onEdit, onRefresh }: DealsTableProps) {
           </Link>
         ) : '-',
     },
+    {
+      key: 'expected_close_date',
+      header: 'Expected Close',
+      sortable: true,
+      render: (deal) => deal.expected_close_date ? formatDate(deal.expected_close_date) : '-',
+    },
     { key: 'status', header: 'Status', render: (deal) => <StatusBadge status={deal.status} /> },
     { key: 'created_at', header: 'Created', sortable: true, render: (deal) => formatDate(deal.created_at) },
     {
@@ -238,7 +244,7 @@ export function DealsTable({ onEdit, onRefresh }: DealsTableProps) {
         </div>
       )}
 
-      <DataTable columns={columns} data={deals} keyExtractor={(deal) => deal.id} emptyMessage="No deals found. Create your first deal to get started." loading={loading} draggable={true} onReorder={handleReorder} />
+      <DataTable columns={columns} data={deals} keyExtractor={(deal) => deal.id} emptyMessage="No deals found. Create your first deal to get started." loading={loading} draggable={true} onReorder={handleReorder} stickyFirstColumn columnDraggable />
     </div>
   );
 }

@@ -118,7 +118,7 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
         job_title: form.job_title.trim() || null,
-        company_id: form.company_id || null,
+        company_id: form.company_id && form.company_id !== '__none' ? form.company_id : null,
         status: form.status,
         notes: form.notes.trim() || null,
       };

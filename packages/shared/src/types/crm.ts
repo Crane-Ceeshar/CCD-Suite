@@ -30,6 +30,12 @@ export interface Contact {
   avatar_url: string | null;
   status: 'active' | 'inactive' | 'lead';
   notes: string | null;
+  website: string | null;
+  lead_source: string | null;
+  lead_status: string | null;
+  qualification: string | null;
+  priority: string | null;
+  comment: string | null;
   metadata: Record<string, unknown>;
   created_by: string | null;
   created_at: string;
@@ -37,6 +43,10 @@ export interface Contact {
   // Joined
   company?: Company;
 }
+
+export type LeadSource = 'website' | 'referral' | 'social_media' | 'cold_call' | 'email_campaign' | 'event' | 'other';
+export type LeadStatus = 'new_lead' | 'attempted_to_contact' | 'contacted' | 'closed';
+export type Qualification = 'qualified' | 'unqualified' | 'pending';
 
 export interface Pipeline {
   id: string;

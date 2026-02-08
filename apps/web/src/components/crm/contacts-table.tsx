@@ -174,6 +174,42 @@ export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
           </Link>
         ) : '-',
     },
+    {
+      key: 'website',
+      header: 'Website',
+      render: (contact) =>
+        contact.website ? (
+          <a href={String(contact.website)} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate max-w-[150px] block">
+            {String(contact.website).replace(/^https?:\/\//, '')}
+          </a>
+        ) : '-',
+    },
+    {
+      key: 'priority',
+      header: 'Priority',
+      render: (contact) => {
+        const p = contact.priority as string | null;
+        if (!p) return '-';
+        const colorMap: Record<string, string> = {
+          high: 'text-red-700 bg-red-50 border-red-200',
+          medium: 'text-amber-700 bg-amber-50 border-amber-200',
+          low: 'text-green-700 bg-green-50 border-green-200',
+        };
+        return (
+          <span className={`text-xs px-2 py-0.5 rounded-full border ${colorMap[p] ?? 'bg-muted'}`}>
+            {p.charAt(0).toUpperCase() + p.slice(1)}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'comment',
+      header: 'Comment',
+      render: (contact) => {
+        const c = contact.comment as string | null;
+        return c ? <span className="text-xs text-muted-foreground truncate max-w-[150px] block">{c}</span> : '-';
+      },
+    },
     { key: 'status', header: 'Status', render: (contact) => <StatusBadge status={contact.status} /> },
     { key: 'created_at', header: 'Added', sortable: true, render: (contact) => formatDate(contact.created_at) },
     {
@@ -237,7 +273,7 @@ export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
         </div>
       )}
 
-      <DataTable columns={columns} data={contacts} keyExtractor={(c) => c.id} emptyMessage="No contacts found. Add your first contact to get started." loading={loading} draggable={true} onReorder={handleReorder} />
+      <DataTable columns={columns} data={contacts} keyExtractor={(c) => c.id} emptyMessage="No contacts found. Add your first contact to get started." loading={loading} draggable={true} onReorder={handleReorder} stickyFirstColumn columnDraggable />
     </div>
   );
 }

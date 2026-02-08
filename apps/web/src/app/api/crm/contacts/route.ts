@@ -59,6 +59,12 @@ export async function POST(request: NextRequest) {
       company_id: body.company_id ?? null,
       status: body.status ?? 'active',
       notes: body.notes ?? null,
+      website: body.website ?? null,
+      lead_source: body.lead_source ?? null,
+      lead_status: body.lead_status ?? null,
+      qualification: body.qualification ?? null,
+      priority: body.priority ?? null,
+      comment: body.comment ?? null,
       created_by: user.id,
     })
     .select('*, company:companies(id, name)')

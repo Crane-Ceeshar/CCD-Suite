@@ -57,6 +57,12 @@ export async function PATCH(
       ...(body.company_id !== undefined && { company_id: body.company_id }),
       ...(body.status !== undefined && { status: body.status }),
       ...(body.notes !== undefined && { notes: body.notes }),
+      ...(body.website !== undefined && { website: body.website }),
+      ...(body.lead_source !== undefined && { lead_source: body.lead_source }),
+      ...(body.lead_status !== undefined && { lead_status: body.lead_status }),
+      ...(body.qualification !== undefined && { qualification: body.qualification }),
+      ...(body.priority !== undefined && { priority: body.priority }),
+      ...(body.comment !== undefined && { comment: body.comment }),
     })
     .eq('id', id)
     .select('*, company:companies(id, name)')

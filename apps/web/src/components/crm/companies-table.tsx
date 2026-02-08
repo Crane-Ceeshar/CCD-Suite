@@ -167,6 +167,10 @@ export function CompaniesTable({ onEdit, onRefresh }: CompaniesTableProps) {
           </a>
         ) : '-',
     },
+    { key: 'email', header: 'Email', render: (company) => company.email ?? '-' },
+    { key: 'phone', header: 'Phone', render: (company) => company.phone ?? '-' },
+    { key: 'city', header: 'City', render: (company) => company.city ?? '-' },
+    { key: 'country', header: 'Country', render: (company) => company.country ?? '-' },
     { key: 'status', header: 'Status', render: (company) => <StatusBadge status={company.status} /> },
     { key: 'created_at', header: 'Added', sortable: true, render: (company) => formatDate(company.created_at) },
     {
@@ -230,7 +234,7 @@ export function CompaniesTable({ onEdit, onRefresh }: CompaniesTableProps) {
         </div>
       )}
 
-      <DataTable columns={columns} data={companies} keyExtractor={(c) => c.id} emptyMessage="No companies found. Add your first company to get started." loading={loading} draggable={true} onReorder={handleReorder} />
+      <DataTable columns={columns} data={companies} keyExtractor={(c) => c.id} emptyMessage="No companies found. Add your first company to get started." loading={loading} draggable={true} onReorder={handleReorder} stickyFirstColumn columnDraggable />
     </div>
   );
 }

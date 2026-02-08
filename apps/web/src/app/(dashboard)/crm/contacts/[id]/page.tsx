@@ -33,6 +33,7 @@ import { EmailComposeDialog } from '@/components/crm/email-compose-dialog';
 import { PortalInviteButton } from '@/components/crm/portal-invite-button';
 import { PortalChat } from '@/components/crm/portal-chat';
 import { CreatePortalProjectDialog } from '@/components/crm/create-portal-project-dialog';
+import { EnrichButton } from '@/components/ai/enrich-button';
 
 interface PortalProject {
   id: string;
@@ -231,11 +232,24 @@ export default function ContactDetailPage() {
           { label: fullName },
         ]}
         actions={
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => router.push('/crm/contacts')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
+            <EnrichButton
+              entityType="contact"
+              entityId={contact.id}
+              entityData={{
+                first_name: contact.first_name,
+                last_name: contact.last_name,
+                email: contact.email,
+                phone: contact.phone,
+                job_title: contact.job_title,
+                company: contact.company?.name,
+              }}
+              onEnrichApplied={loadContact}
+            />
             {contact.email && (
               <Button variant="outline" onClick={() => setEmailDialogOpen(true)}>
                 <Mail className="mr-2 h-4 w-4" />

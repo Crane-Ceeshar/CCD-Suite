@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { useRouter } from 'next/navigation';
 import {
   PageHeader,
   Button,
@@ -13,9 +14,7 @@ import {
 import { formatDate } from '@ccd/shared';
 import { Plus, Pencil, Trash2, UserCheck } from 'lucide-react';
 import { apiGet, apiPatch, apiDelete } from '@/lib/api';
-import { ContactDialog } from '@/components/crm/contact-dialog';
-
-type ContactForDialog = Parameters<typeof ContactDialog>[0]['contact'];
+import { LeadDialog, type LeadForDialog } from '@/components/crm/lead-dialog';
 
 interface LeadRow {
   id: string;
@@ -27,17 +26,39 @@ interface LeadRow {
   status: string;
   company: { id: string; name: string } | null;
   company_id: string | null;
+  website: string | null;
+  lead_source: string | null;
+  lead_status: string | null;
+  qualification: string | null;
   notes: string | null;
   created_at: string;
   [key: string]: unknown;
 }
 
+const LEAD_STATUS_LABELS: Record<string, string> = {
+  new_lead: 'New Lead',
+  attempted_to_contact: 'Attempted',
+  contacted: 'Contacted',
+  closed: 'Closed',
+};
+
+const LEAD_SOURCE_LABELS: Record<string, string> = {
+  website: 'Website',
+  referral: 'Referral',
+  social_media: 'Social Media',
+  cold_call: 'Cold Call',
+  email_campaign: 'Email Campaign',
+  event: 'Event',
+  other: 'Other',
+};
+
 export default function LeadsPage() {
+  const router = useRouter();
   const [leads, setLeads] = React.useState<LeadRow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState('');
   const [dialogOpen, setDialogOpen] = React.useState(false);
-  const [editLead, setEditLead] = React.useState<ContactForDialog>(null);
+  const [editLead, setEditLead] = React.useState<LeadForDialog | null>(null);
   const [refreshKey, setRefreshKey] = React.useState(0);
 
   const loadLeads = React.useCallback(async () => {
@@ -64,7 +85,7 @@ export default function LeadsPage() {
   }
 
   function handleEdit(lead: LeadRow) {
-    setEditLead(lead as unknown as ContactForDialog);
+    setEditLead(lead as unknown as LeadForDialog);
     setDialogOpen(true);
   }
 
@@ -89,7 +110,7 @@ export default function LeadsPage() {
       header: 'Name',
       sortable: true,
       render: (lead) => (
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 min-w-[180px]">
           <UserAvatar name={`${lead.first_name} ${lead.last_name}`} size="sm" />
           <div>
             <p className="font-medium">{lead.first_name} {lead.last_name}</p>
@@ -102,6 +123,50 @@ export default function LeadsPage() {
     { key: 'phone', header: 'Phone', render: (lead) => lead.phone ?? '-' },
     { key: 'company', header: 'Company', render: (lead) => lead.company?.name ?? '-' },
     {
+      key: 'lead_source',
+      header: 'Source',
+      render: (lead) => lead.lead_source
+        ? <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{LEAD_SOURCE_LABELS[lead.lead_source] ?? lead.lead_source}</span>
+        : '-',
+    },
+    {
+      key: 'lead_status',
+      header: 'Lead Status',
+      render: (lead) => {
+        const status = lead.lead_status ?? 'new_lead';
+        return <StatusBadge status={LEAD_STATUS_LABELS[status] ?? status} />;
+      },
+    },
+    {
+      key: 'qualification',
+      header: 'Qualification',
+      render: (lead) => {
+        const q = lead.qualification ?? 'pending';
+        const colorMap: Record<string, string> = {
+          qualified: 'text-green-700 bg-green-50 border-green-200',
+          unqualified: 'text-red-700 bg-red-50 border-red-200',
+          pending: 'text-amber-700 bg-amber-50 border-amber-200',
+        };
+        const label = q.charAt(0).toUpperCase() + q.slice(1);
+        return (
+          <span className={`text-xs px-2 py-0.5 rounded-full border ${colorMap[q] ?? 'bg-muted'}`}>
+            {label}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'website',
+      header: 'Website',
+      render: (lead) => lead.website
+        ? (
+          <a href={lead.website} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate max-w-[150px] block">
+            {lead.website.replace(/^https?:\/\//, '')}
+          </a>
+        )
+        : '-',
+    },
+    {
       key: 'created_at',
       header: 'Added',
       sortable: true,
@@ -110,7 +175,7 @@ export default function LeadsPage() {
     {
       key: 'actions',
       header: '',
-      className: 'w-[120px]',
+      className: 'w-[140px]',
       render: (lead) => (
         <div className="flex items-center gap-1">
           <Button
@@ -160,14 +225,16 @@ export default function LeadsPage() {
           columns={columns}
           data={leads}
           keyExtractor={(l) => l.id}
+          onRowClick={(lead) => router.push(`/crm/leads/${lead.id}`)}
           emptyMessage="No leads found. Add a new lead to get started."
           loading={loading}
+          stickyFirstColumn
         />
       </div>
-      <ContactDialog
+      <LeadDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
-        contact={editLead ?? undefined}
+        lead={editLead}
         onSuccess={() => setRefreshKey((k) => k + 1)}
       />
     </div>

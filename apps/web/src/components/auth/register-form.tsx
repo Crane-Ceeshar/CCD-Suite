@@ -21,6 +21,7 @@ import {
   Eye,
   EyeOff,
   Check,
+  Loader2,
   Users,
   BarChart3,
   PenTool,
@@ -102,6 +103,13 @@ const teamSizeOptions = [
   { value: '50+', label: '50+ people' },
 ];
 
+const passwordRequirements = [
+  { label: '8+ characters', test: (pw: string) => pw.length >= 8 },
+  { label: '1 uppercase letter', test: (pw: string) => /[A-Z]/.test(pw) },
+  { label: '1 number', test: (pw: string) => /[0-9]/.test(pw) },
+  { label: '1 special character', test: (pw: string) => /[^A-Za-z0-9]/.test(pw) },
+];
+
 const slideVariants = {
   enter: (direction: number) => ({
     x: direction > 0 ? 60 : -60,
@@ -136,6 +144,9 @@ export function RegisterForm() {
   const [otpLoading, setOtpLoading] = React.useState(false);
   const [resendCooldown, setResendCooldown] = React.useState(0);
 
+  const [slugStatus, setSlugStatus] = React.useState<'idle' | 'checking' | 'available' | 'taken'>('idle');
+  const slugCheckTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
   const [formData, setFormData] = React.useState({
     plan: hasPlanFromUrl ? preselectedPlan! : '',
     orgName: '',
@@ -156,6 +167,37 @@ export function RegisterForm() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.plan]);
+
+  React.useEffect(() => {
+    if (slugCheckTimerRef.current) clearTimeout(slugCheckTimerRef.current);
+
+    const orgSlug = formData.orgName
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    if (orgSlug.length < 2) {
+      setSlugStatus('idle');
+      return;
+    }
+
+    setSlugStatus('checking');
+    slugCheckTimerRef.current = setTimeout(async () => {
+      try {
+        const supabase = createClient();
+        const { data: isAvailable, error } = await supabase.rpc('check_slug_available', { p_slug: orgSlug });
+        if (error) {
+          setSlugStatus('idle');
+          return;
+        }
+        setSlugStatus(isAvailable ? 'available' : 'taken');
+      } catch {
+        setSlugStatus('idle');
+      }
+    }, 500);
+
+    return () => { if (slugCheckTimerRef.current) clearTimeout(slugCheckTimerRef.current); };
+  }, [formData.orgName]);
 
   const updateField = (field: string, value: string | string[]) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -213,9 +255,9 @@ export function RegisterForm() {
 
   const canProceed = () => {
     if (isPlanStep) return formData.plan !== '';
-    if (isOrgStep) return formData.orgName.trim().length >= 2 && formData.teamSize !== '';
+    if (isOrgStep) return formData.orgName.trim().length >= 2 && formData.teamSize !== '' && slugStatus !== 'taken';
     if (isDetailsStep) return formData.fullName.trim().length >= 2 && formData.roleTitle !== '';
-    if (isAccountStep) return formData.email.includes('@') && formData.password.length >= 8;
+    if (isAccountStep) return formData.email.includes('@') && passwordRequirements.every((req) => req.test(formData.password));
     if (isModuleStep) return formData.selectedModules.length > 0;
     return false;
   };
@@ -561,6 +603,21 @@ export function RegisterForm() {
                       className="pl-10 h-12 bg-card border-border/50 focus:border-primary focus:ring-primary/20 rounded-xl transition-all"
                     />
                   </div>
+                  {slugStatus === 'checking' && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
+                      <Loader2 className="h-3 w-3 animate-spin" /> Checking availability...
+                    </p>
+                  )}
+                  {slugStatus === 'available' && (
+                    <p className="text-xs text-green-500 flex items-center gap-1.5 mt-1">
+                      <Check className="h-3 w-3" /> Name is available
+                    </p>
+                  )}
+                  {slugStatus === 'taken' && (
+                    <p className="text-xs text-destructive flex items-center gap-1.5 mt-1">
+                      This name is already taken. Please try a different name.
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -700,24 +757,28 @@ export function RegisterForm() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  {/* Password strength indicator */}
-                  <div className="flex gap-1 mt-2">
-                    {[1, 2, 3, 4].map((level) => (
-                      <div
-                        key={level}
-                        className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                          formData.password.length >= level * 3
-                            ? level <= 2
-                              ? 'bg-orange-400'
-                              : 'bg-ccd-lime'
-                            : 'bg-border/30'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <p className="text-xs text-foreground/40">
-                    Min. 8 characters
-                  </p>
+                  {/* Password requirements checklist */}
+                  {formData.password.length > 0 && (
+                    <div className="space-y-1.5 mt-2">
+                      {passwordRequirements.map((req) => {
+                        const met = req.test(formData.password);
+                        return (
+                          <div key={req.label} className="flex items-center gap-2">
+                            <div className={`flex h-4 w-4 items-center justify-center rounded-full transition-colors ${
+                              met ? 'bg-green-500 text-white' : 'border border-border/50'
+                            }`}>
+                              {met && <Check className="h-2.5 w-2.5" />}
+                            </div>
+                            <span className={`text-xs transition-colors ${
+                              met ? 'text-foreground/70' : 'text-foreground/40'
+                            }`}>
+                              {req.label}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </>
             )}

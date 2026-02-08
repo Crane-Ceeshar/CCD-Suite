@@ -28,6 +28,7 @@ import {
 import { apiGet } from '@/lib/api';
 import { useParams, useRouter } from 'next/navigation';
 import { CompanyDialog } from '@/components/crm/company-dialog';
+import { EnrichButton } from '@/components/ai/enrich-button';
 
 interface CompanyDetail {
   id: string;
@@ -239,11 +240,23 @@ export default function CompanyDetailPage() {
           { label: company.name },
         ]}
         actions={
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <Button variant="outline" onClick={() => router.push('/crm/companies')}>
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
             </Button>
+            <EnrichButton
+              entityType="company"
+              entityId={company.id}
+              entityData={{
+                name: company.name,
+                industry: company.industry,
+                website: company.website,
+                email: company.email,
+                phone: company.phone,
+              }}
+              onEnrichApplied={loadCompany}
+            />
             <Button onClick={() => setDialogOpen(true)}>
               <Pencil className="mr-2 h-4 w-4" />
               Edit
