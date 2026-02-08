@@ -59,10 +59,6 @@ export default function ContactsPage() {
         }
       />
       <ContactsTable
-        onEdit={(contact) => {
-          setEditContact(contact as unknown as ContactForDialog);
-          setDialogOpen(true);
-        }}
         onRefresh={refreshKey}
       />
       <ContactDialog

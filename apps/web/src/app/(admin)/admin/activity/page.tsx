@@ -7,6 +7,7 @@ import {
   CardContent,
   Button,
   Badge,
+  CcdLoader,
 } from '@ccd/ui';
 import { Activity, Loader2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { apiGet } from '@/lib/api';
@@ -165,7 +166,7 @@ export default function AdminActivityPage() {
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <CcdLoader size="lg" />
         </div>
       ) : logs.length === 0 ? (
         <Card>

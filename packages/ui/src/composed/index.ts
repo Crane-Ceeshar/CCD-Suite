@@ -11,3 +11,4 @@ export { FormField, type FormFieldProps } from './form-field';
 export { UserAvatar, type UserAvatarProps } from './user-avatar';
 export { StatusBadge, STATUS_STYLES, type StatusBadgeProps } from './status-badge';
 export { SidebarNav, type SidebarNavProps, type NavItem, type NavGroup } from './sidebar-nav';
+export { CcdLoader } from './ccd-loader';

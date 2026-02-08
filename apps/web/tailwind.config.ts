@@ -106,6 +106,12 @@ const config: Config = {
           '0%, 100%': { 'background-position': '0% 50%' },
           '50%': { 'background-position': '100% 50%' },
         },
+        'arrow-shoot': {
+          '0%': { transform: 'translateY(12px) scale(0.8)', opacity: '0' },
+          '30%': { transform: 'translateY(-2px) scale(1.05)', opacity: '1' },
+          '60%': { transform: 'translateY(0) scale(1)', opacity: '1' },
+          '100%': { transform: 'translateY(-16px) scale(0.8)', opacity: '0' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -114,6 +120,9 @@ const config: Config = {
         'float-delayed': 'float-delayed 8s ease-in-out infinite',
         'pulse-glow': 'pulse-glow 3s ease-in-out infinite',
         'gradient-x': 'gradient-x 3s ease infinite',
+        'arrow-shoot': 'arrow-shoot 1.2s ease-in-out infinite',
+        'arrow-shoot-delayed': 'arrow-shoot 1.2s ease-in-out 0.15s infinite',
+        'arrow-shoot-delayed-2': 'arrow-shoot 1.2s ease-in-out 0.3s infinite',
       },
     },
   },

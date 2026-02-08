@@ -16,7 +16,7 @@ import {
   type Column,
 } from '@ccd/ui';
 import { formatDate } from '@ccd/shared';
-import { Pencil, Trash2, Download } from 'lucide-react';
+import { Trash2, Download } from 'lucide-react';
 import { apiGet, apiPost, apiDelete, apiPatch } from '@/lib/api';
 import { exportToCsv } from '@/components/crm/csv-import-dialog';
 import Link from 'next/link';
@@ -37,11 +37,10 @@ interface ContactRow {
 }
 
 interface ContactsTableProps {
-  onEdit?: (contact: ContactRow) => void;
   onRefresh?: number;
 }
 
-export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
+export function ContactsTable({ onRefresh }: ContactsTableProps) {
   const [contacts, setContacts] = React.useState<ContactRow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState('');
@@ -88,6 +87,16 @@ export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
     } catch { /* ignore */ }
   }
 
+  async function handleCellEdit(item: ContactRow, key: string, value: unknown) {
+    // Optimistic update
+    setContacts(prev => prev.map(c => c.id === item.id ? { ...c, [key]: value } : c));
+    try {
+      await apiPatch(`/api/crm/contacts/${item.id}`, { [key]: value });
+    } catch {
+      setContacts(prev => prev.map(c => c.id === item.id ? item : c)); // rollback
+    }
+  }
+
   function toggleSelect(id: string) {
     setSelected((prev) => {
       const next = new Set(prev);
@@ -132,6 +141,7 @@ export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
       key: 'select',
       header: '',
       className: 'w-[40px]',
+      width: 52,
       render: (contact) => (
         <Checkbox
           checked={selected.has(contact.id)}
@@ -144,6 +154,7 @@ export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
       key: 'name',
       header: 'Name',
       sortable: true,
+      width: 200,
       render: (contact) => (
         <div className="flex items-center gap-3">
           <UserAvatar name={`${contact.first_name} ${contact.last_name}`} size="sm" />
@@ -162,8 +173,8 @@ export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
         </div>
       ),
     },
-    { key: 'email', header: 'Email', render: (contact) => contact.email ?? '-' },
-    { key: 'phone', header: 'Phone', render: (contact) => contact.phone ?? '-' },
+    { key: 'email', header: 'Email', editable: true, render: (contact) => contact.email ?? '-' },
+    { key: 'phone', header: 'Phone', editable: true, render: (contact) => contact.phone ?? '-' },
     {
       key: 'company',
       header: 'Company',
@@ -177,9 +188,10 @@ export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
     {
       key: 'website',
       header: 'Website',
+      editable: true,
       render: (contact) =>
         contact.website ? (
-          <a href={String(contact.website)} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate max-w-[150px] block">
+          <a href={String(contact.website)} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
             {String(contact.website).replace(/^https?:\/\//, '')}
           </a>
         ) : '-',
@@ -187,6 +199,13 @@ export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
     {
       key: 'priority',
       header: 'Priority',
+      editable: true,
+      editType: 'select',
+      editOptions: [
+        { value: 'high', label: 'High' },
+        { value: 'medium', label: 'Medium' },
+        { value: 'low', label: 'Low' },
+      ],
       render: (contact) => {
         const p = contact.priority as string | null;
         if (!p) return '-';
@@ -205,24 +224,31 @@ export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
     {
       key: 'comment',
       header: 'Comment',
+      editable: true,
       render: (contact) => {
         const c = contact.comment as string | null;
-        return c ? <span className="text-xs text-muted-foreground truncate max-w-[150px] block">{c}</span> : '-';
+        return c ? <span className="text-xs text-muted-foreground">{c}</span> : '-';
       },
     },
-    { key: 'status', header: 'Status', render: (contact) => <StatusBadge status={contact.status} /> },
+    {
+      key: 'status',
+      header: 'Status',
+      editable: true,
+      editType: 'select',
+      editOptions: [
+        { value: 'active', label: 'Active' },
+        { value: 'inactive', label: 'Inactive' },
+        { value: 'lead', label: 'Lead' },
+      ],
+      render: (contact) => <StatusBadge status={contact.status} />,
+    },
     { key: 'created_at', header: 'Added', sortable: true, render: (contact) => formatDate(contact.created_at) },
     {
       key: 'actions',
       header: '',
-      className: 'w-[80px]',
+      className: 'w-[50px]',
       render: (contact) => (
         <div className="flex items-center gap-1">
-          {onEdit && (
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onEdit(contact); }}>
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-          )}
           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(contact.id); }}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -273,7 +299,7 @@ export function ContactsTable({ onEdit, onRefresh }: ContactsTableProps) {
         </div>
       )}
 
-      <DataTable columns={columns} data={contacts} keyExtractor={(c) => c.id} emptyMessage="No contacts found. Add your first contact to get started." loading={loading} draggable={true} onReorder={handleReorder} stickyFirstColumn columnDraggable />
+      <DataTable columns={columns} data={contacts} keyExtractor={(c) => c.id} emptyMessage="No contacts found. Add your first contact to get started." loading={loading} draggable={true} onReorder={handleReorder} stickyColumns={2} columnDraggable onCellEdit={handleCellEdit} />
     </div>
   );
 }

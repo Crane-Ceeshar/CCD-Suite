@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { PageHeader, Card, CardContent, CardHeader, CardTitle, Button } from '@ccd/ui';
-import { RefreshCw, Loader2, CheckCircle2, AlertTriangle, XCircle, HelpCircle } from 'lucide-react';
+import { PageHeader, Card, CardContent, CardHeader, CardTitle, Button, CcdLoader } from '@ccd/ui';
+import { RefreshCw, CheckCircle2, AlertTriangle, XCircle, HelpCircle } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 
 interface ServiceHealth {
@@ -72,7 +72,7 @@ export default function AdminServicesPage() {
       {/* Service Cards */}
       {loading && services.length === 0 ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <CcdLoader size="lg" />
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

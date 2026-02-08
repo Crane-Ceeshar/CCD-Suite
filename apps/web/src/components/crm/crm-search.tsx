@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { SearchInput, Card, CardContent } from '@ccd/ui';
-import { Users, Building2, DollarSign, Loader2 } from 'lucide-react';
+import { SearchInput, Card, CardContent, CcdLoader } from '@ccd/ui';
+import { Users, Building2, DollarSign } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 import Link from 'next/link';
 
@@ -107,7 +107,7 @@ export function CrmSearch() {
           <CardContent className="p-2">
             {loading ? (
               <div className="flex justify-center py-4">
-                <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                <CcdLoader size="sm" />
               </div>
             ) : (
               <div className="space-y-1">

@@ -13,6 +13,7 @@ import {
   StatusBadge,
   UserAvatar,
   cn,
+  CcdLoader,
   type Column,
 } from '@ccd/ui';
 import { formatDate } from '@ccd/shared';
@@ -25,7 +26,6 @@ import {
   Building2,
   Globe,
   Calendar,
-  Loader2,
   CheckCircle,
   XCircle,
 } from 'lucide-react';
@@ -158,7 +158,7 @@ export default function LeadDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CcdLoader size="lg" />
       </div>
     );
   }

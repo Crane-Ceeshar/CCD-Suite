@@ -66,10 +66,6 @@ export default function DealsPage() {
         }
       />
       <DealsTable
-        onEdit={(deal) => {
-          setEditDeal(deal as unknown as DealForDialog);
-          setDialogOpen(true);
-        }}
         onRefresh={refreshKey}
       />
       <DealDialog

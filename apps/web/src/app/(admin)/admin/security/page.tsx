@@ -8,8 +8,9 @@ import {
   CardContent,
   Badge,
   Button,
+  CcdLoader,
 } from '@ccd/ui';
-import { ShieldAlert, LogIn, Globe, AlertTriangle, Loader2, RefreshCw } from 'lucide-react';
+import { ShieldAlert, LogIn, Globe, AlertTriangle, RefreshCw } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 
 interface SecurityStats {
@@ -90,7 +91,7 @@ export default function AdminSecurityPage() {
       {/* Stats */}
       {loading && !stats ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <CcdLoader size="lg" />
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

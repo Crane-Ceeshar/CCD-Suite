@@ -12,6 +12,7 @@ import {
   Label,
   Badge,
   toast,
+  CcdLoader,
 } from '@ccd/ui';
 import { Building2, Globe, Copy, Check, Loader2, Save } from 'lucide-react';
 import { apiGet, apiPatch } from '@/lib/api';
@@ -105,7 +106,7 @@ export default function OrganizationSettingsPage() {
   if (loading) {
     return (
       <div className="flex justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <CcdLoader size="lg" />
       </div>
     );
   }

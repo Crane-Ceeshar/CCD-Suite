@@ -27,6 +27,10 @@ export interface Column<T> {
   render?: (item: T) => React.ReactNode;
   sortable?: boolean;
   className?: string;
+  width?: number;
+  editable?: boolean;
+  editType?: 'text' | 'select' | 'currency' | 'date';
+  editOptions?: { value: string; label: string }[];
 }
 
 export interface DataTableProps<T> extends React.HTMLAttributes<HTMLDivElement> {
@@ -41,9 +45,127 @@ export interface DataTableProps<T> extends React.HTMLAttributes<HTMLDivElement> 
   loading?: boolean;
   draggable?: boolean;
   onReorder?: (items: T[]) => void;
+  /** @deprecated Use stickyColumns instead */
   stickyFirstColumn?: boolean;
+  stickyColumns?: number;
   columnDraggable?: boolean;
   onColumnReorder?: (keys: string[]) => void;
+  onCellEdit?: (item: T, key: string, value: unknown) => void;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Editable Cell Component                                            */
+/* ------------------------------------------------------------------ */
+function EditableCell({
+  value,
+  editType = 'text',
+  editOptions,
+  onSave,
+  displayContent,
+}: {
+  value: unknown;
+  editType: 'text' | 'select' | 'currency' | 'date';
+  editOptions?: { value: string; label: string }[];
+  onSave: (newValue: unknown) => void;
+  displayContent: React.ReactNode;
+}) {
+  const [editing, setEditing] = React.useState(false);
+  const [editValue, setEditValue] = React.useState('');
+  const inputRef = React.useRef<HTMLInputElement | HTMLSelectElement>(null);
+
+  function startEditing(e: React.MouseEvent) {
+    e.stopPropagation();
+    if (editType === 'currency') {
+      // Strip formatting, show raw number
+      const num = typeof value === 'number' ? value : parseFloat(String(value ?? '0'));
+      setEditValue(isNaN(num) ? '' : String(num));
+    } else {
+      setEditValue(String(value ?? ''));
+    }
+    setEditing(true);
+  }
+
+  React.useEffect(() => {
+    if (editing && inputRef.current) {
+      inputRef.current.focus();
+      if (inputRef.current instanceof HTMLInputElement) {
+        inputRef.current.select();
+      }
+    }
+  }, [editing]);
+
+  function handleSave() {
+    setEditing(false);
+    let finalValue: unknown = editValue;
+    if (editType === 'currency') {
+      const parsed = parseFloat(editValue);
+      finalValue = isNaN(parsed) ? 0 : parsed;
+    }
+    if (finalValue !== value) {
+      onSave(finalValue);
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleSave();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      setEditing(false);
+    }
+  }
+
+  function handleSelectChange(e: React.ChangeEvent<HTMLSelectElement>) {
+    const newVal = e.target.value;
+    setEditing(false);
+    if (newVal !== String(value ?? '')) {
+      onSave(newVal);
+    }
+  }
+
+  if (editing) {
+    if (editType === 'select' && editOptions) {
+      return (
+        <select
+          ref={inputRef as React.RefObject<HTMLSelectElement>}
+          value={editValue}
+          onChange={handleSelectChange}
+          onBlur={() => setEditing(false)}
+          onClick={(e) => e.stopPropagation()}
+          className="h-8 w-full text-sm border rounded px-2 bg-transparent focus:ring-1 focus:ring-primary focus:outline-none appearance-none cursor-pointer"
+        >
+          {editOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      );
+    }
+
+    return (
+      <input
+        ref={inputRef as React.RefObject<HTMLInputElement>}
+        type={editType === 'date' ? 'date' : 'text'}
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={handleKeyDown}
+        onClick={(e) => e.stopPropagation()}
+        className="h-8 w-full text-sm border rounded px-2 bg-transparent focus:ring-1 focus:ring-primary focus:outline-none"
+      />
+    );
+  }
+
+  return (
+    <div
+      onClick={startEditing}
+      className="cursor-pointer rounded px-1 -mx-1 py-0.5 hover:ring-1 hover:ring-border hover:bg-muted/30 transition-colors min-h-[28px] flex items-center"
+    >
+      {displayContent}
+    </div>
+  );
 }
 
 /* ------------------------------------------------------------------ */
@@ -53,37 +175,63 @@ export interface DataTableProps<T> extends React.HTMLAttributes<HTMLDivElement> 
 /** Non-draggable column keys that should never participate in column DnD */
 const NON_DRAGGABLE_COLUMN_KEYS = new Set(['select', 'actions']);
 
-function getStickyClass(
-  stickyFirstColumn: boolean,
+const DRAG_HANDLE_WIDTH = 36;
+
+function getStickyStyle(
+  stickyColumns: number,
   draggable: boolean,
   columnIndex: number,
-  isDragHandleColumn: boolean
-): string {
-  if (!stickyFirstColumn) return '';
+  isDragHandleColumn: boolean,
+  columns: { width?: number }[]
+): { className: string; style: React.CSSProperties } {
+  if (stickyColumns <= 0) return { className: '', style: {} };
 
   if (draggable) {
-    // With row drag: index 0 is drag handle, index 1 is first data column
+    // With row drag: index 0 is drag handle
     if (isDragHandleColumn) {
-      return 'sticky left-0 z-10 bg-background';
+      return {
+        className: 'sticky z-10 bg-background',
+        style: { left: 0 },
+      };
     }
-    if (columnIndex === 0) {
-      // First data column (rendered at visual index 1 due to drag handle)
-      return cn(
-        'sticky left-[36px] z-10 bg-background',
-        'after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-border'
-      );
+
+    // Calculate cumulative left offset for this column
+    // Start after drag handle (36px)
+    if (columnIndex < stickyColumns) {
+      let left = DRAG_HANDLE_WIDTH;
+      for (let i = 0; i < columnIndex; i++) {
+        left += columns[i]?.width ?? 100;
+      }
+      const isLastSticky = columnIndex === stickyColumns - 1;
+      return {
+        className: cn(
+          'sticky z-10 bg-background',
+          isLastSticky &&
+            'after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-border'
+        ),
+        style: { left },
+      };
     }
   } else {
-    // No row drag: index 0 is first data column
-    if (columnIndex === 0) {
-      return cn(
-        'sticky left-0 z-10 bg-background',
-        'after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-border'
-      );
+    // No row drag: direct column indices
+    if (columnIndex < stickyColumns) {
+      let left = 0;
+      for (let i = 0; i < columnIndex; i++) {
+        left += columns[i]?.width ?? 100;
+      }
+      const isLastSticky = columnIndex === stickyColumns - 1;
+      return {
+        className: cn(
+          'sticky z-10 bg-background',
+          isLastSticky &&
+            'after:absolute after:right-0 after:top-0 after:bottom-0 after:w-px after:bg-border'
+        ),
+        style: { left },
+      };
     }
   }
 
-  return '';
+  return { className: '', style: {} };
 }
 
 /* ------------------------------------------------------------------ */
@@ -94,13 +242,15 @@ function SortableHeaderCell<T>({
   sortKey,
   sortDirection,
   onSort,
-  stickyClass,
+  stickyClassName,
+  stickyStyle,
 }: {
   column: Column<T>;
   sortKey?: string;
   sortDirection?: 'asc' | 'desc';
   onSort?: (key: string) => void;
-  stickyClass?: string;
+  stickyClassName?: string;
+  stickyStyle?: React.CSSProperties;
 }) {
   const {
     attributes,
@@ -112,6 +262,7 @@ function SortableHeaderCell<T>({
   } = useSortable({ id: column.key });
 
   const style: React.CSSProperties = {
+    ...stickyStyle,
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
@@ -122,8 +273,8 @@ function SortableHeaderCell<T>({
       ref={setNodeRef}
       style={style}
       className={cn(
-        'h-12 px-4 text-left align-middle font-medium text-muted-foreground cursor-grab',
-        stickyClass,
+        'h-12 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap cursor-grab',
+        stickyClassName,
         column.className
       )}
       {...attributes}
@@ -162,13 +313,15 @@ function SortableRow<T extends Record<string, unknown>>({
   itemId,
   columns,
   onRowClick,
-  stickyFirstColumn,
+  stickyColumns,
+  onCellEdit,
 }: {
   item: T;
   itemId: string;
   columns: Column<T>[];
   onRowClick?: (item: T) => void;
-  stickyFirstColumn?: boolean;
+  stickyColumns: number;
+  onCellEdit?: (item: T, key: string, value: unknown) => void;
 }) {
   const {
     attributes,
@@ -186,9 +339,9 @@ function SortableRow<T extends Record<string, unknown>>({
     opacity: isDragging ? 0.3 : 1,
   };
 
-  const dragHandleStickyClass = stickyFirstColumn
-    ? 'sticky left-0 z-10 bg-background'
-    : '';
+  const dragHandleSticky = stickyColumns > 0
+    ? { className: 'sticky z-10 bg-background', style: { left: 0 } as React.CSSProperties }
+    : { className: '', style: {} as React.CSSProperties };
 
   return (
     <tr
@@ -201,7 +354,10 @@ function SortableRow<T extends Record<string, unknown>>({
       onClick={() => onRowClick?.(item)}
     >
       {/* Drag handle cell */}
-      <td className={cn('w-[36px] p-2 align-middle', dragHandleStickyClass)}>
+      <td
+        className={cn('w-[36px] p-2 align-middle whitespace-nowrap', dragHandleSticky.className)}
+        style={dragHandleSticky.style}
+      >
         <button
           ref={setActivatorNodeRef}
           {...attributes}
@@ -212,20 +368,36 @@ function SortableRow<T extends Record<string, unknown>>({
           <GripVertical className="h-4 w-4 text-muted-foreground/50" />
         </button>
       </td>
-      {columns.map((column, colIdx) => (
-        <td
-          key={column.key}
-          className={cn(
-            'p-4 align-middle',
-            getStickyClass(!!stickyFirstColumn, true, colIdx, false),
-            column.className
-          )}
-        >
-          {column.render
-            ? column.render(item)
-            : String(item[column.key] ?? '')}
-        </td>
-      ))}
+      {columns.map((column, colIdx) => {
+        const sticky = getStickyStyle(stickyColumns, true, colIdx, false, columns);
+        const cellContent = column.render
+          ? column.render(item)
+          : String(item[column.key] ?? '');
+
+        return (
+          <td
+            key={column.key}
+            className={cn(
+              'p-4 align-middle whitespace-nowrap',
+              sticky.className,
+              column.className
+            )}
+            style={sticky.style}
+          >
+            {column.editable && onCellEdit ? (
+              <EditableCell
+                value={item[column.key]}
+                editType={column.editType ?? 'text'}
+                editOptions={column.editOptions}
+                onSave={(newValue) => onCellEdit(item, column.key, newValue)}
+                displayContent={cellContent}
+              />
+            ) : (
+              cellContent
+            )}
+          </td>
+        );
+      })}
     </tr>
   );
 }
@@ -241,14 +413,14 @@ function DragOverlayRow<T extends Record<string, unknown>>({
   columns: Column<T>[];
 }) {
   return (
-    <table className="w-full text-sm">
+    <table className="w-max min-w-full text-sm">
       <tbody>
         <tr className="border rounded-md bg-background shadow-xl ring-2 ring-primary/30">
-          <td className="w-[36px] p-2 align-middle">
+          <td className="w-[36px] p-2 align-middle whitespace-nowrap">
             <GripVertical className="h-4 w-4 text-muted-foreground" />
           </td>
           {columns.map((column) => (
-            <td key={column.key} className={cn('p-4 align-middle', column.className)}>
+            <td key={column.key} className={cn('p-4 align-middle whitespace-nowrap', column.className)}>
               {column.render
                 ? column.render(item)
                 : String(item[column.key] ?? '')}
@@ -276,11 +448,16 @@ function DataTable<T extends Record<string, unknown>>({
   draggable,
   onReorder,
   stickyFirstColumn,
+  stickyColumns: stickyColumnsProp,
   columnDraggable,
   onColumnReorder,
+  onCellEdit,
   className,
   ...props
 }: DataTableProps<T>) {
+  // Support both legacy stickyFirstColumn and new stickyColumns
+  const stickyColumns = stickyColumnsProp ?? (stickyFirstColumn ? 1 : 0);
+
   const [activeItem, setActiveItem] = React.useState<T | null>(null);
 
   /* ---- Column ordering state ---- */
@@ -322,12 +499,12 @@ function DataTable<T extends Record<string, unknown>>({
       .filter((col, idx) => {
         // Exclude non-draggable keys (select, actions)
         if (NON_DRAGGABLE_COLUMN_KEYS.has(col.key)) return false;
-        // Exclude sticky first column
-        if (stickyFirstColumn && idx === 0) return false;
+        // Exclude sticky columns
+        if (idx < stickyColumns) return false;
         return true;
       })
       .map((col) => col.key);
-  }, [columnDraggable, orderedColumns, stickyFirstColumn]);
+  }, [columnDraggable, orderedColumns, stickyColumns]);
 
   /* ---- Row DnD sensors ---- */
   const rowSensors = useSensors(
@@ -386,20 +563,25 @@ function DataTable<T extends Record<string, unknown>>({
   /* ---- Header row ---- */
   const headerCells = (
     <>
-      {draggable && (
-        <th
-          className={cn(
-            'w-[36px] h-12 px-2 text-left align-middle font-medium text-muted-foreground',
-            stickyFirstColumn ? 'sticky left-0 z-10 bg-background' : ''
-          )}
-        />
-      )}
+      {draggable && (() => {
+        const dragHandleSticky = getStickyStyle(stickyColumns, true, 0, true, renderColumns);
+        return (
+          <th
+            className={cn(
+              'w-[36px] h-12 px-2 text-left align-middle font-medium text-muted-foreground whitespace-nowrap',
+              dragHandleSticky.className
+            )}
+            style={dragHandleSticky.style}
+          />
+        );
+      })()}
       {renderColumns.map((column, colIdx) => {
-        const stickyClass = getStickyClass(
-          !!stickyFirstColumn,
+        const sticky = getStickyStyle(
+          stickyColumns,
           !!draggable,
           colIdx,
-          false
+          false,
+          renderColumns
         );
         const isColumnDraggable =
           columnDraggable && draggableColumnKeys.includes(column.key);
@@ -412,7 +594,8 @@ function DataTable<T extends Record<string, unknown>>({
               sortKey={sortKey}
               sortDirection={sortDirection}
               onSort={onSort ? handleSort : undefined}
-              stickyClass={stickyClass}
+              stickyClassName={sticky.className}
+              stickyStyle={sticky.style}
             />
           );
         }
@@ -421,10 +604,11 @@ function DataTable<T extends Record<string, unknown>>({
           <th
             key={column.key}
             className={cn(
-              'h-12 px-4 text-left align-middle font-medium text-muted-foreground',
-              stickyClass,
+              'h-12 px-4 text-left align-middle font-medium text-muted-foreground whitespace-nowrap',
+              sticky.className,
               column.className
             )}
+            style={sticky.style}
           >
             {column.sortable ? (
               <Button
@@ -480,22 +664,29 @@ function DataTable<T extends Record<string, unknown>>({
   const bodyContent = loading ? (
     Array.from({ length: 5 }).map((_, i) => (
       <tr key={i} className="border-b">
-        {draggable && (
-          <td className={cn('p-2', stickyFirstColumn ? 'sticky left-0 z-10 bg-background' : '')}>
-            <div className="h-4 w-4 animate-pulse rounded bg-muted" />
-          </td>
-        )}
-        {renderColumns.map((col, colIdx) => (
-          <td
-            key={col.key}
-            className={cn(
-              'p-4',
-              getStickyClass(!!stickyFirstColumn, !!draggable, colIdx, false)
-            )}
-          >
-            <div className="h-4 w-full animate-pulse rounded bg-muted" />
-          </td>
-        ))}
+        {draggable && (() => {
+          const dragHandleSticky = getStickyStyle(stickyColumns, true, 0, true, renderColumns);
+          return (
+            <td
+              className={cn('p-2 whitespace-nowrap', dragHandleSticky.className)}
+              style={dragHandleSticky.style}
+            >
+              <div className="h-4 w-4 animate-pulse rounded bg-muted" />
+            </td>
+          );
+        })()}
+        {renderColumns.map((col, colIdx) => {
+          const sticky = getStickyStyle(stickyColumns, !!draggable, colIdx, false, renderColumns);
+          return (
+            <td
+              key={col.key}
+              className={cn('p-4 whitespace-nowrap', sticky.className)}
+              style={sticky.style}
+            >
+              <div className="h-4 w-full animate-pulse rounded bg-muted" />
+            </td>
+          );
+        })}
       </tr>
     ))
   ) : data.length === 0 ? (
@@ -516,7 +707,8 @@ function DataTable<T extends Record<string, unknown>>({
           itemId={keyExtractor(item)}
           columns={renderColumns}
           onRowClick={onRowClick}
-          stickyFirstColumn={stickyFirstColumn}
+          stickyColumns={stickyColumns}
+          onCellEdit={onCellEdit}
         />
       ))}
     </SortableContext>
@@ -530,20 +722,36 @@ function DataTable<T extends Record<string, unknown>>({
         )}
         onClick={() => onRowClick?.(item)}
       >
-        {renderColumns.map((column, colIdx) => (
-          <td
-            key={column.key}
-            className={cn(
-              'p-4 align-middle',
-              getStickyClass(!!stickyFirstColumn, !!draggable, colIdx, false),
-              column.className
-            )}
-          >
-            {column.render
-              ? column.render(item)
-              : String(item[column.key] ?? '')}
-          </td>
-        ))}
+        {renderColumns.map((column, colIdx) => {
+          const sticky = getStickyStyle(stickyColumns, !!draggable, colIdx, false, renderColumns);
+          const cellContent = column.render
+            ? column.render(item)
+            : String(item[column.key] ?? '');
+
+          return (
+            <td
+              key={column.key}
+              className={cn(
+                'p-4 align-middle whitespace-nowrap',
+                sticky.className,
+                column.className
+              )}
+              style={sticky.style}
+            >
+              {column.editable && onCellEdit ? (
+                <EditableCell
+                  value={item[column.key]}
+                  editType={column.editType ?? 'text'}
+                  editOptions={column.editOptions}
+                  onSave={(newValue) => onCellEdit(item, column.key, newValue)}
+                  displayContent={cellContent}
+                />
+              ) : (
+                cellContent
+              )}
+            </td>
+          );
+        })}
       </tr>
     ))
   );
@@ -551,7 +759,7 @@ function DataTable<T extends Record<string, unknown>>({
   const tableContent = (
     <div className={cn('rounded-md border', className)} {...props}>
       <div className="relative w-full overflow-auto">
-        <table className="w-full caption-bottom text-sm">
+        <table className="w-max min-w-full caption-bottom text-sm">
           <thead className="[&_tr]:border-b">
             {theadContent}
           </thead>

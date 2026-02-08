@@ -9,6 +9,7 @@ import {
   CardTitle,
   Button,
   Badge,
+  CcdLoader,
 } from '@ccd/ui';
 import { Plus, Loader2, Copy, Check, RefreshCw, Trash2, KeyRound } from 'lucide-react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
@@ -156,7 +157,7 @@ export default function AdminApiKeysPage() {
       {/* Keys Table */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <CcdLoader size="lg" />
         </div>
       ) : keys.length === 0 ? (
         <Card>

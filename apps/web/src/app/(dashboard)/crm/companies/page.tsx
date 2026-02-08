@@ -59,10 +59,6 @@ export default function CompaniesPage() {
         }
       />
       <CompaniesTable
-        onEdit={(company) => {
-          setEditCompany(company as unknown as CompanyForDialog);
-          setDialogOpen(true);
-        }}
         onRefresh={refreshKey}
       />
       <CompanyDialog

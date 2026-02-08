@@ -15,7 +15,7 @@ import {
   type Column,
 } from '@ccd/ui';
 import { formatCurrency, formatDate } from '@ccd/shared';
-import { Pencil, Trash2, Download } from 'lucide-react';
+import { Trash2, Download } from 'lucide-react';
 import { apiGet, apiDelete, apiPatch } from '@/lib/api';
 import { exportToCsv } from '@/components/crm/csv-import-dialog';
 import Link from 'next/link';
@@ -40,11 +40,10 @@ interface DealRow {
 }
 
 interface DealsTableProps {
-  onEdit?: (deal: DealRow) => void;
   onRefresh?: number;
 }
 
-export function DealsTable({ onEdit, onRefresh }: DealsTableProps) {
+export function DealsTable({ onRefresh }: DealsTableProps) {
   const [deals, setDeals] = React.useState<DealRow[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [search, setSearch] = React.useState('');
@@ -88,6 +87,16 @@ export function DealsTable({ onEdit, onRefresh }: DealsTableProps) {
       await apiDelete(`/api/crm/deals/${id}`);
       loadDeals();
     } catch { /* ignore */ }
+  }
+
+  async function handleCellEdit(item: DealRow, key: string, value: unknown) {
+    // Optimistic update
+    setDeals(prev => prev.map(d => d.id === item.id ? { ...d, [key]: value } : d));
+    try {
+      await apiPatch(`/api/crm/deals/${item.id}`, { [key]: value });
+    } catch {
+      setDeals(prev => prev.map(d => d.id === item.id ? item : d)); // rollback
+    }
   }
 
   function toggleSelect(id: string) {
@@ -134,6 +143,7 @@ export function DealsTable({ onEdit, onRefresh }: DealsTableProps) {
       key: 'select',
       header: '',
       className: 'w-[40px]',
+      width: 52,
       render: (deal) => (
         <Checkbox
           checked={selected.has(deal.id)}
@@ -142,8 +152,8 @@ export function DealsTable({ onEdit, onRefresh }: DealsTableProps) {
         />
       ),
     },
-    { key: 'title', header: 'Deal', sortable: true },
-    { key: 'value', header: 'Value', sortable: true, render: (deal) => formatCurrency(deal.value, deal.currency) },
+    { key: 'title', header: 'Deal', sortable: true, width: 200, editable: true },
+    { key: 'value', header: 'Value', sortable: true, editable: true, editType: 'currency', render: (deal) => formatCurrency(deal.value, deal.currency) },
     {
       key: 'stage',
       header: 'Stage',
@@ -179,21 +189,29 @@ export function DealsTable({ onEdit, onRefresh }: DealsTableProps) {
       key: 'expected_close_date',
       header: 'Expected Close',
       sortable: true,
+      editable: true,
+      editType: 'date',
       render: (deal) => deal.expected_close_date ? formatDate(deal.expected_close_date) : '-',
     },
-    { key: 'status', header: 'Status', render: (deal) => <StatusBadge status={deal.status} /> },
+    {
+      key: 'status',
+      header: 'Status',
+      editable: true,
+      editType: 'select',
+      editOptions: [
+        { value: 'open', label: 'Open' },
+        { value: 'won', label: 'Won' },
+        { value: 'lost', label: 'Lost' },
+      ],
+      render: (deal) => <StatusBadge status={deal.status} />,
+    },
     { key: 'created_at', header: 'Created', sortable: true, render: (deal) => formatDate(deal.created_at) },
     {
       key: 'actions',
       header: '',
-      className: 'w-[80px]',
+      className: 'w-[50px]',
       render: (deal) => (
         <div className="flex items-center gap-1">
-          {onEdit && (
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={(e) => { e.stopPropagation(); onEdit(deal); }}>
-              <Pencil className="h-3.5 w-3.5" />
-            </Button>
-          )}
           <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(deal.id); }}>
             <Trash2 className="h-3.5 w-3.5" />
           </Button>
@@ -244,7 +262,7 @@ export function DealsTable({ onEdit, onRefresh }: DealsTableProps) {
         </div>
       )}
 
-      <DataTable columns={columns} data={deals} keyExtractor={(deal) => deal.id} emptyMessage="No deals found. Create your first deal to get started." loading={loading} draggable={true} onReorder={handleReorder} stickyFirstColumn columnDraggable />
+      <DataTable columns={columns} data={deals} keyExtractor={(deal) => deal.id} emptyMessage="No deals found. Create your first deal to get started." loading={loading} draggable={true} onReorder={handleReorder} stickyColumns={2} columnDraggable onCellEdit={handleCellEdit} />
     </div>
   );
 }

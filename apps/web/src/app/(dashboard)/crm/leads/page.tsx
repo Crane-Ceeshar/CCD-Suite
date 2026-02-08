@@ -12,7 +12,7 @@ import {
   type Column,
 } from '@ccd/ui';
 import { formatDate } from '@ccd/shared';
-import { Plus, Pencil, Trash2, UserCheck } from 'lucide-react';
+import { Plus, Trash2, UserCheck } from 'lucide-react';
 import { apiGet, apiPatch, apiDelete } from '@/lib/api';
 import { LeadDialog, type LeadForDialog } from '@/components/crm/lead-dialog';
 
@@ -84,11 +84,6 @@ export default function LeadsPage() {
     setDialogOpen(true);
   }
 
-  function handleEdit(lead: LeadRow) {
-    setEditLead(lead as unknown as LeadForDialog);
-    setDialogOpen(true);
-  }
-
   async function handleConvert(id: string) {
     try {
       await apiPatch(`/api/crm/contacts/${id}`, { status: 'active' });
@@ -104,11 +99,22 @@ export default function LeadsPage() {
     } catch { /* ignore */ }
   }
 
+  async function handleCellEdit(item: LeadRow, key: string, value: unknown) {
+    // Optimistic update
+    setLeads(prev => prev.map(l => l.id === item.id ? { ...l, [key]: value } : l));
+    try {
+      await apiPatch(`/api/crm/contacts/${item.id}`, { [key]: value });
+    } catch {
+      setLeads(prev => prev.map(l => l.id === item.id ? item : l)); // rollback
+    }
+  }
+
   const columns: Column<LeadRow>[] = [
     {
       key: 'name',
       header: 'Name',
       sortable: true,
+      width: 220,
       render: (lead) => (
         <div className="flex items-center gap-3 min-w-[180px]">
           <UserAvatar name={`${lead.first_name} ${lead.last_name}`} size="sm" />
@@ -119,12 +125,23 @@ export default function LeadsPage() {
         </div>
       ),
     },
-    { key: 'email', header: 'Email', render: (lead) => lead.email ?? '-' },
-    { key: 'phone', header: 'Phone', render: (lead) => lead.phone ?? '-' },
+    { key: 'email', header: 'Email', editable: true, render: (lead) => lead.email ?? '-' },
+    { key: 'phone', header: 'Phone', editable: true, render: (lead) => lead.phone ?? '-' },
     { key: 'company', header: 'Company', render: (lead) => lead.company?.name ?? '-' },
     {
       key: 'lead_source',
       header: 'Source',
+      editable: true,
+      editType: 'select',
+      editOptions: [
+        { value: 'website', label: 'Website' },
+        { value: 'referral', label: 'Referral' },
+        { value: 'social_media', label: 'Social Media' },
+        { value: 'cold_call', label: 'Cold Call' },
+        { value: 'email_campaign', label: 'Email Campaign' },
+        { value: 'event', label: 'Event' },
+        { value: 'other', label: 'Other' },
+      ],
       render: (lead) => lead.lead_source
         ? <span className="text-xs px-2 py-0.5 rounded-full bg-muted">{LEAD_SOURCE_LABELS[lead.lead_source] ?? lead.lead_source}</span>
         : '-',
@@ -132,6 +149,14 @@ export default function LeadsPage() {
     {
       key: 'lead_status',
       header: 'Lead Status',
+      editable: true,
+      editType: 'select',
+      editOptions: [
+        { value: 'new_lead', label: 'New Lead' },
+        { value: 'attempted_to_contact', label: 'Attempted' },
+        { value: 'contacted', label: 'Contacted' },
+        { value: 'closed', label: 'Closed' },
+      ],
       render: (lead) => {
         const status = lead.lead_status ?? 'new_lead';
         return <StatusBadge status={LEAD_STATUS_LABELS[status] ?? status} />;
@@ -140,6 +165,13 @@ export default function LeadsPage() {
     {
       key: 'qualification',
       header: 'Qualification',
+      editable: true,
+      editType: 'select',
+      editOptions: [
+        { value: 'qualified', label: 'Qualified' },
+        { value: 'unqualified', label: 'Unqualified' },
+        { value: 'pending', label: 'Pending' },
+      ],
       render: (lead) => {
         const q = lead.qualification ?? 'pending';
         const colorMap: Record<string, string> = {
@@ -158,9 +190,10 @@ export default function LeadsPage() {
     {
       key: 'website',
       header: 'Website',
+      editable: true,
       render: (lead) => lead.website
         ? (
-          <a href={lead.website} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline truncate max-w-[150px] block">
+          <a href={lead.website} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
             {lead.website.replace(/^https?:\/\//, '')}
           </a>
         )
@@ -175,7 +208,7 @@ export default function LeadsPage() {
     {
       key: 'actions',
       header: '',
-      className: 'w-[140px]',
+      className: 'w-[100px]',
       render: (lead) => (
         <div className="flex items-center gap-1">
           <Button
@@ -185,9 +218,6 @@ export default function LeadsPage() {
             onClick={(e) => { e.stopPropagation(); handleConvert(lead.id); }}
           >
             <UserCheck className="mr-1 h-3 w-3" /> Convert
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); handleEdit(lead); }}>
-            <Pencil className="h-3 w-3" />
           </Button>
           <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={(e) => { e.stopPropagation(); handleDelete(lead.id); }}>
             <Trash2 className="h-3 w-3" />
@@ -228,7 +258,8 @@ export default function LeadsPage() {
           onRowClick={(lead) => router.push(`/crm/leads/${lead.id}`)}
           emptyMessage="No leads found. Add a new lead to get started."
           loading={loading}
-          stickyFirstColumn
+          stickyColumns={1}
+          onCellEdit={handleCellEdit}
         />
       </div>
       <LeadDialog

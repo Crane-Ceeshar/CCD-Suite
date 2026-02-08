@@ -10,6 +10,7 @@ import {
   Button,
   Badge,
   Switch,
+  CcdLoader,
 } from '@ccd/ui';
 import { ToggleLeft, Plus, Loader2, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
@@ -174,7 +175,7 @@ export default function AdminFeatureFlagsPage() {
       {/* Flags List */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <CcdLoader size="lg" />
         </div>
       ) : flags.length === 0 ? (
         <Card>

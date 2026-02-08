@@ -2,7 +2,7 @@
 
 import * as React from 'react';
 import { Send, Sparkles, Loader2 } from 'lucide-react';
-import { Button, Card } from '@ccd/ui';
+import { Button, Card, CcdLoader } from '@ccd/ui';
 import { ChatMessage } from './chat-message';
 import { ConversationSidebar } from './conversation-sidebar';
 import { useAIStore } from '@/stores/ai-store';
@@ -202,7 +202,7 @@ export function ChatInterface({ moduleContext, entityContext, compact }: ChatInt
             </div>
           ) : isLoading ? (
             <div className="h-full flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              <CcdLoader size="lg" />
             </div>
           ) : (
             <div className="py-4">

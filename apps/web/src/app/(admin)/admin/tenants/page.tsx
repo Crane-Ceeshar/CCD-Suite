@@ -9,6 +9,7 @@ import {
   CardTitle,
   Button,
   Badge,
+  CcdLoader,
 } from '@ccd/ui';
 import { Building2, Plus, Loader2 } from 'lucide-react';
 import { apiGet, apiPost, apiPatch } from '@/lib/api';
@@ -149,7 +150,7 @@ export default function AdminTenantsPage() {
       {/* Tenants Table */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <CcdLoader size="lg" />
         </div>
       ) : tenants.length === 0 ? (
         <Card>

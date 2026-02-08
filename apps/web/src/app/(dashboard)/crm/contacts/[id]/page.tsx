@@ -12,6 +12,7 @@ import {
   UserAvatar,
   DataTable,
   type Column,
+  CcdLoader,
 } from '@ccd/ui';
 import { formatDate, formatCurrency } from '@ccd/shared';
 import {
@@ -22,7 +23,6 @@ import {
   Calendar,
   Pencil,
   ArrowLeft,
-  Loader2,
   Send,
   ExternalLink,
 } from 'lucide-react';
@@ -135,7 +135,7 @@ export default function ContactDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CcdLoader size="lg" />
       </div>
     );
   }

@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, Button, UserAvatar, Badge } from '@ccd/ui';
+import { Card, CardContent, CardHeader, CardTitle, Button, UserAvatar, Badge, CcdLoader } from '@ccd/ui';
 import { Send, Loader2, Lock, Globe, MessageSquare } from 'lucide-react';
 import { apiGet, apiPost } from '@/lib/api';
 
@@ -98,7 +98,7 @@ export function PortalChat({ portalProjectId, className }: PortalChatProps) {
         <div className="max-h-[400px] overflow-y-auto space-y-3 pr-1">
           {loading ? (
             <div className="flex justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+              <CcdLoader size="lg" />
             </div>
           ) : messages.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">

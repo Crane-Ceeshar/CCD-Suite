@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
   toast,
+  CcdLoader,
 } from '@ccd/ui';
 import { Loader2, Save, Link2 } from 'lucide-react';
 import { apiGet, apiPatch } from '@/lib/api';
@@ -70,7 +71,7 @@ export default function AssociationPage() {
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        <CcdLoader size="lg" />
       </div>
     );
   }

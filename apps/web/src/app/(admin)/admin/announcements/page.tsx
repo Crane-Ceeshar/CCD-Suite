@@ -9,6 +9,7 @@ import {
   CardTitle,
   Button,
   Badge,
+  CcdLoader,
 } from '@ccd/ui';
 import { Megaphone, Plus, Loader2, Trash2 } from 'lucide-react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
@@ -190,7 +191,7 @@ export default function AdminAnnouncementsPage() {
       {/* Announcements Table */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <CcdLoader size="lg" />
         </div>
       ) : announcements.length === 0 ? (
         <Card>

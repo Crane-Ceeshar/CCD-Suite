@@ -9,8 +9,9 @@ import {
   CardHeader,
   CardTitle,
   Button,
+  CcdLoader,
 } from '@ccd/ui';
-import { TrendingUp, DollarSign, Clock, Target, Loader2 } from 'lucide-react';
+import { TrendingUp, DollarSign, Clock, Target } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 import {
   ResponsiveContainer,
@@ -73,7 +74,7 @@ export default function DealAnalyticsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <CcdLoader size="lg" />
       </div>
     );
   }

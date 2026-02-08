@@ -9,6 +9,7 @@ import {
   CardTitle,
   Button,
   Badge,
+  CcdLoader,
 } from '@ccd/ui';
 import { UserPlus, Loader2, MoreHorizontal } from 'lucide-react';
 import { apiGet, apiPost, apiPatch } from '@/lib/api';
@@ -147,7 +148,7 @@ export default function AdminUsersPage() {
       {/* Users Table */}
       {loading ? (
         <div className="flex items-center justify-center py-12">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <CcdLoader size="lg" />
         </div>
       ) : (
         <Card>

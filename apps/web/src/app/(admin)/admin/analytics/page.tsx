@@ -9,8 +9,9 @@ import {
   CardHeader,
   CardTitle,
   Button,
+  CcdLoader,
 } from '@ccd/ui';
-import { BarChart3, Users, UserPlus, Activity, Loader2 } from 'lucide-react';
+import { BarChart3, Users, UserPlus, Activity } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 import {
   ResponsiveContainer,
@@ -89,7 +90,7 @@ export default function AdminAnalyticsPage() {
       {/* Stats */}
       {loading && !data ? (
         <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          <CcdLoader size="lg" />
         </div>
       ) : (
         <>
