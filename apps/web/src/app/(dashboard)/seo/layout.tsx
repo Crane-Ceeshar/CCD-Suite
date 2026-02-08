@@ -14,7 +14,7 @@ const navItems = [
 
 export default function SEOLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="seo" navItems={navItems}>
+    <ModuleShell moduleId="seo" navItems={navItems} settingsHref="/seo/settings">
       {children}
     </ModuleShell>
   );

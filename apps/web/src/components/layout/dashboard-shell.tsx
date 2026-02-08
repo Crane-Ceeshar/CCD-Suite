@@ -18,6 +18,7 @@ import {
 import { LogOut, Settings, Bell, HelpCircle, UserPlus, Clock, Zap } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
+import { InviteMembersDialog } from '@/components/team/invite-members-dialog';
 
 interface DashboardShellProps {
   user: {
@@ -41,6 +42,8 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
   const router = useRouter();
   const supabase = createClient();
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [inviteOpen, setInviteOpen] = React.useState(false);
+  const canInvite = ['admin', 'owner'].includes(user.user_type);
 
   // Trial banner calculation
   const trialDaysRemaining = React.useMemo(() => {
@@ -97,14 +100,17 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
 
         {/* Right: Actions */}
         <div className="flex items-center gap-1.5 shrink-0">
-          <Button
-            variant="outline"
-            size="sm"
-            className="hidden md:flex items-center gap-1.5 h-8 rounded-lg text-xs font-medium border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/40 transition-all"
-          >
-            <UserPlus className="h-3.5 w-3.5" />
-            Invite
-          </Button>
+          {canInvite && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setInviteOpen(true)}
+              className="hidden md:flex items-center gap-1.5 h-8 rounded-lg text-xs font-medium border-primary/20 text-primary hover:bg-primary/5 hover:border-primary/40 transition-all"
+            >
+              <UserPlus className="h-3.5 w-3.5" />
+              Invite
+            </Button>
+          )}
 
           <Button
             variant="ghost"
@@ -181,6 +187,15 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
       <main className="flex-1 overflow-auto">
         {children}
       </main>
+
+      {/* Invite members dialog */}
+      {canInvite && (
+        <InviteMembersDialog
+          open={inviteOpen}
+          onOpenChange={setInviteOpen}
+          tenant={tenant}
+        />
+      )}
     </div>
   );
 }

@@ -14,7 +14,7 @@ const navItems = [
 
 export default function HRLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="hr" navItems={navItems}>
+    <ModuleShell moduleId="hr" navItems={navItems} settingsHref="/hr/settings">
       {children}
     </ModuleShell>
   );

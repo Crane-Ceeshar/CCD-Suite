@@ -14,7 +14,7 @@ const navItems = [
 
 export default function ContentLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="content" navItems={navItems}>
+    <ModuleShell moduleId="content" navItems={navItems} settingsHref="/content/settings">
       {children}
     </ModuleShell>
   );

@@ -14,7 +14,7 @@ const navItems = [
 
 export default function FinanceLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="finance" navItems={navItems}>
+    <ModuleShell moduleId="finance" navItems={navItems} settingsHref="/finance/settings">
       {children}
     </ModuleShell>
   );

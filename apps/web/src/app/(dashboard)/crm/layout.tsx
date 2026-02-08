@@ -28,7 +28,7 @@ const navItems = [
 
 export default function CRMLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="crm" navItems={navItems}>
+    <ModuleShell moduleId="crm" navItems={navItems} settingsHref="/crm/settings">
       {children}
       <AskAiButton moduleContext="crm" />
     </ModuleShell>

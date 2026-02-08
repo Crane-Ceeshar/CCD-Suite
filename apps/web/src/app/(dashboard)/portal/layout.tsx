@@ -12,7 +12,7 @@ const navItems = [
 
 export default function PortalLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="client_portal" navItems={navItems}>
+    <ModuleShell moduleId="client_portal" navItems={navItems} settingsHref="/portal/settings">
       {children}
     </ModuleShell>
   );

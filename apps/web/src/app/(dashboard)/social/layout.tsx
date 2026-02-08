@@ -14,7 +14,7 @@ const navItems = [
 
 export default function SocialLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="social" navItems={navItems}>
+    <ModuleShell moduleId="social" navItems={navItems} settingsHref="/social/settings">
       {children}
     </ModuleShell>
   );

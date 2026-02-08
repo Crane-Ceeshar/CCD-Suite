@@ -12,7 +12,7 @@ const navItems = [
 
 export default function AnalyticsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="analytics" navItems={navItems}>
+    <ModuleShell moduleId="analytics" navItems={navItems} settingsHref="/analytics/settings">
       {children}
     </ModuleShell>
   );

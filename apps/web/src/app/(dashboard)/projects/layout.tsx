@@ -14,7 +14,7 @@ const navItems = [
 
 export default function ProjectsLayout({ children }: { children: React.ReactNode }) {
   return (
-    <ModuleShell moduleId="projects" navItems={navItems}>
+    <ModuleShell moduleId="projects" navItems={navItems} settingsHref="/projects/settings">
       {children}
     </ModuleShell>
   );
