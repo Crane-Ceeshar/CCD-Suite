@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Sparkles, X, Send, Loader2, Minimize2 } from 'lucide-react';
-import { Button, Card } from '@ccd/ui';
+import { Sparkles, X, Send, Minimize2 } from 'lucide-react';
+import { Button, Card, CcdSpinner } from '@ccd/ui';
 import { ChatMessage } from './chat-message';
 import { apiPost } from '@/lib/api';
 import type { AiMessage } from '@ccd/shared';
@@ -171,7 +171,7 @@ export function AskAiButton({ moduleContext, entityContext }: AskAiButtonProps) 
             className="h-9 w-9 rounded-lg bg-emerald-600 hover:bg-emerald-700"
           >
             {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <CcdSpinner size="sm" />
             ) : (
               <Send className="h-4 w-4" />
             )}

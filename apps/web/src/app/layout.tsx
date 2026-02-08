@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import '@ccd/ui/globals.css';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -12,6 +12,19 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: 'CCD Suite',
   description: 'Comprehensive business management platform by Crane & Ceeshar Digital',
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'CCD Suite',
+  },
+};
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  themeColor: '#194ca1',
 };
 
 export default function RootLayout({
@@ -22,6 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         {/* Prevent flash of wrong theme by reading localStorage before paint */}
         <script
           dangerouslySetInnerHTML={{

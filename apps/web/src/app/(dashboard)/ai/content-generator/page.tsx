@@ -8,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
   Button,
+  CcdSpinner,
 } from '@ccd/ui';
 import {
   PenTool,
@@ -19,7 +20,6 @@ import {
   Sparkles,
   Copy,
   Check,
-  Loader2,
 } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 
@@ -125,7 +125,7 @@ export default function ContentGeneratorPage() {
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <CcdSpinner size="sm" className="mr-2" />
                     Generating...
                   </>
                 ) : (

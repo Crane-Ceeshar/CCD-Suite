@@ -66,6 +66,18 @@ export {
 } from './toast';
 export { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from './accordion';
 export {
+  Sheet,
+  SheetPortal,
+  SheetOverlay,
+  SheetTrigger,
+  SheetClose,
+  SheetContent,
+  SheetHeader,
+  SheetFooter,
+  SheetTitle,
+  SheetDescription,
+} from './sheet';
+export {
   AlertDialog,
   AlertDialogPortal,
   AlertDialogOverlay,

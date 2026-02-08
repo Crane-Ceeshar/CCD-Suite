@@ -8,6 +8,7 @@ import {
   Button,
   Input,
   Label,
+  CcdSpinner,
 } from '@ccd/ui';
 import { createClient } from '@/lib/supabase/client';
 import { Mail, Lock, ArrowRight, Eye, EyeOff } from 'lucide-react';
@@ -203,7 +204,7 @@ export function LoginForm() {
           >
             {loading ? (
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                <CcdSpinner size="sm" className="text-white" />
                 Signing in...
               </div>
             ) : (
@@ -238,7 +239,7 @@ export function LoginForm() {
           >
             {googleLoading ? (
               <div className="flex items-center gap-2">
-                <div className="h-4 w-4 border-2 border-foreground/20 border-t-foreground/60 rounded-full animate-spin" />
+                <CcdSpinner size="sm" />
                 Connecting to Google...
               </div>
             ) : (

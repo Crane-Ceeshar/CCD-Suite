@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { Loader2 } from 'lucide-react';
+import { CcdSpinner } from './ccd-spinner';
 import { cn } from '../lib/utils';
 
 export interface LoadingSpinnerProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -8,9 +8,9 @@ export interface LoadingSpinnerProps extends React.HTMLAttributes<HTMLDivElement
 }
 
 const sizeMap = {
-  sm: 'h-4 w-4',
-  md: 'h-6 w-6',
-  lg: 'h-8 w-8',
+  sm: 'sm' as const,
+  md: 'md' as const,
+  lg: 'lg' as const,
 };
 
 function LoadingSpinner({
@@ -24,7 +24,7 @@ function LoadingSpinner({
       className={cn('flex items-center justify-center gap-2', className)}
       {...props}
     >
-      <Loader2 className={cn('animate-spin text-muted-foreground', sizeMap[size])} />
+      <CcdSpinner size={sizeMap[size]} className="text-muted-foreground" />
       {label && (
         <span className="text-sm text-muted-foreground">{label}</span>
       )}

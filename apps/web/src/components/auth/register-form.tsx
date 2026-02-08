@@ -8,6 +8,7 @@ import {
   Button,
   Input,
   Label,
+  CcdSpinner,
 } from '@ccd/ui';
 import { createClient } from '@/lib/supabase/client';
 import { OtpInput } from './otp-input';
@@ -21,7 +22,6 @@ import {
   Eye,
   EyeOff,
   Check,
-  Loader2,
   Users,
   BarChart3,
   PenTool,
@@ -605,7 +605,7 @@ export function RegisterForm() {
                   </div>
                   {slugStatus === 'checking' && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1.5 mt-1">
-                      <Loader2 className="h-3 w-3 animate-spin" /> Checking availability...
+                      <CcdSpinner size="xs" /> Checking availability...
                     </p>
                   )}
                   {slugStatus === 'available' && (

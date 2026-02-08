@@ -11,9 +11,10 @@ import {
   Button,
   Input,
   FormField,
+  CcdSpinner,
 } from '@ccd/ui';
 import { toast } from '@ccd/ui';
-import { Send, Loader2, Mail } from 'lucide-react';
+import { Send, Mail } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 
 interface EmailComposeDialogProps {
@@ -141,7 +142,7 @@ export function EmailComposeDialog({
             </Button>
             <Button type="submit" disabled={sending}>
               {sending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <CcdSpinner size="sm" className="mr-2" />
               ) : (
                 <Send className="mr-2 h-4 w-4" />
               )}

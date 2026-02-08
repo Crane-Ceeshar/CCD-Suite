@@ -2,10 +2,12 @@
   "extends": "@ccd/config/typescript/base.json",
   "compilerOptions": {
     "jsx": "preserve",
+    "types": ["@serwist/next/typings"],
     "lib": [
       "dom",
       "dom.iterable",
-      "esnext"
+      "esnext",
+      "webworker"
     ],
     "module": "esnext",
     "moduleResolution": "bundler",
@@ -30,6 +32,7 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "public/sw.js"
   ]
 }

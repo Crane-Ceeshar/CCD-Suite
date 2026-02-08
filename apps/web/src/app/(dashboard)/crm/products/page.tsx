@@ -20,9 +20,10 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  CcdSpinner,
   type Column,
 } from '@ccd/ui';
-import { Plus, Pencil, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 
 interface ProductRow {
@@ -297,7 +298,7 @@ export default function ProductsPage() {
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={saving}>
-                {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {saving && <CcdSpinner size="sm" className="mr-2" />}
                 {editProduct ? 'Save Changes' : 'Create Product'}
               </Button>
             </DialogFooter>

@@ -16,8 +16,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Loader2 } from 'lucide-react';
 import { apiPost, apiGet } from '@/lib/api';
 
 interface ActivityFormData {
@@ -204,7 +204,7 @@ export function ActivityDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saving && <CcdSpinner size="sm" className="mr-2" />}
               Create Activity
             </Button>
           </DialogFooter>

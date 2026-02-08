@@ -1,0 +1,5 @@
+# Serwist service worker (generated at build time)
+public/sw.js
+public/sw.js.map
+public/serwist-worker-*.js
+public/serwist-worker-*.js.map

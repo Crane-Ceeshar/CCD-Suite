@@ -8,8 +8,9 @@ import {
   Button,
   Badge,
   CcdLoader,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Activity, Loader2, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Activity, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { apiGet } from '@/lib/api';
 
 interface ActivityEntry {
@@ -121,7 +122,7 @@ export default function AdminActivityPage() {
             disabled={exporting}
           >
             {exporting ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <CcdSpinner size="sm" className="mr-2" />
             ) : (
               <Download className="mr-2 h-4 w-4" />
             )}

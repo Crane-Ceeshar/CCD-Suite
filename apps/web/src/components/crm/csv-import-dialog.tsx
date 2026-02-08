@@ -9,8 +9,9 @@ import {
   DialogDescription,
   DialogFooter,
   Button,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Upload, FileText, Loader2, CheckCircle2 } from 'lucide-react';
+import { Upload, FileText, CheckCircle2 } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 
 interface CsvImportDialogProps {
@@ -158,7 +159,7 @@ export function CsvImportDialog({ open, onOpenChange, entity, onSuccess }: CsvIm
           </Button>
           {!result && (
             <Button onClick={handleImport} disabled={!file || importing}>
-              {importing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {importing && <CcdSpinner size="sm" className="mr-2" />}
               Import
             </Button>
           )}

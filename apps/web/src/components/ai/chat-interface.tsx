@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Send, Sparkles, Loader2 } from 'lucide-react';
-import { Button, Card, CcdLoader } from '@ccd/ui';
+import { Send, Sparkles } from 'lucide-react';
+import { Button, Card, CcdLoader, CcdSpinner } from '@ccd/ui';
 import { ChatMessage } from './chat-message';
 import { ConversationSidebar } from './conversation-sidebar';
 import { useAIStore } from '@/stores/ai-store';
@@ -241,7 +241,7 @@ export function ChatInterface({ moduleContext, entityContext, compact }: ChatInt
               className="h-11 w-11 rounded-xl bg-emerald-600 hover:bg-emerald-700"
             >
               {isStreaming ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
+                <CcdSpinner size="sm" />
               ) : (
                 <Send className="h-4 w-4" />
               )}

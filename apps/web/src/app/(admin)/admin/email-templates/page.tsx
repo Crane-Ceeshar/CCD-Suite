@@ -7,8 +7,9 @@ import {
   CardContent,
   Button,
   CcdLoader,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Mail, Loader2, Save, Eye, Code } from 'lucide-react';
+import { Mail, Save, Eye, Code } from 'lucide-react';
 import { apiGet, apiPost } from '@/lib/api';
 
 interface EmailTemplate {
@@ -141,7 +142,7 @@ export default function AdminEmailTemplatesPage() {
                       className="bg-red-600 hover:bg-red-700"
                     >
                       {saving ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <CcdSpinner size="sm" />
                       ) : (
                         <><Save className="mr-2 h-4 w-4" />Save</>
                       )}

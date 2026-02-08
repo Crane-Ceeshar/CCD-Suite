@@ -11,8 +11,9 @@ import {
   Badge,
   Switch,
   CcdLoader,
+  CcdSpinner,
 } from '@ccd/ui';
-import { ToggleLeft, Plus, Loader2, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { ToggleLeft, Plus, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 
 interface FlagOverride {
@@ -165,7 +166,7 @@ export default function AdminFeatureFlagsPage() {
                 />
               </div>
               <Button type="submit" disabled={creating} className="bg-red-600 hover:bg-red-700">
-                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create'}
+                {creating ? <CcdSpinner size="sm" /> : 'Create'}
               </Button>
             </form>
           </CardContent>

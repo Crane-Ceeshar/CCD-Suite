@@ -10,8 +10,9 @@ import {
   Button,
   Badge,
   CcdLoader,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Megaphone, Plus, Loader2, Trash2 } from 'lucide-react';
+import { Megaphone, Plus, Trash2 } from 'lucide-react';
 import { apiGet, apiPost, apiPatch, apiDelete } from '@/lib/api';
 
 interface Announcement {
@@ -181,7 +182,7 @@ export default function AdminAnnouncementsPage() {
                 </div>
               </div>
               <Button type="submit" disabled={creating} className="bg-red-600 hover:bg-red-700">
-                {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Announcement'}
+                {creating ? <CcdSpinner size="sm" /> : 'Create Announcement'}
               </Button>
             </form>
           </CardContent>

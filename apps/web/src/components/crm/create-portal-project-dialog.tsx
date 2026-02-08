@@ -11,9 +11,10 @@ import {
   Button,
   Input,
   FormField,
+  CcdSpinner,
 } from '@ccd/ui';
 import { toast } from '@ccd/ui';
-import { Loader2, FolderPlus } from 'lucide-react';
+import { FolderPlus } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 
 interface CreatePortalProjectDialogProps {
@@ -136,7 +137,7 @@ export function CreatePortalProjectDialog({
               Cancel
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saving && <CcdSpinner size="sm" className="mr-2" />}
               Create Project
             </Button>
           </DialogFooter>

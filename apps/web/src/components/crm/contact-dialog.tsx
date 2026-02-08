@@ -16,8 +16,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Loader2 } from 'lucide-react';
 import { apiPost, apiPatch, apiGet } from '@/lib/api';
 
 interface ContactFormData {
@@ -203,7 +203,7 @@ export function ContactDialog({ open, onOpenChange, contact, onSuccess }: Contac
               Cancel
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saving && <CcdSpinner size="sm" className="mr-2" />}
               {isEdit ? 'Save Changes' : 'Create Contact'}
             </Button>
           </DialogFooter>

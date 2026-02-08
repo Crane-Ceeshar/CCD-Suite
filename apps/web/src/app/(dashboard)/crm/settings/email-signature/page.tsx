@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Button, Input, Label, Switch, Textarea, toast, CcdLoader } from '@ccd/ui';
-import { Loader2, Save, FileSignature } from 'lucide-react';
+import { Button, Input, Label, Switch, Textarea, toast, CcdLoader, CcdSpinner } from '@ccd/ui';
+import { Save, FileSignature } from 'lucide-react';
 import { apiGet, apiPatch } from '@/lib/api';
 
 interface SignatureSettings {
@@ -133,7 +133,7 @@ export default function EmailSignaturePage() {
         <div className="mt-8 flex justify-end">
           <Button onClick={handleSave} disabled={saving}>
             {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <CcdSpinner size="sm" className="mr-2" />
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}

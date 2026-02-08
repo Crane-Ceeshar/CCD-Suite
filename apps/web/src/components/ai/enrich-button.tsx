@@ -11,8 +11,9 @@ import {
   Button,
   ScrollArea,
   toast,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Sparkles, Loader2 } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 
 interface EnrichButtonProps {
@@ -117,7 +118,7 @@ export function EnrichButton({ entityType, entityId, entityData, onEnrichApplied
             <div className="pr-4">
               {loading && (
                 <div className="flex flex-col items-center justify-center py-12">
-                  <Loader2 className="h-8 w-8 animate-spin text-emerald-600 mb-3" />
+                  <CcdSpinner size="lg" className="text-emerald-600 mb-3" />
                   <p className="text-sm text-muted-foreground">
                     Analyzing {entityType}...
                   </p>

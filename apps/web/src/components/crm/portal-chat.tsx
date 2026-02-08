@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, Button, UserAvatar, Badge, CcdLoader } from '@ccd/ui';
-import { Send, Loader2, Lock, Globe, MessageSquare } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, Button, UserAvatar, Badge, CcdLoader, CcdSpinner } from '@ccd/ui';
+import { Send, Lock, Globe, MessageSquare } from 'lucide-react';
 import { apiGet, apiPost } from '@/lib/api';
 
 interface ChatMessage {
@@ -176,7 +176,7 @@ export function PortalChat({ portalProjectId, className }: PortalChatProps) {
           </div>
           <Button type="submit" size="icon" disabled={!newMessage.trim() || sending}>
             {sending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <CcdSpinner size="sm" />
             ) : (
               <Send className="h-4 w-4" />
             )}

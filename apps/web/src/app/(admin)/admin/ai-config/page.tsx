@@ -9,8 +9,9 @@ import {
   CardTitle,
   Button,
   CcdLoader,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Save, Loader2, BrainCircuit } from 'lucide-react';
+import { Save, BrainCircuit } from 'lucide-react';
 import { apiGet, apiPatch } from '@/lib/api';
 
 interface AiSettings {
@@ -97,7 +98,7 @@ export default function AdminAiConfigPage() {
         description="Manage AI model preferences, token budgets, and enabled features"
         actions={
           <Button onClick={handleSave} disabled={saving} className="bg-red-600 hover:bg-red-700">
-            {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+            {saving ? <CcdSpinner size="sm" className="mr-2" /> : <Save className="mr-2 h-4 w-4" />}
             Save Changes
           </Button>
         }

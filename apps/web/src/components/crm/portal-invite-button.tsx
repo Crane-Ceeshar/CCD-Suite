@@ -1,9 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { Button } from '@ccd/ui';
+import { Button, CcdSpinner } from '@ccd/ui';
 import { toast } from '@ccd/ui';
-import { ExternalLink, Send, Loader2 } from 'lucide-react';
+import { ExternalLink, Send } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 import { useRouter } from 'next/navigation';
 
@@ -91,7 +91,7 @@ export function PortalInviteButton({
       disabled={inviting || !contactEmail}
     >
       {inviting ? (
-        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        <CcdSpinner size="sm" className="mr-2" />
       ) : (
         <Send className="mr-2 h-4 w-4" />
       )}

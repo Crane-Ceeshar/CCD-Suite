@@ -12,8 +12,9 @@ import {
   SelectValue,
   toast,
   CcdLoader,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Loader2, Save, Mail } from 'lucide-react';
+import { Save, Mail } from 'lucide-react';
 import { apiGet, apiPatch } from '@/lib/api';
 
 interface EmailLoggingSettings {
@@ -173,7 +174,7 @@ export default function EmailLoggingPage() {
         <div className="mt-8 flex justify-end">
           <Button onClick={handleSave} disabled={saving}>
             {saving ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              <CcdSpinner size="sm" className="mr-2" />
             ) : (
               <Save className="mr-2 h-4 w-4" />
             )}

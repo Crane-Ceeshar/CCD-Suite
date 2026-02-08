@@ -16,8 +16,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Loader2 } from 'lucide-react';
 import { apiPost, apiPatch } from '@/lib/api';
 
 interface CompanyFormData {
@@ -208,7 +208,7 @@ export function CompanyDialog({ open, onOpenChange, company, onSuccess }: Compan
               Cancel
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saving && <CcdSpinner size="sm" className="mr-2" />}
               {isEdit ? 'Save Changes' : 'Create Company'}
             </Button>
           </DialogFooter>

@@ -15,8 +15,9 @@ import {
   SelectTrigger,
   SelectValue,
   toast,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Copy, Check, Mail, UserPlus, Loader2, AlertCircle } from 'lucide-react';
+import { Copy, Check, Mail, UserPlus, AlertCircle } from 'lucide-react';
 import { apiGet, apiPost } from '@/lib/api';
 
 interface Role {
@@ -268,7 +269,7 @@ export function InviteMembersDialog({
               <div className="flex justify-end">
                 <Button onClick={handleInvite} disabled={sending || !email.trim()}>
                   {sending ? (
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <CcdSpinner size="sm" className="mr-2" />
                   ) : (
                     <UserPlus className="mr-2 h-4 w-4" />
                   )}

@@ -10,8 +10,9 @@ import {
   Button,
   Badge,
   CcdLoader,
+  CcdSpinner,
 } from '@ccd/ui';
-import { UserPlus, Loader2, MoreHorizontal } from 'lucide-react';
+import { UserPlus, MoreHorizontal } from 'lucide-react';
 import { apiGet, apiPost, apiPatch } from '@/lib/api';
 
 interface UserProfile {
@@ -138,7 +139,7 @@ export default function AdminUsersPage() {
                 </select>
               </div>
               <Button type="submit" disabled={inviting} className="bg-red-600 hover:bg-red-700">
-                {inviting ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send Invite'}
+                {inviting ? <CcdSpinner size="sm" /> : 'Send Invite'}
               </Button>
             </form>
           </CardContent>

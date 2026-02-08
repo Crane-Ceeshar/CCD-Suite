@@ -11,8 +11,9 @@ import {
   Label,
   Checkbox,
   toast,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Shield, Loader2 } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { MODULES } from '@ccd/shared';
 import type { ModuleId } from '@ccd/shared';
 import { apiPost, apiPatch } from '@/lib/api';
@@ -172,7 +173,7 @@ export function RoleDialog({ open, onOpenChange, role, onSuccess }: RoleDialogPr
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saving && <CcdSpinner size="sm" className="mr-2" />}
               {isEdit ? 'Save Changes' : 'Create Role'}
             </Button>
           </div>

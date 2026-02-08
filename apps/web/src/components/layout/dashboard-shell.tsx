@@ -15,10 +15,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@ccd/ui';
-import { LogOut, Settings, Bell, HelpCircle, UserPlus, Clock, Zap } from 'lucide-react';
+import { LogOut, Settings, Bell, HelpCircle, UserPlus, Clock, Zap, Menu, Search, X } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { InviteMembersDialog } from '@/components/team/invite-members-dialog';
+import { useUIStore } from '@/stores/ui-store';
 
 interface DashboardShellProps {
   user: {
@@ -42,8 +43,10 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
   const router = useRouter();
   const supabase = createClient();
   const [searchQuery, setSearchQuery] = React.useState('');
+  const [searchExpanded, setSearchExpanded] = React.useState(false);
   const [inviteOpen, setInviteOpen] = React.useState(false);
   const canInvite = ['admin', 'owner'].includes(user.user_type);
+  const { toggleMobileMenu } = useUIStore();
 
   // Trial banner calculation
   const trialDaysRemaining = React.useMemo(() => {
@@ -66,7 +69,17 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* Top header bar */}
-      <header className="sticky top-0 z-50 flex h-16 items-center gap-4 border-b bg-gradient-to-r from-card/90 via-card/80 to-card/90 backdrop-blur-xl px-4 md:px-6 shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]">
+      <header className="sticky top-0 z-50 flex h-16 items-center gap-2 md:gap-4 border-b bg-gradient-to-r from-card/90 via-card/80 to-card/90 backdrop-blur-xl px-3 md:px-6 shadow-[0_1px_3px_0_rgb(0_0_0/0.04)]">
+        {/* Mobile: hamburger menu */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden h-10 w-10 shrink-0 text-muted-foreground hover:text-foreground"
+          onClick={toggleMobileMenu}
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
         {/* Left: Logo */}
         <Link href="/dashboard" className="flex items-center shrink-0">
           <Image
@@ -87,8 +100,8 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
           />
         </Link>
 
-        {/* Center: Search */}
-        <div className="flex-1 flex justify-center px-4 max-w-xl mx-auto">
+        {/* Center: Search — desktop full bar */}
+        <div className="hidden md:flex flex-1 justify-center px-4 max-w-xl mx-auto">
           <SearchInput
             placeholder="Search modules, contacts, deals..."
             value={searchQuery}
@@ -98,8 +111,21 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
           />
         </div>
 
+        {/* Mobile: spacer to push actions right */}
+        <div className="flex-1 md:hidden" />
+
         {/* Right: Actions */}
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
+          {/* Mobile: search icon */}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden h-10 w-10 rounded-full text-muted-foreground hover:text-foreground"
+            onClick={() => setSearchExpanded(true)}
+          >
+            <Search className="h-4 w-4" />
+          </Button>
+
           {canInvite && (
             <Button
               variant="outline"
@@ -115,7 +141,7 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-full text-muted-foreground hover:text-foreground"
+            className="hidden md:inline-flex h-9 w-9 rounded-full text-muted-foreground hover:text-foreground"
             title="Help & Support"
           >
             <HelpCircle className="h-4 w-4" />
@@ -123,7 +149,7 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
 
           <ThemeToggle />
 
-          <Button variant="ghost" size="icon" className="h-9 w-9 rounded-full relative text-muted-foreground hover:text-foreground">
+          <Button variant="ghost" size="icon" className="h-10 w-10 md:h-9 md:w-9 rounded-full relative text-muted-foreground hover:text-foreground">
             <Bell className="h-4 w-4" />
             <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-primary animate-pulse" />
           </Button>
@@ -132,7 +158,7 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-9 w-9 rounded-full p-0 hover:ring-2 hover:ring-primary/20 transition-all">
+              <Button variant="ghost" className="relative h-10 w-10 md:h-9 md:w-9 rounded-full p-0 hover:ring-2 hover:ring-primary/20 transition-all">
                 <UserAvatar
                   name={user.full_name || user.email}
                   imageUrl={user.avatar_url}
@@ -161,6 +187,31 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
+
+        {/* Mobile: expanded search overlay */}
+        {searchExpanded && (
+          <div className="absolute inset-x-0 top-0 h-16 bg-card z-50 flex items-center px-3 gap-2 md:hidden">
+            <SearchInput
+              placeholder="Search..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onClear={() => setSearchQuery('')}
+              className="flex-1 bg-muted/50 border-transparent focus-within:border-border focus-within:bg-background"
+              autoFocus
+            />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 shrink-0"
+              onClick={() => {
+                setSearchExpanded(false);
+                setSearchQuery('');
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
       </header>
 
       {/* Trial banner */}

@@ -10,6 +10,7 @@ import {
   Button,
   Badge,
   CcdLoader,
+  CcdSpinner,
 } from '@ccd/ui';
 import {
   Lightbulb,
@@ -19,7 +20,6 @@ import {
   Search,
   Wallet,
   Share2,
-  Loader2,
   RefreshCw,
 } from 'lucide-react';
 import { apiGet, apiPost } from '@/lib/api';
@@ -103,7 +103,7 @@ export default function InsightsPage() {
           >
             {isGenerating ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <CcdSpinner size="sm" className="mr-2" />
                 Generating...
               </>
             ) : (

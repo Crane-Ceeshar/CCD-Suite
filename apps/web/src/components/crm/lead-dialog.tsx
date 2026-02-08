@@ -16,8 +16,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Loader2 } from 'lucide-react';
 import { apiPost, apiPatch, apiGet } from '@/lib/api';
 
 interface LeadFormData {
@@ -276,7 +276,7 @@ export function LeadDialog({ open, onOpenChange, lead, onSuccess }: LeadDialogPr
               Cancel
             </Button>
             <Button type="submit" disabled={saving}>
-              {saving && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {saving && <CcdSpinner size="sm" className="mr-2" />}
               {isEdit ? 'Save Changes' : 'Create Lead'}
             </Button>
           </DialogFooter>

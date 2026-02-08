@@ -13,8 +13,9 @@ import {
   Badge,
   toast,
   CcdLoader,
+  CcdSpinner,
 } from '@ccd/ui';
-import { Building2, Globe, Copy, Check, Loader2, Save } from 'lucide-react';
+import { Building2, Globe, Copy, Check, Save } from 'lucide-react';
 import { apiGet, apiPatch } from '@/lib/api';
 
 interface OrgData {
@@ -214,7 +215,7 @@ export default function OrganizationSettingsPage() {
             </div>
             <Button onClick={handleSave} disabled={saving || !hasChanges}>
               {saving ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <CcdSpinner size="sm" className="mr-2" />
               ) : (
                 <Save className="mr-2 h-4 w-4" />
               )}

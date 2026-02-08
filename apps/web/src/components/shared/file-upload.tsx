@@ -1,9 +1,9 @@
 'use client';
 
 import * as React from 'react';
-import { Upload, X, FileIcon, Loader2 } from 'lucide-react';
+import { Upload, X, FileIcon } from 'lucide-react';
 import { cn } from '@ccd/ui/lib/utils';
-import { Button } from '@ccd/ui';
+import { Button, CcdSpinner } from '@ccd/ui';
 
 export interface FileUploadProps {
   bucket: string;
@@ -114,7 +114,7 @@ export function FileUpload({
 
       {uploading ? (
         <div className="flex flex-col items-center gap-2">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <CcdSpinner size="lg" className="text-primary" />
           <p className="text-sm text-muted-foreground">Uploading {fileName}...</p>
         </div>
       ) : (
