@@ -2,7 +2,7 @@
 
 import { ModuleShell } from '@/components/layout/module-shell';
 import { SocialSettingsDialog } from '@/components/social/social-settings-dialog';
-import { LayoutDashboard, Edit, FileText, Megaphone, Globe, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, Edit, FileText, Megaphone, Globe, MessageCircle, BarChart3 } from 'lucide-react';
 
 const navItems = [
   { label: 'Dashboard', href: '/social', icon: <LayoutDashboard /> },
@@ -11,6 +11,7 @@ const navItems = [
   { label: 'Campaigns', href: '/social/campaigns', icon: <Megaphone /> },
   { label: 'Accounts', href: '/social/accounts', icon: <Globe /> },
   { label: 'Engagement', href: '/social/engagement', icon: <MessageCircle /> },
+  { label: 'Analytics', href: '/social/analytics', icon: <BarChart3 /> },
 ];
 
 export default function SocialLayout({ children }: { children: React.ReactNode }) {

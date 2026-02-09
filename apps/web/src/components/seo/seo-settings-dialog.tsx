@@ -17,7 +17,7 @@ import {
   CcdSpinner,
   CcdLoader,
 } from '@ccd/ui';
-import { Save, Search, Globe, ClipboardCheck } from 'lucide-react';
+import { Save, Search, Globe, ClipboardCheck, Bell } from 'lucide-react';
 import { useModuleSettings } from '@/hooks/use-module-settings';
 
 interface SeoSettingsDialogProps {
@@ -338,6 +338,142 @@ function AuditsTabContent() {
   );
 }
 
+// --- Notifications Tab ---
+
+interface NotificationsSettings {
+  rankChangeAlerts: boolean;
+  rankChangeThreshold: string;
+  weeklyDigest: boolean;
+  competitorAlerts: boolean;
+  alertRecipients: string;
+  backlinkAlerts: boolean;
+}
+
+const notificationsDefaults: NotificationsSettings = {
+  rankChangeAlerts: true,
+  rankChangeThreshold: '5',
+  weeklyDigest: true,
+  competitorAlerts: false,
+  alertRecipients: '',
+  backlinkAlerts: true,
+};
+
+function NotificationsTabContent() {
+  const { settings, updateField, loading, saving, save } =
+    useModuleSettings<NotificationsSettings>({
+      module: 'seo',
+      key: 'notifications.preferences',
+      defaults: notificationsDefaults,
+    });
+
+  if (loading)
+    return (
+      <div className="flex h-32 items-center justify-center">
+        <CcdLoader size="md" />
+      </div>
+    );
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <Label className="text-sm font-medium">Rank Change Alerts</Label>
+          <p className="text-xs text-muted-foreground">
+            Get notified when keyword rankings change significantly.
+          </p>
+        </div>
+        <Switch
+          checked={settings.rankChangeAlerts}
+          onCheckedChange={(v) => updateField('rankChangeAlerts', v)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Rank Change Threshold</Label>
+        <p className="text-xs text-muted-foreground">
+          Minimum position change to trigger an alert.
+        </p>
+        <Select
+          value={settings.rankChangeThreshold}
+          onValueChange={(v) => updateField('rankChangeThreshold', v)}
+        >
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Select..." />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="3">3+ positions</SelectItem>
+            <SelectItem value="5">5+ positions</SelectItem>
+            <SelectItem value="10">10+ positions</SelectItem>
+            <SelectItem value="20">20+ positions</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <Label className="text-sm font-medium">Weekly Digest</Label>
+          <p className="text-xs text-muted-foreground">
+            Receive a weekly summary of SEO performance and changes.
+          </p>
+        </div>
+        <Switch
+          checked={settings.weeklyDigest}
+          onCheckedChange={(v) => updateField('weeklyDigest', v)}
+        />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <Label className="text-sm font-medium">Competitor Alerts</Label>
+          <p className="text-xs text-muted-foreground">
+            Get notified when competitors gain or lose significant rankings.
+          </p>
+        </div>
+        <Switch
+          checked={settings.competitorAlerts}
+          onCheckedChange={(v) => updateField('competitorAlerts', v)}
+        />
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="space-y-0.5">
+          <Label className="text-sm font-medium">Backlink Alerts</Label>
+          <p className="text-xs text-muted-foreground">
+            Get notified when new backlinks are discovered or lost.
+          </p>
+        </div>
+        <Switch
+          checked={settings.backlinkAlerts}
+          onCheckedChange={(v) => updateField('backlinkAlerts', v)}
+        />
+      </div>
+
+      <div className="space-y-2">
+        <Label className="text-sm font-medium">Alert Recipients</Label>
+        <p className="text-xs text-muted-foreground">
+          Additional email addresses to receive alerts (comma-separated).
+        </p>
+        <Input
+          value={settings.alertRecipients}
+          onChange={(e) => updateField('alertRecipients', e.target.value)}
+          placeholder="team@example.com, seo-lead@example.com"
+        />
+      </div>
+
+      <div className="mt-6 flex justify-end">
+        <Button onClick={save} disabled={saving}>
+          {saving ? (
+            <CcdSpinner size="sm" className="mr-2" />
+          ) : (
+            <Save className="mr-2 h-4 w-4" />
+          )}
+          Save Changes
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 // --- Main Dialog ---
 
 export function SeoSettingsDialog({
@@ -364,6 +500,12 @@ export function SeoSettingsDialog({
       label: 'Audits',
       icon: <ClipboardCheck />,
       content: <AuditsTabContent />,
+    },
+    {
+      value: 'notifications',
+      label: 'Notifications',
+      icon: <Bell />,
+      content: <NotificationsTabContent />,
     },
   ];
 

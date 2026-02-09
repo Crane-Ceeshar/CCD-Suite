@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { PageHeader, Card, CardContent, Badge, Button } from '@ccd/ui';
+import { useEffect, useState, useCallback } from 'react';
+import { PageHeader, Card, CardContent, Badge, Button, CcdLoader } from '@ccd/ui';
 import { Plus, Globe } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { apiGet } from '@/lib/api';
+import { ProjectDialog } from '@/components/seo/project-dialog';
+import type { SeoProject } from '@ccd/shared/types/seo';
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
   active: { label: 'Active', variant: 'default' },
@@ -11,7 +15,47 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
 };
 
 export default function SEOProjectsPage() {
-  const [projects] = useState<any[]>([]);
+  const router = useRouter();
+  const [projects, setProjects] = useState<SeoProject[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editProject, setEditProject] = useState<SeoProject | null>(null);
+
+  const fetchProjects = useCallback(() => {
+    setLoading(true);
+    apiGet<SeoProject[]>('/api/seo/projects')
+      .then((res) => setProjects(res.data))
+      .catch(() => setProjects([]))
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    fetchProjects();
+  }, [fetchProjects]);
+
+  function handleCreate() {
+    setEditProject(null);
+    setDialogOpen(true);
+  }
+
+  function handleEdit(project: SeoProject) {
+    setEditProject(project);
+    setDialogOpen(true);
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="SEO Projects"
+          description="Manage your SEO projects and tracked domains"
+        />
+        <div className="flex items-center justify-center py-24">
+          <CcdLoader size="lg" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -19,7 +63,7 @@ export default function SEOProjectsPage() {
         title="SEO Projects"
         description="Manage your SEO projects and tracked domains"
       >
-        <Button>
+        <Button onClick={handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
           New Project
         </Button>
@@ -33,7 +77,7 @@ export default function SEOProjectsPage() {
             <p className="text-sm text-muted-foreground mb-4">
               Create a project to start tracking a domain
             </p>
-            <Button>
+            <Button onClick={handleCreate}>
               <Plus className="mr-2 h-4 w-4" />
               Create Project
             </Button>
@@ -44,14 +88,20 @@ export default function SEOProjectsPage() {
           {projects.map((project) => {
             const config = statusConfig[project.status];
             return (
-              <Card key={project.id} className="cursor-pointer transition-shadow hover:shadow-md">
+              <Card
+                key={project.id}
+                className="cursor-pointer transition-shadow hover:shadow-md"
+                onClick={() => router.push(`/seo/projects/${project.id}`)}
+              >
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <h3 className="font-medium">{project.name}</h3>
                       <p className="text-sm text-muted-foreground">{project.domain}</p>
                     </div>
-                    <Badge variant={config?.variant}>{config?.label}</Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={config?.variant}>{config?.label}</Badge>
+                    </div>
                   </div>
                   {project.description && (
                     <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
@@ -62,6 +112,13 @@ export default function SEOProjectsPage() {
           })}
         </div>
       )}
+
+      <ProjectDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        project={editProject}
+        onSuccess={fetchProjects}
+      />
     </div>
   );
 }

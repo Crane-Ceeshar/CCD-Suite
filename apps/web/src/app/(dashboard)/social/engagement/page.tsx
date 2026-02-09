@@ -1,8 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { PageHeader, Card, CardContent, CardHeader, CardTitle, Badge, Button } from '@ccd/ui';
-import { MessageCircle, ThumbsUp, Share, Eye } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { PageHeader, Card, CardContent, CardHeader, CardTitle, Badge, Button, CcdLoader, CcdSpinner, toast } from '@ccd/ui';
+import { MessageCircle, ThumbsUp, Share, Eye, Sparkles } from 'lucide-react';
+import { apiGet, apiPost } from '@/lib/api';
+import { CommentReplyDialog } from '@/components/social/comment-reply-dialog';
+import { EngagementChart } from '@/components/social/engagement-chart';
+import type { SocialEngagement, SocialComment } from '@ccd/shared/types/social';
 
 const sentimentConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
   positive: { label: 'Positive', variant: 'default' },
@@ -10,8 +14,128 @@ const sentimentConfig: Record<string, { label: string; variant: 'default' | 'sec
   negative: { label: 'Negative', variant: 'destructive' },
 };
 
+interface EngagementTotals {
+  likes: number;
+  comments: number;
+  shares: number;
+  impressions: number;
+}
+
 export default function EngagementPage() {
-  const [comments] = useState<any[]>([]);
+  const [engagementData, setEngagementData] = useState<SocialEngagement[]>([]);
+  const [comments, setComments] = useState<SocialComment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [replyDialogOpen, setReplyDialogOpen] = useState(false);
+  const [replyComment, setReplyComment] = useState<SocialComment | null>(null);
+  const [replyInitialContent, setReplyInitialContent] = useState<string | undefined>(undefined);
+  const [suggestingReplyId, setSuggestingReplyId] = useState<string | null>(null);
+
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [engRes, comRes] = await Promise.all([
+        apiGet<SocialEngagement[]>('/api/social/engagement'),
+        apiGet<SocialComment[]>('/api/social/comments'),
+      ]);
+      setEngagementData(engRes.data);
+      setComments(comRes.data);
+    } catch {
+      // keep empty
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Compute totals
+  const totals: EngagementTotals = engagementData.reduce(
+    (acc, row) => ({
+      likes: acc.likes + (row.likes ?? 0),
+      comments: acc.comments + (row.comments ?? 0),
+      shares: acc.shares + (row.shares ?? 0),
+      impressions: acc.impressions + (row.impressions ?? 0),
+    }),
+    { likes: 0, comments: 0, shares: 0, impressions: 0 }
+  );
+
+  // Aggregate by platform for chart
+  const chartData = Object.values(
+    engagementData.reduce<Record<string, { platform: string; likes: number; comments: number; shares: number }>>(
+      (acc, row) => {
+        const key = row.platform;
+        if (!acc[key]) {
+          acc[key] = { platform: key, likes: 0, comments: 0, shares: 0 };
+        }
+        acc[key].likes += row.likes ?? 0;
+        acc[key].comments += row.comments ?? 0;
+        acc[key].shares += row.shares ?? 0;
+        return acc;
+      },
+      {}
+    )
+  );
+
+  function openReply(comment: SocialComment, prefilledContent?: string) {
+    setReplyComment(comment);
+    setReplyInitialContent(prefilledContent);
+    setReplyDialogOpen(true);
+  }
+
+  async function handleSuggestReply(comment: SocialComment) {
+    setSuggestingReplyId(comment.id);
+    try {
+      const prompt = `Suggest a professional and friendly reply to this social media comment from ${comment.author_name || 'a user'} on ${comment.platform}: '${comment.content}'. Keep the reply concise and appropriate.`;
+      const res = await apiPost<{ message: { content: string } }>('/api/ai/chat', {
+        content: prompt,
+        module_context: 'social',
+        entity_context: {
+          entity_type: 'comment',
+          entity_data: {
+            author: comment.author_name,
+            content: comment.content,
+            platform: comment.platform,
+            sentiment: comment.sentiment,
+          },
+        },
+      });
+      const suggestedReply = res.data?.message?.content;
+      if (suggestedReply) {
+        // Log AI-assisted engagement activity
+        apiPost('/api/ai/module-context', {
+          module: 'social',
+          context_type: 'engagement_replied',
+          context_data: {
+            platform: comment.platform,
+            ai_assisted: true,
+          },
+        }).catch(() => {});
+        openReply(comment, suggestedReply);
+      } else {
+        toast({ title: 'No suggestion', description: 'AI could not generate a reply suggestion', variant: 'destructive' });
+      }
+    } catch {
+      toast({ title: 'AI unavailable', description: 'AI service is not available. Please ensure the AI gateway is running.', variant: 'destructive' });
+    } finally {
+      setSuggestingReplyId(null);
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Engagement Hub"
+          description="Monitor engagement and respond to comments"
+        />
+        <div className="flex items-center justify-center py-24">
+          <CcdLoader size="lg" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -27,7 +151,7 @@ export default function EngagementPage() {
             <div className="flex items-center gap-3">
               <ThumbsUp className="h-8 w-8 text-amber-500" />
               <div>
-                <p className="text-2xl font-bold">0</p>
+                <p className="text-2xl font-bold">{totals.likes.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Total Likes</p>
               </div>
             </div>
@@ -38,7 +162,7 @@ export default function EngagementPage() {
             <div className="flex items-center gap-3">
               <MessageCircle className="h-8 w-8 text-amber-500" />
               <div>
-                <p className="text-2xl font-bold">0</p>
+                <p className="text-2xl font-bold">{totals.comments.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Comments</p>
               </div>
             </div>
@@ -49,7 +173,7 @@ export default function EngagementPage() {
             <div className="flex items-center gap-3">
               <Share className="h-8 w-8 text-amber-500" />
               <div>
-                <p className="text-2xl font-bold">0</p>
+                <p className="text-2xl font-bold">{totals.shares.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Shares</p>
               </div>
             </div>
@@ -60,13 +184,25 @@ export default function EngagementPage() {
             <div className="flex items-center gap-3">
               <Eye className="h-8 w-8 text-amber-500" />
               <div>
-                <p className="text-2xl font-bold">0</p>
+                <p className="text-2xl font-bold">{totals.impressions.toLocaleString()}</p>
                 <p className="text-xs text-muted-foreground">Impressions</p>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Engagement Chart */}
+      {chartData.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Engagement by Platform</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <EngagementChart data={chartData} />
+          </CardContent>
+        </Card>
+      )}
 
       {/* Comment stream */}
       <Card>
@@ -88,19 +224,47 @@ export default function EngagementPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="font-medium text-sm">{comment.author_name || 'Unknown'}</span>
-                      <span className="text-xs text-muted-foreground capitalize">{comment.platform}</span>
-                      {comment.sentiment && (
-                        <Badge variant={sentimentConfig[comment.sentiment]?.variant} className="text-xs">
-                          {sentimentConfig[comment.sentiment]?.label}
+                      <span className="font-medium text-sm">
+                        {comment.author_name || 'Unknown'}
+                      </span>
+                      <span className="text-xs text-muted-foreground capitalize">
+                        {comment.platform}
+                      </span>
+                      {comment.sentiment && sentimentConfig[comment.sentiment] && (
+                        <Badge
+                          variant={sentimentConfig[comment.sentiment].variant}
+                          className="text-xs"
+                        >
+                          {sentimentConfig[comment.sentiment].label}
                         </Badge>
                       )}
                     </div>
                     <p className="text-sm">{comment.content}</p>
                     {!comment.replied && (
-                      <Button variant="ghost" size="sm" className="mt-2 h-7 text-xs">
-                        Reply
-                      </Button>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs"
+                          onClick={() => openReply(comment)}
+                        >
+                          Reply
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-emerald-600 hover:text-emerald-700"
+                          onClick={() => handleSuggestReply(comment)}
+                          disabled={suggestingReplyId === comment.id}
+                        >
+                          {suggestingReplyId === comment.id ? (
+                            <CcdSpinner size="sm" className="mr-1" />
+                          ) : (
+                            <Sparkles className="mr-1 h-3.5 w-3.5" />
+                          )}
+                          Suggest Reply
+                        </Button>
+                      </div>
                     )}
                     {comment.replied && comment.reply_content && (
                       <div className="mt-2 p-2 bg-muted rounded text-xs">
@@ -115,6 +279,20 @@ export default function EngagementPage() {
           )}
         </CardContent>
       </Card>
+
+      <CommentReplyDialog
+        open={replyDialogOpen}
+        onOpenChange={(v) => {
+          setReplyDialogOpen(v);
+          if (!v) {
+            setReplyComment(null);
+            setReplyInitialContent(undefined);
+          }
+        }}
+        comment={replyComment}
+        onSuccess={fetchData}
+        initialReply={replyInitialContent}
+      />
     </div>
   );
 }

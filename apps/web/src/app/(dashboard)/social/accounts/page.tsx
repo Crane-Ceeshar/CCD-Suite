@@ -1,8 +1,11 @@
 'use client';
 
-import { useState } from 'react';
-import { PageHeader, Card, CardContent, Badge, Button } from '@ccd/ui';
+import { useState, useEffect, useCallback } from 'react';
+import { PageHeader, Card, CardContent, Badge, Button, CcdLoader } from '@ccd/ui';
 import { Plus, Unplug } from 'lucide-react';
+import { apiGet, apiPatch, apiDelete } from '@/lib/api';
+import { AccountDialog } from '@/components/social/account-dialog';
+import type { SocialAccount } from '@ccd/shared/types/social';
 
 const platformConfig: Record<string, { label: string; color: string }> = {
   facebook: { label: 'Facebook', color: '#1877F2' },
@@ -20,7 +23,58 @@ const statusConfig: Record<string, { label: string; variant: 'default' | 'second
 };
 
 export default function SocialAccountsPage() {
-  const [accounts] = useState<any[]>([]);
+  const [accounts, setAccounts] = useState<SocialAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+
+  const fetchAccounts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await apiGet<SocialAccount[]>('/api/social/accounts');
+      setAccounts(res.data);
+    } catch {
+      // keep empty
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, [fetchAccounts]);
+
+  async function handleDisconnect(id: string) {
+    if (!confirm('Are you sure you want to disconnect this account?')) return;
+    try {
+      await apiDelete(`/api/social/accounts/${id}`);
+      fetchAccounts();
+    } catch {
+      alert('Failed to disconnect account');
+    }
+  }
+
+  async function handleReconnect(id: string) {
+    try {
+      await apiPatch(`/api/social/accounts/${id}`, { status: 'active' });
+      fetchAccounts();
+    } catch {
+      alert('Failed to reconnect account');
+    }
+  }
+
+  if (loading && accounts.length === 0) {
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          title="Social Accounts"
+          description="Manage connected social media accounts"
+        />
+        <div className="flex items-center justify-center py-24">
+          <CcdLoader size="lg" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -28,7 +82,7 @@ export default function SocialAccountsPage() {
         title="Social Accounts"
         description="Manage connected social media accounts"
       >
-        <Button>
+        <Button onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           Connect Account
         </Button>
@@ -42,7 +96,7 @@ export default function SocialAccountsPage() {
             <p className="text-sm text-muted-foreground mb-4">
               Connect your social media accounts to start publishing
             </p>
-            <Button>
+            <Button onClick={() => setDialogOpen(true)}>
               <Plus className="mr-2 h-4 w-4" />
               Connect Account
             </Button>
@@ -73,11 +127,21 @@ export default function SocialAccountsPage() {
                   </div>
                   <div className="flex gap-2 mt-4">
                     {account.status !== 'active' && (
-                      <Button size="sm" variant="outline" className="flex-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => handleReconnect(account.id)}
+                      >
                         Reconnect
                       </Button>
                     )}
-                    <Button size="sm" variant="ghost" className="text-destructive">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive"
+                      onClick={() => handleDisconnect(account.id)}
+                    >
                       Disconnect
                     </Button>
                   </div>
@@ -87,6 +151,12 @@ export default function SocialAccountsPage() {
           })}
         </div>
       )}
+
+      <AccountDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        onSuccess={fetchAccounts}
+      />
     </div>
   );
 }

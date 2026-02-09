@@ -2,7 +2,7 @@
 
 import { ModuleShell } from '@/components/layout/module-shell';
 import { SeoSettingsDialog } from '@/components/seo/seo-settings-dialog';
-import { LayoutDashboard, FolderSearch, Key, ClipboardCheck, TrendingUp, Swords } from 'lucide-react';
+import { LayoutDashboard, FolderSearch, Key, ClipboardCheck, TrendingUp, Swords, Link2 } from 'lucide-react';
 
 const navItems = [
   { label: 'Dashboard', href: '/seo', icon: <LayoutDashboard /> },
@@ -10,6 +10,7 @@ const navItems = [
   { label: 'Keywords', href: '/seo/keywords', icon: <Key /> },
   { label: 'Audits', href: '/seo/audits', icon: <ClipboardCheck /> },
   { label: 'Rank Tracker', href: '/seo/rank-tracker', icon: <TrendingUp /> },
+  { label: 'Backlinks', href: '/seo/backlinks', icon: <Link2 /> },
   { label: 'Competitors', href: '/seo/competitors', icon: <Swords /> },
 ];
 
