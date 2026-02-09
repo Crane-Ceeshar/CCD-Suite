@@ -2,19 +2,11 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { PageHeader, Card, CardContent, Badge, Button, CcdLoader } from '@ccd/ui';
-import { Plus, Unplug, ExternalLink } from 'lucide-react';
+import { Plus, Unplug, ExternalLink, Trash2 } from 'lucide-react';
 import { apiGet, apiPatch, apiDelete } from '@/lib/api';
 import { AccountDialog } from '@/components/social/account-dialog';
+import { PlatformIcon, getPlatformColor, platformLabels } from '@/components/social/platform-icon';
 import type { SocialAccount } from '@ccd/shared/types/social';
-
-const platformConfig: Record<string, { label: string; color: string }> = {
-  facebook: { label: 'Facebook', color: '#1877F2' },
-  instagram: { label: 'Instagram', color: '#E4405F' },
-  twitter: { label: 'X (Twitter)', color: '#000000' },
-  linkedin: { label: 'LinkedIn', color: '#0A66C2' },
-  tiktok: { label: 'TikTok', color: '#000000' },
-  youtube: { label: 'YouTube', color: '#FF0000' },
-};
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
   active: { label: 'Connected', variant: 'default' },
@@ -106,68 +98,94 @@ export default function SocialAccountsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {accounts.map((account) => {
-            const platform = platformConfig[account.platform];
+            const platformColor = getPlatformColor(account.platform);
+            const platformLabel = platformLabels[account.platform] ?? account.platform;
             const status = statusConfig[account.status];
+            const meta = account.metadata as Record<string, string> | null;
+            const accountType = typeof meta?.account_type === 'string' ? meta.account_type : null;
+            const profileUrl = account.account_id?.startsWith('http') ? account.account_id : null;
+
             return (
-              <Card key={account.id} className="transition-shadow hover:shadow-md">
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      {account.avatar_url ? (
-                        /* eslint-disable-next-line @next/next/no-img-element */
-                        <img
-                          src={account.avatar_url}
-                          alt={account.account_name}
-                          className="h-10 w-10 rounded-full object-cover"
-                          onError={(e) => {
-                            // Fallback to initial letter on avatar load failure
-                            const target = e.currentTarget;
-                            target.style.display = 'none';
-                            const fallback = target.nextElementSibling as HTMLElement;
-                            if (fallback) fallback.style.display = 'flex';
-                          }}
-                        />
-                      ) : null}
+              <Card
+                key={account.id}
+                className="overflow-hidden transition-shadow hover:shadow-md"
+              >
+                {/* Platform accent bar */}
+                <div className="h-1" style={{ backgroundColor: platformColor }} />
+
+                <CardContent className="pt-5">
+                  <div className="flex items-start gap-4">
+                    {/* Avatar with platform badge overlay */}
+                    <div className="relative shrink-0">
+                      {/* Main avatar area */}
                       <div
-                        className="h-10 w-10 rounded-full items-center justify-center text-white text-sm font-bold"
-                        style={{
-                          backgroundColor: platform?.color,
-                          display: account.avatar_url ? 'none' : 'flex',
-                        }}
+                        className="h-12 w-12 rounded-full flex items-center justify-center"
+                        style={{ backgroundColor: `${platformColor}15` }}
                       >
-                        {account.account_name?.[0]?.toUpperCase()}
+                        <PlatformIcon platform={account.platform} size={24} />
                       </div>
-                      <div>
-                        <p className="font-medium">{account.account_name}</p>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-muted-foreground">{platform?.label}</p>
-                          {typeof (account.metadata as Record<string, string>)?.account_type === 'string' && (
-                            <span className="text-[10px] text-muted-foreground border rounded px-1">
-                              {(account.metadata as Record<string, string>).account_type}
+
+                      {/* Status dot */}
+                      <div
+                        className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-background ${
+                          account.status === 'active'
+                            ? 'bg-green-500'
+                            : account.status === 'expired'
+                              ? 'bg-yellow-500'
+                              : 'bg-red-500'
+                        }`}
+                      />
+                    </div>
+
+                    {/* Account info */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-semibold text-sm truncate">
+                            {account.account_name}
+                          </p>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span
+                              className="text-xs font-medium"
+                              style={{ color: platformColor }}
+                            >
+                              {platformLabel}
                             </span>
-                          )}
+                            {accountType && (
+                              <>
+                                <span className="text-muted-foreground text-[10px]">•</span>
+                                <span className="text-[11px] text-muted-foreground capitalize">
+                                  {accountType}
+                                </span>
+                              </>
+                            )}
+                          </div>
                         </div>
+                        <Badge variant={status?.variant} className="shrink-0 text-[10px]">
+                          {status?.label}
+                        </Badge>
                       </div>
                     </div>
-                    <Badge variant={status?.variant}>{status?.label}</Badge>
                   </div>
-                  <div className="flex gap-2 mt-4">
-                    {account.account_id && account.account_id.startsWith('http') && (
+
+                  {/* Actions */}
+                  <div className="flex items-center gap-2 mt-4 pt-3 border-t">
+                    {profileUrl && (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex-1"
-                        onClick={() => window.open(account.account_id!, '_blank')}
+                        className="flex-1 h-8 text-xs"
+                        onClick={() => window.open(profileUrl, '_blank')}
                       >
-                        <ExternalLink className="mr-1 h-3 w-3" />
-                        Profile
+                        <ExternalLink className="mr-1.5 h-3 w-3" />
+                        View Profile
                       </Button>
                     )}
                     {account.status !== 'active' && (
                       <Button
                         size="sm"
                         variant="outline"
-                        className="flex-1"
+                        className="flex-1 h-8 text-xs"
                         onClick={() => handleReconnect(account.id)}
                       >
                         Reconnect
@@ -176,9 +194,10 @@ export default function SocialAccountsPage() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="text-destructive"
+                      className="h-8 text-xs text-destructive hover:text-destructive"
                       onClick={() => handleDisconnect(account.id)}
                     >
+                      <Trash2 className="mr-1.5 h-3 w-3" />
                       Disconnect
                     </Button>
                   </div>
