@@ -1,12 +1,24 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
-import { PageHeader, Card, CardContent, Badge, Button, CcdLoader } from '@ccd/ui';
-import { Plus, Globe } from 'lucide-react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
+import {
+  PageHeader,
+  Card,
+  CardContent,
+  Badge,
+  Button,
+  Input,
+  DataTable,
+  toast,
+  type Column,
+} from '@ccd/ui';
+import { Plus, Globe, Search, LayoutGrid, List } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { apiGet } from '@/lib/api';
+import { apiGet, apiPatch, apiDelete } from '@/lib/api';
 import { ProjectDialog } from '@/components/seo/project-dialog';
 import type { SeoProject } from '@ccd/shared/types/seo';
+
+type ProjectRow = SeoProject & Record<string, unknown>;
 
 const statusConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'outline' }> = {
   active: { label: 'Active', variant: 'default' },
@@ -20,18 +32,34 @@ export default function SEOProjectsPage() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editProject, setEditProject] = useState<SeoProject | null>(null);
+  const [search, setSearch] = useState('');
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
   const fetchProjects = useCallback(() => {
     setLoading(true);
     apiGet<SeoProject[]>('/api/seo/projects')
       .then((res) => setProjects(res.data))
-      .catch(() => setProjects([]))
+      .catch((err) => {
+        setProjects([]);
+        toast({ title: 'Failed to load projects', description: err.message, variant: 'destructive' });
+      })
       .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
     fetchProjects();
   }, [fetchProjects]);
+
+  const filtered = useMemo(() => {
+    if (!search.trim()) return projects;
+    const q = search.toLowerCase();
+    return projects.filter(
+      (p) =>
+        p.name.toLowerCase().includes(q) ||
+        p.domain.toLowerCase().includes(q) ||
+        (p.description ?? '').toLowerCase().includes(q)
+    );
+  }, [projects, search]);
 
   function handleCreate() {
     setEditProject(null);
@@ -43,33 +71,153 @@ export default function SEOProjectsPage() {
     setDialogOpen(true);
   }
 
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <PageHeader
-          title="SEO Projects"
-          description="Manage your SEO projects and tracked domains"
-        />
-        <div className="flex items-center justify-center py-24">
-          <CcdLoader size="lg" />
-        </div>
-      </div>
-    );
+  async function handleDelete(id: string) {
+    if (!confirm('Are you sure you want to delete this project?')) return;
+    try {
+      await apiDelete(`/api/seo/projects/${id}`);
+      toast({ title: 'Project deleted' });
+      fetchProjects();
+    } catch (err) {
+      toast({ title: 'Failed to delete', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' });
+    }
   }
+
+  async function handleCellEdit(item: ProjectRow, key: string, value: unknown) {
+    const original = projects.find((p) => p.id === item.id);
+    setProjects((prev) => prev.map((p) => (p.id === item.id ? { ...p, [key]: value } : p)));
+    try {
+      await apiPatch(`/api/seo/projects/${item.id}`, { [key]: value });
+      toast({ title: 'Project updated' });
+    } catch {
+      if (original) setProjects((prev) => prev.map((p) => (p.id === item.id ? original : p)));
+      toast({ title: 'Failed to update', variant: 'destructive' });
+    }
+  }
+
+  const columns: Column<ProjectRow>[] = [
+    {
+      key: 'name',
+      header: 'Name',
+      sortable: true,
+      editable: true,
+      width: 200,
+      render: (project) => (
+        <span className="font-medium">{project.name}</span>
+      ),
+    },
+    {
+      key: 'domain',
+      header: 'Domain',
+      sortable: true,
+      editable: true,
+      render: (project) => (
+        <span className="text-muted-foreground">{project.domain}</span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      editable: true,
+      editType: 'select',
+      editOptions: [
+        { value: 'active', label: 'Active' },
+        { value: 'paused', label: 'Paused' },
+        { value: 'completed', label: 'Completed' },
+      ],
+      render: (project) => {
+        const config = statusConfig[project.status];
+        return <Badge variant={config?.variant}>{config?.label ?? project.status}</Badge>;
+      },
+    },
+    {
+      key: 'description',
+      header: 'Description',
+      editable: true,
+      render: (project) => (
+        <span className="text-sm text-muted-foreground truncate max-w-[200px] block">
+          {project.description || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'created_at',
+      header: 'Created',
+      sortable: true,
+      render: (project) => (
+        <span className="text-sm text-muted-foreground">
+          {new Date(project.created_at).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      className: 'w-[80px]',
+      render: (project) => (
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleEdit(project as SeoProject);
+            }}
+          >
+            Edit
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="SEO Projects"
-        description="Manage your SEO projects and tracked domains"
-      >
-        <Button onClick={handleCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Project
-        </Button>
-      </PageHeader>
+        description={`Manage your SEO projects and tracked domains${projects.length > 0 ? ` · ${projects.length} project${projects.length !== 1 ? 's' : ''}` : ''}`}
+        actions={
+          <Button onClick={handleCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Project
+          </Button>
+        }
+      />
 
-      {projects.length === 0 ? (
+      {projects.length > 0 && (
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search projects..."
+              className="pl-9"
+            />
+          </div>
+          <div className="flex items-center gap-1 border rounded-md p-0.5">
+            <Button
+              variant={viewMode === 'grid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('grid')}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={viewMode === 'table' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setViewMode('table')}
+            >
+              <List className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center py-24">
+          <Globe className="h-8 w-8 animate-pulse text-muted-foreground" />
+        </div>
+      ) : filtered.length === 0 && projects.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Globe className="h-12 w-12 text-muted-foreground/50 mb-4" />
@@ -83,9 +231,19 @@ export default function SEOProjectsPage() {
             </Button>
           </CardContent>
         </Card>
+      ) : viewMode === 'table' ? (
+        <DataTable
+          columns={columns}
+          data={filtered as ProjectRow[]}
+          keyExtractor={(p) => p.id}
+          onRowClick={(p) => router.push(`/seo/projects/${p.id}`)}
+          onCellEdit={handleCellEdit}
+          emptyMessage={search ? 'No projects match your search' : 'No projects found'}
+          loading={loading}
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {projects.map((project) => {
+          {filtered.map((project) => {
             const config = statusConfig[project.status];
             return (
               <Card

@@ -1,13 +1,18 @@
 'use client';
 
-import { Badge, Button, CcdLoader } from '@ccd/ui';
+import * as React from 'react';
+import { DataTable, Badge, Button, toast, type Column } from '@ccd/ui';
 import { Trash2 } from 'lucide-react';
+import { apiPatch } from '@/lib/api';
 import type { Backlink } from '@ccd/shared/types/seo';
+
+type BacklinkRow = Backlink & Record<string, unknown>;
 
 interface BacklinksTableProps {
   backlinks: Backlink[];
   loading: boolean;
   onDelete: (id: string) => void;
+  onCellEdit?: (backlink: Backlink, key: string, value: unknown) => void;
 }
 
 function getStatusVariant(status: string): 'default' | 'destructive' | 'secondary' {
@@ -21,67 +26,187 @@ function truncateUrl(url: string, max = 40) {
   return url.slice(0, max) + '...';
 }
 
-export function BacklinksTable({ backlinks, loading, onDelete }: BacklinksTableProps) {
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <CcdLoader size="md" />
-      </div>
-    );
+export function BacklinksTable({
+  backlinks,
+  loading,
+  onDelete,
+  onCellEdit,
+}: BacklinksTableProps) {
+  // Local copy for optimistic updates
+  const [localData, setLocalData] = React.useState<BacklinkRow[]>(
+    backlinks as BacklinkRow[]
+  );
+
+  // Sync local data when props change
+  React.useEffect(() => {
+    setLocalData(backlinks as BacklinkRow[]);
+  }, [backlinks]);
+
+  // Local sorting state
+  const [sortKey, setSortKey] = React.useState<string | undefined>(undefined);
+  const [sortDirection, setSortDirection] = React.useState<'asc' | 'desc'>('asc');
+
+  function handleSort(key: string, direction: 'asc' | 'desc') {
+    setSortKey(key);
+    setSortDirection(direction);
   }
 
-  if (backlinks.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 text-center">
-        <p className="text-sm text-muted-foreground">No backlinks found</p>
-      </div>
+  const sortedData = React.useMemo(() => {
+    if (!sortKey) return localData;
+
+    return [...localData].sort((a, b) => {
+      const aVal = a[sortKey as keyof Backlink];
+      const bVal = b[sortKey as keyof Backlink];
+
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return sortDirection === 'asc' ? 1 : -1;
+      if (bVal == null) return sortDirection === 'asc' ? -1 : 1;
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      const aStr = String(aVal);
+      const bStr = String(bVal);
+      return sortDirection === 'asc'
+        ? aStr.localeCompare(bStr)
+        : bStr.localeCompare(aStr);
+    });
+  }, [localData, sortKey, sortDirection]);
+
+  async function handleCellEdit(item: BacklinkRow, key: string, value: unknown) {
+    const original = localData.find((row) => row.id === item.id);
+
+    // Optimistic update
+    setLocalData((prev) =>
+      prev.map((row) => (row.id === item.id ? { ...row, [key]: value } : row))
     );
+
+    // Notify parent if callback provided
+    if (onCellEdit) {
+      onCellEdit(item as Backlink, key, value);
+    }
+
+    try {
+      await apiPatch(`/api/seo/backlinks/${item.id}`, { [key]: value });
+    } catch {
+      // Rollback on error
+      if (original) {
+        setLocalData((prev) =>
+          prev.map((row) => (row.id === item.id ? original : row))
+        );
+      }
+      toast({
+        title: 'Update failed',
+        description: 'Could not save backlink changes. Reverted.',
+        variant: 'destructive',
+      });
+    }
   }
+
+  const columns: Column<BacklinkRow>[] = [
+    {
+      key: 'source_url',
+      header: 'Source URL',
+      sortable: true,
+      editable: true,
+      editType: 'text',
+      render: (item) => (
+        <span className="text-sm" title={item.source_url}>
+          {truncateUrl(item.source_url)}
+        </span>
+      ),
+    },
+    {
+      key: 'target_url',
+      header: 'Target URL',
+      sortable: true,
+      editable: true,
+      editType: 'text',
+      render: (item) => (
+        <span className="text-sm" title={item.target_url}>
+          {truncateUrl(item.target_url)}
+        </span>
+      ),
+    },
+    {
+      key: 'anchor_text',
+      header: 'Anchor',
+      editable: true,
+      editType: 'text',
+      render: (item) => (
+        <span className="text-sm">{item.anchor_text ?? '--'}</span>
+      ),
+    },
+    {
+      key: 'domain_authority',
+      header: 'DA',
+      sortable: true,
+      editable: true,
+      editType: 'text',
+      className: 'text-right',
+      render: (item) => (
+        <span className="text-sm font-mono">
+          {item.domain_authority != null ? item.domain_authority : '--'}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      editable: true,
+      editType: 'select',
+      editOptions: [
+        { value: 'active', label: 'Active' },
+        { value: 'lost', label: 'Lost' },
+        { value: 'pending', label: 'Pending' },
+      ],
+      className: 'text-center',
+      render: (item) => (
+        <Badge variant={getStatusVariant(item.status)}>{item.status}</Badge>
+      ),
+    },
+    {
+      key: 'discovered_at',
+      header: 'Discovered',
+      sortable: true,
+      render: (item) => (
+        <span className="text-sm text-muted-foreground">
+          {new Date(item.discovered_at).toLocaleDateString()}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      render: (item) => (
+        <div className="text-right">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete(item.id);
+            }}
+          >
+            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b">
-            <th className="text-left p-4 text-sm font-medium text-muted-foreground">Source URL</th>
-            <th className="text-left p-4 text-sm font-medium text-muted-foreground">Target URL</th>
-            <th className="text-left p-4 text-sm font-medium text-muted-foreground">Anchor Text</th>
-            <th className="text-right p-4 text-sm font-medium text-muted-foreground">DA</th>
-            <th className="text-center p-4 text-sm font-medium text-muted-foreground">Status</th>
-            <th className="text-left p-4 text-sm font-medium text-muted-foreground">Discovered</th>
-            <th className="text-right p-4 text-sm font-medium text-muted-foreground">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {backlinks.map((bl) => (
-            <tr key={bl.id} className="border-b last:border-0 hover:bg-muted/50">
-              <td className="p-4">
-                <span className="text-sm" title={bl.source_url}>
-                  {truncateUrl(bl.source_url)}
-                </span>
-              </td>
-              <td className="p-4">
-                <span className="text-sm" title={bl.target_url}>
-                  {truncateUrl(bl.target_url)}
-                </span>
-              </td>
-              <td className="p-4 text-sm">{bl.anchor_text ?? '--'}</td>
-              <td className="p-4 text-right font-mono text-sm">{bl.domain_authority ?? '--'}</td>
-              <td className="p-4 text-center">
-                <Badge variant={getStatusVariant(bl.status)}>{bl.status}</Badge>
-              </td>
-              <td className="p-4 text-sm text-muted-foreground">
-                {new Date(bl.discovered_at).toLocaleDateString()}
-              </td>
-              <td className="p-4 text-right">
-                <Button variant="ghost" size="sm" onClick={() => onDelete(bl.id)}>
-                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                </Button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <DataTable<BacklinkRow>
+      columns={columns}
+      data={sortedData}
+      keyExtractor={(item) => item.id}
+      sortKey={sortKey}
+      sortDirection={sortDirection}
+      onSort={handleSort}
+      onCellEdit={handleCellEdit}
+      emptyMessage="No backlinks found"
+      loading={loading}
+    />
   );
 }

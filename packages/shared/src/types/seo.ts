@@ -30,7 +30,7 @@ export interface SeoAudit {
   issues_count: number;
   pages_crawled: number;
   status: AuditStatus;
-  results: Record<string, unknown>;
+  results: AuditResults | Record<string, unknown>;
   started_at: string;
   completed_at: string | null;
   created_at: string;
@@ -110,4 +110,73 @@ export interface CreateKeywordInput {
 
 export interface CreateAuditInput {
   project_id: string;
+}
+
+// ── Audit Results (stored in seo_audits.results JSONB) ──────────────
+
+export type WebVitalRating = 'good' | 'needs-improvement' | 'poor';
+
+export interface CoreWebVitals {
+  lcp: number;
+  fid: number;
+  cls: number;
+  lcpRating: WebVitalRating;
+  fidRating: WebVitalRating;
+  clsRating: WebVitalRating;
+}
+
+export interface MetaTagCheck {
+  exists: boolean;
+  value: string | null;
+  length: number;
+  optimal: boolean;
+}
+
+export interface AuditMetaTags {
+  title: MetaTagCheck;
+  description: MetaTagCheck;
+  ogTitle: boolean;
+  ogDescription: boolean;
+  ogImage: boolean;
+  canonical: boolean;
+  robots: string | null;
+  viewport: boolean;
+}
+
+export interface AuditContentStructure {
+  h1Count: number;
+  headingHierarchyValid: boolean;
+  totalImages: number;
+  imagesMissingAlt: number;
+  internalLinks: number;
+  externalLinks: number;
+}
+
+export interface AuditTechnical {
+  https: boolean;
+  robotsTxt: boolean;
+  sitemap: boolean;
+}
+
+export interface AuditIssue {
+  type: RecommendationType;
+  priority: RecommendationPriority;
+  title: string;
+  description: string;
+}
+
+export interface AuditResults {
+  lighthouse: {
+    performance: number;
+    seo: number;
+    bestPractices: number;
+    accessibility: number;
+  };
+  coreWebVitals: CoreWebVitals;
+  metaTags: AuditMetaTags;
+  contentStructure: AuditContentStructure;
+  technical: AuditTechnical;
+  issues: AuditIssue[];
+  url: string;
+  analyzedAt: string;
 }

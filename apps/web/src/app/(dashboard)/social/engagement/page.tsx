@@ -6,7 +6,7 @@ import { MessageCircle, ThumbsUp, Share, Eye, Sparkles } from 'lucide-react';
 import { apiGet, apiPost } from '@/lib/api';
 import { CommentReplyDialog } from '@/components/social/comment-reply-dialog';
 import { EngagementChart } from '@/components/social/engagement-chart';
-import type { SocialEngagement, SocialComment } from '@ccd/shared/types/social';
+import type { SocialComment } from '@ccd/shared/types/social';
 
 const sentimentConfig: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' }> = {
   positive: { label: 'Positive', variant: 'default' },
@@ -19,10 +19,25 @@ interface EngagementTotals {
   comments: number;
   shares: number;
   impressions: number;
+  reach: number;
+  clicks: number;
+  total_engagement: number;
+  engagement_rate: number;
 }
 
+const emptyTotals: EngagementTotals = {
+  likes: 0,
+  comments: 0,
+  shares: 0,
+  impressions: 0,
+  reach: 0,
+  clicks: 0,
+  total_engagement: 0,
+  engagement_rate: 0,
+};
+
 export default function EngagementPage() {
-  const [engagementData, setEngagementData] = useState<SocialEngagement[]>([]);
+  const [totals, setTotals] = useState<EngagementTotals>(emptyTotals);
   const [comments, setComments] = useState<SocialComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [replyDialogOpen, setReplyDialogOpen] = useState(false);
@@ -34,13 +49,13 @@ export default function EngagementPage() {
     setLoading(true);
     try {
       const [engRes, comRes] = await Promise.all([
-        apiGet<SocialEngagement[]>('/api/social/engagement'),
+        apiGet<EngagementTotals>('/api/social/engagement'),
         apiGet<SocialComment[]>('/api/social/comments'),
       ]);
-      setEngagementData(engRes.data);
-      setComments(comRes.data);
-    } catch {
-      // keep empty
+      setTotals(engRes.data ?? emptyTotals);
+      setComments(Array.isArray(comRes.data) ? comRes.data : []);
+    } catch (err) {
+      toast({ title: 'Failed to load engagement data', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' });
     } finally {
       setLoading(false);
     }
@@ -49,34 +64,6 @@ export default function EngagementPage() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
-
-  // Compute totals
-  const totals: EngagementTotals = engagementData.reduce(
-    (acc, row) => ({
-      likes: acc.likes + (row.likes ?? 0),
-      comments: acc.comments + (row.comments ?? 0),
-      shares: acc.shares + (row.shares ?? 0),
-      impressions: acc.impressions + (row.impressions ?? 0),
-    }),
-    { likes: 0, comments: 0, shares: 0, impressions: 0 }
-  );
-
-  // Aggregate by platform for chart
-  const chartData = Object.values(
-    engagementData.reduce<Record<string, { platform: string; likes: number; comments: number; shares: number }>>(
-      (acc, row) => {
-        const key = row.platform;
-        if (!acc[key]) {
-          acc[key] = { platform: key, likes: 0, comments: 0, shares: 0 };
-        }
-        acc[key].likes += row.likes ?? 0;
-        acc[key].comments += row.comments ?? 0;
-        acc[key].shares += row.shares ?? 0;
-        return acc;
-      },
-      {}
-    )
-  );
 
   function openReply(comment: SocialComment, prefilledContent?: string) {
     setReplyComment(comment);
@@ -192,14 +179,18 @@ export default function EngagementPage() {
         </Card>
       </div>
 
-      {/* Engagement Chart */}
-      {chartData.length > 0 && (
+      {/* Engagement Chart — shown when there is engagement data */}
+      {totals.total_engagement > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Engagement by Platform</CardTitle>
+            <CardTitle className="text-base">Engagement Breakdown</CardTitle>
           </CardHeader>
           <CardContent>
-            <EngagementChart data={chartData} />
+            <EngagementChart
+              data={[
+                { platform: 'Overview', likes: totals.likes, comments: totals.comments, shares: totals.shares },
+              ]}
+            />
           </CardContent>
         </Card>
       )}

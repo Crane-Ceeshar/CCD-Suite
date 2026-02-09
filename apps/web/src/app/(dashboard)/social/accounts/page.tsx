@@ -81,12 +81,13 @@ export default function SocialAccountsPage() {
       <PageHeader
         title="Social Accounts"
         description="Manage connected social media accounts"
-      >
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Connect Account
-        </Button>
-      </PageHeader>
+        actions={
+          <Button onClick={() => setDialogOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Connect Account
+          </Button>
+        }
+      />
 
       {accounts.length === 0 ? (
         <Card>

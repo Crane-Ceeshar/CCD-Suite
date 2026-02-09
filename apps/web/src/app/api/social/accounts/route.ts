@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       account_id: body.account_id,
       avatar_url: body.avatar_url ?? null,
       status: body.status ?? 'active',
-      metadata: body.metadata ?? null,
+      metadata: body.metadata ?? {},
       connected_by: user.id,
     })
     .select('*')

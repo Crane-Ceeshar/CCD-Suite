@@ -1,11 +1,23 @@
 'use client';
 
 import * as React from 'react';
-import { Badge, Button, Card, CardContent, Input, CcdLoader } from '@ccd/ui';
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  CcdLoader,
+  DataTable,
+  Input,
+  toast,
+  type Column,
+} from '@ccd/ui';
 import { Pencil, Trash2, FileText, Search } from 'lucide-react';
-import { apiDelete } from '@/lib/api';
+import { apiDelete, apiPatch } from '@/lib/api';
 import { PostDialog } from './post-dialog';
 import type { SocialPost } from '@ccd/shared/types/social';
+
+type PostRow = SocialPost & Record<string, unknown>;
 
 const platformColors: Record<string, string> = {
   facebook: '#1877F2',
@@ -35,9 +47,15 @@ export function PostsTable({ posts, loading, onRefresh }: PostsTableProps) {
   const [statusFilter, setStatusFilter] = React.useState<string>('all');
   const [editPost, setEditPost] = React.useState<SocialPost | null>(null);
   const [dialogOpen, setDialogOpen] = React.useState(false);
+  const [localPosts, setLocalPosts] = React.useState<PostRow[]>([]);
+
+  // Sync localPosts from the posts prop
+  React.useEffect(() => {
+    setLocalPosts(posts as PostRow[]);
+  }, [posts]);
 
   const filtered = React.useMemo(() => {
-    let result = posts;
+    let result = localPosts;
     if (statusFilter !== 'all') {
       result = result.filter((p) => p.status === statusFilter);
     }
@@ -46,7 +64,22 @@ export function PostsTable({ posts, loading, onRefresh }: PostsTableProps) {
       result = result.filter((p) => (p.content ?? '').toLowerCase().includes(q));
     }
     return result;
-  }, [posts, statusFilter, search]);
+  }, [localPosts, statusFilter, search]);
+
+  async function handleCellEdit(item: PostRow, key: string, value: unknown) {
+    setLocalPosts((prev) =>
+      prev.map((c) => (c.id === item.id ? { ...c, [key]: value } : c))
+    );
+    try {
+      await apiPatch(`/api/social/posts/${item.id}`, { [key]: value });
+      toast({ title: 'Post updated' });
+    } catch {
+      setLocalPosts((prev) =>
+        prev.map((c) => (c.id === item.id ? item : c))
+      );
+      toast({ title: 'Failed to update post', variant: 'destructive' });
+    }
+  }
 
   async function handleDelete(id: string) {
     if (!confirm('Are you sure you want to delete this post?')) return;
@@ -54,9 +87,103 @@ export function PostsTable({ posts, loading, onRefresh }: PostsTableProps) {
       await apiDelete(`/api/social/posts/${id}`);
       onRefresh();
     } catch {
-      alert('Failed to delete post');
+      toast({ title: 'Failed to delete post', variant: 'destructive' });
     }
   }
+
+  const columns: Column<PostRow>[] = [
+    {
+      key: 'content',
+      header: 'Content',
+      editable: true,
+      editType: 'text',
+      render: (post) => (
+        <p className="truncate max-w-[300px]">
+          {post.content
+            ? post.content.length > 60
+              ? post.content.slice(0, 60) + '...'
+              : post.content
+            : 'No content'}
+        </p>
+      ),
+    },
+    {
+      key: 'platforms',
+      header: 'Platforms',
+      render: (post) => (
+        <div className="flex flex-wrap gap-1">
+          {(post.platforms ?? []).map((p) => (
+            <span
+              key={p}
+              className="inline-block px-2 py-0.5 rounded-full text-xs text-white font-medium"
+              style={{ backgroundColor: platformColors[p] ?? '#888' }}
+            >
+              {p}
+            </span>
+          ))}
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      editable: true,
+      editType: 'select',
+      editOptions: [
+        { value: 'draft', label: 'Draft' },
+        { value: 'scheduled', label: 'Scheduled' },
+        { value: 'published', label: 'Published' },
+        { value: 'failed', label: 'Failed' },
+      ],
+      render: (post) => {
+        const config = statusConfig[post.status];
+        return <Badge variant={config?.variant}>{config?.label ?? post.status}</Badge>;
+      },
+    },
+    {
+      key: 'scheduled_at',
+      header: 'Scheduled',
+      sortable: true,
+      render: (post) => (
+        <span className="text-muted-foreground">
+          {post.scheduled_at
+            ? new Date(post.scheduled_at).toLocaleDateString()
+            : '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      header: '',
+      className: 'w-[100px]',
+      render: (post) => (
+        <div className="flex justify-end gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditPost(post);
+              setDialogOpen(true);
+            }}
+          >
+            <Pencil className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(post.id);
+            }}
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        </div>
+      ),
+    },
+  ];
 
   if (loading) {
     return (
@@ -93,7 +220,7 @@ export function PostsTable({ posts, loading, onRefresh }: PostsTableProps) {
         </div>
       </div>
 
-      {/* Table */}
+      {/* Table or Empty State */}
       {filtered.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
@@ -107,80 +234,14 @@ export function PostsTable({ posts, loading, onRefresh }: PostsTableProps) {
           </CardContent>
         </Card>
       ) : (
-        <div className="rounded-md border overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b bg-muted/50">
-                <th className="text-left font-medium px-4 py-3">Content</th>
-                <th className="text-left font-medium px-4 py-3">Platforms</th>
-                <th className="text-left font-medium px-4 py-3">Status</th>
-                <th className="text-left font-medium px-4 py-3">Scheduled</th>
-                <th className="text-right font-medium px-4 py-3">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((post) => {
-                const config = statusConfig[post.status];
-                return (
-                  <tr key={post.id} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                    <td className="px-4 py-3 max-w-[300px]">
-                      <p className="truncate">
-                        {post.content
-                          ? post.content.length > 60
-                            ? post.content.slice(0, 60) + '...'
-                            : post.content
-                          : 'No content'}
-                      </p>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex flex-wrap gap-1">
-                        {(post.platforms ?? []).map((p) => (
-                          <span
-                            key={p}
-                            className="inline-block px-2 py-0.5 rounded-full text-xs text-white font-medium"
-                            style={{ backgroundColor: platformColors[p] ?? '#888' }}
-                          >
-                            {p}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Badge variant={config?.variant}>{config?.label ?? post.status}</Badge>
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground">
-                      {post.scheduled_at
-                        ? new Date(post.scheduled_at).toLocaleDateString()
-                        : '-'}
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => {
-                            setEditPost(post);
-                            setDialogOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-destructive hover:text-destructive"
-                          onClick={() => handleDelete(post.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
+        <DataTable
+          columns={columns}
+          data={filtered}
+          keyExtractor={(p) => p.id}
+          onCellEdit={handleCellEdit}
+          emptyMessage="No posts found"
+          loading={false}
+        />
       )}
 
       <PostDialog

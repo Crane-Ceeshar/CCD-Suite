@@ -34,12 +34,13 @@ export default function SocialPostsPage() {
       <PageHeader
         title="Posts"
         description="View and manage all social media posts"
-      >
-        <Button onClick={() => setCreateOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Compose
-        </Button>
-      </PageHeader>
+        actions={
+          <Button onClick={() => setCreateOpen(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Compose
+          </Button>
+        }
+      />
 
       {loading && posts.length === 0 ? (
         <div className="flex items-center justify-center py-24">

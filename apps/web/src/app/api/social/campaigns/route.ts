@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       start_date: body.start_date ?? null,
       end_date: body.end_date ?? null,
       status: body.status ?? 'draft',
-      tags: body.tags ?? null,
+      tags: body.tags ?? [],
       budget: body.budget ?? null,
       created_by: user.id,
     })

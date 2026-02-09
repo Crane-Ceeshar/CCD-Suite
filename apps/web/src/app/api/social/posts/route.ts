@@ -55,13 +55,13 @@ export async function POST(request: NextRequest) {
     .insert({
       tenant_id: profile.tenant_id,
       content: body.content,
-      media_urls: body.media_urls ?? null,
+      media_urls: body.media_urls ?? [],
       platforms: body.platforms ?? [],
       scheduled_at: body.scheduled_at ?? null,
       status: body.status ?? 'draft',
-      account_ids: body.account_ids ?? null,
+      account_ids: body.account_ids ?? [],
       campaign_id: body.campaign_id ?? null,
-      metadata: body.metadata ?? null,
+      metadata: body.metadata ?? {},
       created_by: user.id,
     })
     .select('*')

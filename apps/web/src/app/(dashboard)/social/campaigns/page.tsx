@@ -45,12 +45,13 @@ export default function CampaignsPage() {
       <PageHeader
         title="Campaigns"
         description="Organise posts into marketing campaigns"
-      >
-        <Button onClick={handleCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          New Campaign
-        </Button>
-      </PageHeader>
+        actions={
+          <Button onClick={handleCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            New Campaign
+          </Button>
+        }
+      />
 
       {loading && campaigns.length === 0 ? (
         <div className="flex items-center justify-center py-24">

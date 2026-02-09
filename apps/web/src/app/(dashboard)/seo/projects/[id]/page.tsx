@@ -224,12 +224,13 @@ export default function ProjectDetailPage() {
           { label: 'Projects', href: '/seo/projects' },
           { label: project.name },
         ]}
-      >
-        <Button variant="outline" onClick={() => setEditOpen(true)}>
-          <Pencil className="mr-2 h-4 w-4" />
-          Edit
-        </Button>
-      </PageHeader>
+        actions={
+          <Button variant="outline" onClick={() => setEditOpen(true)}>
+            <Pencil className="mr-2 h-4 w-4" />
+            Edit
+          </Button>
+        }
+      />
 
       <Tabs defaultValue="overview" onValueChange={handleTabChange}>
         <TabsList>
