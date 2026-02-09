@@ -43,9 +43,9 @@ export default function RootLayout({
               (function() {
                 try {
                   var stored = JSON.parse(localStorage.getItem('ccd-ui-preferences') || '{}');
-                  var theme = stored.state && stored.state.theme || 'light';
-                  var dark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                  if (dark) document.documentElement.classList.add('dark');
+                  var theme = stored.state && stored.state.theme || 'dark';
+                  if (theme === 'dark' || theme === 'night') document.documentElement.classList.add('dark');
+                  if (theme === 'night') document.documentElement.classList.add('night');
                 } catch(e) {}
               })();
             `,

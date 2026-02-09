@@ -21,7 +21,10 @@ import {
   Clock,
   Search,
   X,
+  ArrowLeft,
+  Lock,
 } from 'lucide-react';
+import { usePlanGate } from '@/hooks/use-plan-gate';
 
 /* -------------------------------------------------------------------------- */
 /*  Search Index                                                               */
@@ -108,6 +111,7 @@ export default function SettingsLayout({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { isEnterprise } = usePlanGate();
   const [searchQuery, setSearchQuery] = React.useState('');
   const [showResults, setShowResults] = React.useState(false);
   const searchRef = React.useRef<HTMLDivElement>(null);
@@ -156,6 +160,14 @@ export default function SettingsLayout({
     <div className="p-6 md:p-8 lg:p-10 max-w-6xl mx-auto">
       {/* Header */}
       <div className="mb-8">
+        <button
+          type="button"
+          onClick={() => router.back()}
+          className="mb-3 inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-muted/50"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          Back
+        </button>
         <h1 className="text-2xl md:text-3xl font-bold font-heading text-foreground">
           Settings
         </h1>
@@ -253,33 +265,39 @@ export default function SettingsLayout({
 
           {/* Desktop: grouped sidebar */}
           <div className="hidden md:flex md:flex-col gap-1">
-            {settingsGroups.map((group) => (
-              <div key={group.label} className="mb-4">
-                <p className="mb-1.5 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
-                  {group.label}
-                </p>
-                <ul className="space-y-0.5">
-                  {group.items.map((item) => {
-                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-                    return (
-                      <li key={item.href}>
-                        <Link
-                          href={item.href}
-                          className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 whitespace-nowrap ${
-                            isActive
-                              ? 'bg-primary/10 text-primary'
-                              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-                          }`}
-                        >
-                          <item.icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary' : ''}`} />
-                          {item.label}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
+            {settingsGroups.map((group) => {
+              const isLockedGroup =
+                (group.label === 'Connections' || group.label === 'Customization') && !isEnterprise;
+              return (
+                <div key={group.label} className={`mb-4 ${isLockedGroup ? 'opacity-60' : ''}`}>
+                  <p className="mb-1.5 px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                    {group.label}
+                    {isLockedGroup && <Lock className="h-3 w-3" />}
+                  </p>
+                  <ul className="space-y-0.5">
+                    {group.items.map((item) => {
+                      const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                      return (
+                        <li key={item.href}>
+                          <Link
+                            href={item.href}
+                            className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 whitespace-nowrap ${
+                              isActive
+                                ? 'bg-primary/10 text-primary'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                            }`}
+                          >
+                            <item.icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary' : ''}`} />
+                            {item.label}
+                            {isLockedGroup && <Lock className="h-3 w-3 ml-auto text-muted-foreground" />}
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         </nav>
 

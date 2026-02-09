@@ -22,6 +22,7 @@ import {
 } from '@ccd/ui';
 import { ImageIcon, Palette, Type, LogIn, Mail, Save } from 'lucide-react';
 import { useModuleSettings } from '@/hooks/use-module-settings';
+import { EnterpriseGate } from '@/components/settings/enterprise-gate';
 
 /* -------------------------------------------------------------------------- */
 /*  Defaults                                                                   */
@@ -108,6 +109,7 @@ export default function BrandingSettingsPage() {
   }
 
   return (
+    <EnterpriseGate feature="White-label branding">
     <div className="space-y-6">
       {/* Logo */}
       <Card>
@@ -285,5 +287,6 @@ export default function BrandingSettingsPage() {
         </Button>
       </div>
     </div>
+    </EnterpriseGate>
   );
 }

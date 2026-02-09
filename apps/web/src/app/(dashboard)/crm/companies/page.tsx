@@ -5,7 +5,10 @@ import { PageHeader, Button } from '@ccd/ui';
 import { Plus, Download, Upload } from 'lucide-react';
 import { CompaniesTable } from '@/components/crm/companies-table';
 import { CompanyDialog } from '@/components/crm/company-dialog';
-import { CsvImportDialog, exportToCsv } from '@/components/crm/csv-import-dialog';
+import { CsvImportDialog } from '@/components/crm/csv-import-dialog';
+import { ExportFormatDialog } from '@/components/crm/export-format-dialog';
+import { exportCrmData } from '@/lib/crm-export';
+import type { ExportFormat } from '@/lib/crm-export';
 import { apiGet } from '@/lib/api';
 
 type CompanyForDialog = Parameters<typeof CompanyDialog>[0]['company'];
@@ -13,6 +16,7 @@ type CompanyForDialog = Parameters<typeof CompanyDialog>[0]['company'];
 export default function CompaniesPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [importOpen, setImportOpen] = React.useState(false);
+  const [exportOpen, setExportOpen] = React.useState(false);
   const [editCompany, setEditCompany] = React.useState<CompanyForDialog>(null);
   const [refreshKey, setRefreshKey] = React.useState(0);
 
@@ -25,10 +29,10 @@ export default function CompaniesPage() {
     setRefreshKey((k) => k + 1);
   }
 
-  async function handleExport() {
+  async function handleExport(format: ExportFormat) {
     try {
       const res = await apiGet<Record<string, unknown>[]>('/api/crm/companies?limit=10000');
-      exportToCsv('companies.csv', res.data);
+      exportCrmData('companies', res.data, format);
     } catch { /* ignore */ }
   }
 
@@ -43,7 +47,7 @@ export default function CompaniesPage() {
         ]}
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExport}>
+            <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
@@ -72,6 +76,12 @@ export default function CompaniesPage() {
         onOpenChange={setImportOpen}
         entity="companies"
         onSuccess={handleSuccess}
+      />
+      <ExportFormatDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        entity="companies"
+        onExport={handleExport}
       />
     </div>
   );

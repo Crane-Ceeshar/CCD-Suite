@@ -21,12 +21,71 @@ import {
   Clock,
   Receipt,
 } from 'lucide-react';
+import { PLAN_FEATURES } from '@ccd/shared';
+import type { PlanTier } from '@ccd/shared';
+import { useAuthStore } from '@/stores/auth-store';
+import { usePlanGate } from '@/hooks/use-plan-gate';
+import { apiGet } from '@/lib/api';
+import { PricingDialog } from '@/components/settings/pricing-dialog';
+import { PaymentMethodDialog } from '@/components/settings/payment-method-dialog';
+
+/* -------------------------------------------------------------------------- */
+/*  Helpers                                                                    */
+/* -------------------------------------------------------------------------- */
+
+function getPlanInfo(plan: PlanTier) {
+  if (plan === 'custom') {
+    return {
+      name: 'Custom',
+      monthlyPrice: 0,
+      limits: { maxUsers: -1, maxModules: 11, maxStorageGb: 500 },
+    };
+  }
+  return PLAN_FEATURES[plan];
+}
 
 /* -------------------------------------------------------------------------- */
 /*  Billing Settings Page                                                     */
 /* -------------------------------------------------------------------------- */
 
 export default function BillingSettingsPage() {
+  const session = useAuthStore((s) => s.session);
+  const { plan, isOnTrial, daysRemaining } = usePlanGate();
+
+  const [pricingOpen, setPricingOpen] = React.useState(false);
+  const [paymentOpen, setPaymentOpen] = React.useState(false);
+  const [memberCount, setMemberCount] = React.useState<number>(0);
+  const [loadingMembers, setLoadingMembers] = React.useState(true);
+
+  const planInfo = getPlanInfo(plan);
+  const modulesEnabled = session?.tenant?.settings?.modules_enabled?.length ?? 0;
+
+  React.useEffect(() => {
+    let cancelled = false;
+    async function fetchMembers() {
+      try {
+        const res = await apiGet<{ members: unknown[] }>('/api/team/members');
+        if (!cancelled) {
+          const members = res.data?.members;
+          setMemberCount(Array.isArray(members) ? members.length : 0);
+        }
+      } catch {
+        if (!cancelled) setMemberCount(0);
+      } finally {
+        if (!cancelled) setLoadingMembers(false);
+      }
+    }
+    fetchMembers();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const maxUsersLabel =
+    planInfo.limits.maxUsers === -1
+      ? 'Unlimited'
+      : String(planInfo.limits.maxUsers);
+
   return (
     <div className="space-y-6">
       {/* Current Plan */}
@@ -45,18 +104,32 @@ export default function BillingSettingsPage() {
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Badge className="bg-primary/10 text-primary border-primary/20 text-sm">
-                  Free Trial
+                  {planInfo.name}
                 </Badge>
-                <Badge variant="outline" className="text-xs">
-                  <Clock className="mr-1 h-3 w-3" />
-                  14 days remaining
-                </Badge>
+                {isOnTrial && (
+                  <Badge variant="outline" className="text-xs">
+                    <Clock className="mr-1 h-3 w-3" />
+                    Trial - {daysRemaining} days remaining
+                  </Badge>
+                )}
               </div>
               <p className="text-sm text-muted-foreground">
-                You&apos;re on the free trial plan. Upgrade to unlock all features and remove limits.
+                {plan === 'custom' ? (
+                  'You are on a custom plan. Contact your account manager for details.'
+                ) : (
+                  <>
+                    <span className="font-semibold text-foreground">
+                      ${planInfo.monthlyPrice}/mo
+                    </span>
+                    {' '}
+                    &mdash; {isOnTrial
+                      ? 'Upgrade to keep access after your trial ends.'
+                      : 'Upgrade to unlock more features and higher limits.'}
+                  </>
+                )}
               </p>
             </div>
-            <Button disabled>
+            <Button onClick={() => setPricingOpen(true)}>
               <Zap className="mr-2 h-4 w-4" />
               Upgrade Now
             </Button>
@@ -70,17 +143,21 @@ export default function BillingSettingsPage() {
         <div className="grid gap-4 grid-cols-1 sm:grid-cols-3">
           <StatCard
             label="Members"
-            value="3 / 10"
+            value={
+              loadingMembers
+                ? '...'
+                : `${memberCount} / ${maxUsersLabel}`
+            }
             icon={<Users className="h-5 w-5 text-muted-foreground" />}
           />
           <StatCard
             label="Modules"
-            value="5 / 11"
+            value={`${modulesEnabled} / ${planInfo.limits.maxModules}`}
             icon={<Package className="h-5 w-5 text-muted-foreground" />}
           />
           <StatCard
             label="Storage"
-            value="0.2 GB / 5 GB"
+            value={`0.2 GB / ${planInfo.limits.maxStorageGb} GB`}
             icon={<HardDrive className="h-5 w-5 text-muted-foreground" />}
           />
         </div>
@@ -158,13 +235,17 @@ export default function BillingSettingsPage() {
                 Add a payment method to upgrade your plan and manage subscriptions.
               </p>
             </div>
-            <Button variant="outline" disabled>
+            <Button variant="outline" onClick={() => setPaymentOpen(true)}>
               <CreditCard className="mr-2 h-4 w-4" />
               Add Payment Method
             </Button>
           </div>
         </CardContent>
       </Card>
+
+      {/* Dialogs */}
+      <PricingDialog open={pricingOpen} onOpenChange={setPricingOpen} />
+      <PaymentMethodDialog open={paymentOpen} onOpenChange={setPaymentOpen} />
     </div>
   );
 }

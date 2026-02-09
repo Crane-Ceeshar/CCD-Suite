@@ -21,6 +21,7 @@ import {
 } from '@ccd/ui';
 import { Webhook as WebhookIcon, Plus, Pencil, Trash2, Play } from 'lucide-react';
 import { apiGet, apiPost, apiDelete } from '@/lib/api';
+import { EnterpriseGate } from '@/components/settings/enterprise-gate';
 import { WebhookDialog } from '@/components/settings/webhook-dialog';
 import type { Webhook } from '@ccd/shared';
 
@@ -134,6 +135,7 @@ export default function WebhooksSettingsPage() {
   }
 
   return (
+    <EnterpriseGate feature="Webhook configuration">
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -307,5 +309,6 @@ export default function WebhooksSettingsPage() {
       />
 
     </div>
+    </EnterpriseGate>
   );
 }

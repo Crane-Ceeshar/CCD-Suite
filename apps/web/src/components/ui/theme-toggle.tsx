@@ -2,20 +2,20 @@
 
 import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon, Monitor } from 'lucide-react';
+import { Sun, Moon, MoonStar } from 'lucide-react';
 import { Button } from '@ccd/ui';
 import { useUIStore } from '@/stores/ui-store';
 
-const themes = ['light', 'dark', 'system'] as const;
+const themes = ['light', 'dark', 'night'] as const;
 const icons = {
   light: Sun,
   dark: Moon,
-  system: Monitor,
+  night: MoonStar,
 };
 const labels = {
   light: 'Switch to dark mode',
-  dark: 'Switch to system mode',
-  system: 'Switch to light mode',
+  dark: 'Switch to night mode',
+  night: 'Switch to light mode',
 };
 
 export function ThemeToggle() {

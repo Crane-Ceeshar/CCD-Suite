@@ -5,7 +5,10 @@ import { PageHeader, Button } from '@ccd/ui';
 import { Plus, Download, Upload } from 'lucide-react';
 import { ContactsTable } from '@/components/crm/contacts-table';
 import { ContactDialog } from '@/components/crm/contact-dialog';
-import { CsvImportDialog, exportToCsv } from '@/components/crm/csv-import-dialog';
+import { CsvImportDialog } from '@/components/crm/csv-import-dialog';
+import { ExportFormatDialog } from '@/components/crm/export-format-dialog';
+import { exportCrmData } from '@/lib/crm-export';
+import type { ExportFormat } from '@/lib/crm-export';
 import { apiGet } from '@/lib/api';
 
 type ContactForDialog = Parameters<typeof ContactDialog>[0]['contact'];
@@ -13,6 +16,7 @@ type ContactForDialog = Parameters<typeof ContactDialog>[0]['contact'];
 export default function ContactsPage() {
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [importOpen, setImportOpen] = React.useState(false);
+  const [exportOpen, setExportOpen] = React.useState(false);
   const [editContact, setEditContact] = React.useState<ContactForDialog>(null);
   const [refreshKey, setRefreshKey] = React.useState(0);
 
@@ -25,10 +29,10 @@ export default function ContactsPage() {
     setRefreshKey((k) => k + 1);
   }
 
-  async function handleExport() {
+  async function handleExport(format: ExportFormat) {
     try {
       const res = await apiGet<Record<string, unknown>[]>('/api/crm/contacts?limit=10000');
-      exportToCsv('contacts.csv', res.data);
+      exportCrmData('contacts', res.data, format);
     } catch { /* ignore */ }
   }
 
@@ -43,7 +47,7 @@ export default function ContactsPage() {
         ]}
         actions={
           <div className="flex gap-2">
-            <Button variant="outline" size="sm" onClick={handleExport}>
+            <Button variant="outline" size="sm" onClick={() => setExportOpen(true)}>
               <Download className="mr-2 h-4 w-4" />
               Export
             </Button>
@@ -72,6 +76,12 @@ export default function ContactsPage() {
         onOpenChange={setImportOpen}
         entity="contacts"
         onSuccess={handleSuccess}
+      />
+      <ExportFormatDialog
+        open={exportOpen}
+        onOpenChange={setExportOpen}
+        entity="contacts"
+        onExport={handleExport}
       />
     </div>
   );

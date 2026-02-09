@@ -97,7 +97,7 @@ function ModuleSettingsDialog({
           </div>
 
           {/* Tab content — scrollable */}
-          <div className="flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-hidden">
             {tabs.map((tab) => (
               <TabsContent
                 key={tab.value}

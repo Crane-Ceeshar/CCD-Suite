@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
-import { requireTenantAdmin } from '@/lib/supabase/tenant-admin';
 import { createAdminServiceClient } from '@/lib/supabase/admin';
+
+/** Setting keys that any authenticated user can edit (not just admins) */
+const USER_SCOPED_KEYS = ['platform.profile', 'platform.appearance', 'platform.notifications'];
 
 export async function GET(request: NextRequest) {
   const { error, supabase, profile } = await requireAuth();
@@ -66,7 +68,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PATCH(request: NextRequest) {
-  const { error, supabase, user, profile } = await requireTenantAdmin();
+  const { error, supabase, user, profile } = await requireAuth();
   if (error) return error;
 
   const body = await request.json();
@@ -80,6 +82,16 @@ export async function PATCH(request: NextRequest) {
   }
 
   const settingKey = `${moduleName}.${key}`;
+
+  // Non-user-scoped settings require admin or owner role
+  if (!USER_SCOPED_KEYS.includes(settingKey)) {
+    if (!['admin', 'owner'].includes(profile.user_type)) {
+      return NextResponse.json(
+        { success: false, error: { message: 'Forbidden — admin or owner access required' } },
+        { status: 403 }
+      );
+    }
+  }
 
   // Fetch existing value for diff logging
   const { data: oldSetting } = await supabase

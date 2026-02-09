@@ -18,7 +18,7 @@ import {
   CcdLoader,
   CcdSpinner,
 } from '@ccd/ui';
-import { Palette, Sun, Moon, Monitor, Save } from 'lucide-react';
+import { Palette, Sun, Moon, MoonStar, Save } from 'lucide-react';
 import { useUIStore } from '@/stores/ui-store';
 import { apiGet, apiPatch } from '@/lib/api';
 
@@ -55,7 +55,7 @@ function ThemeCard({
   onSelect,
 }: {
   label: string;
-  value: 'light' | 'dark' | 'system';
+  value: 'light' | 'dark' | 'night';
   icon: typeof Sun;
   selected: boolean;
   onSelect: () => void;
@@ -229,11 +229,11 @@ export default function AppearanceSettingsPage() {
                 onSelect={() => setTheme('dark')}
               />
               <ThemeCard
-                label="System"
-                value="system"
-                icon={Monitor}
-                selected={theme === 'system'}
-                onSelect={() => setTheme('system')}
+                label="Night"
+                value="night"
+                icon={MoonStar}
+                selected={theme === 'night'}
+                onSelect={() => setTheme('night')}
               />
             </div>
           </div>

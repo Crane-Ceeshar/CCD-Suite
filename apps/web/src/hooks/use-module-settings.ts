@@ -65,12 +65,18 @@ export function useModuleSettings<T extends Record<string, any>>({
   const save = React.useCallback(async () => {
     setSaving(true);
     try {
-      await apiPatch('/api/settings/module', {
+      const res = await apiPatch<{ key: string; value: T }>('/api/settings/module', {
         module,
         key,
         value: settings,
       });
-      setSnapshot(JSON.stringify(settings));
+      if (res.data?.value) {
+        const merged = { ...defaults, ...res.data.value };
+        setSettings(merged);
+        setSnapshot(JSON.stringify(merged));
+      } else {
+        setSnapshot(JSON.stringify(settings));
+      }
       toast({ title: 'Settings saved', description: 'Your changes have been saved.' });
     } catch (err) {
       toast({
@@ -81,6 +87,7 @@ export function useModuleSettings<T extends Record<string, any>>({
     } finally {
       setSaving(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [module, key, settings]);
 
   return { settings, setSettings, updateField, loading, saving, save, isDirty };

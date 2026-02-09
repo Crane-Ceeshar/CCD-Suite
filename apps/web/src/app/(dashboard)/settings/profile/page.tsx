@@ -23,6 +23,7 @@ import {
 import { User, Globe, Save } from 'lucide-react';
 import { apiGet, apiPatch } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth-store';
+import { VerificationDialog } from '@/components/settings/verification-dialog';
 
 /* -------------------------------------------------------------------------- */
 /*  Timezone list (reused from CRM settings)                                  */
@@ -84,6 +85,13 @@ export default function ProfileSettingsPage() {
   const [loading, setLoading] = React.useState(true);
   const [saving, setSaving] = React.useState(false);
 
+  // Email verification state
+  const [pendingEmail, setPendingEmail] = React.useState('');
+  const [emailVerifyOpen, setEmailVerifyOpen] = React.useState(false);
+
+  // Phone verification state
+  const [phoneVerifyOpen, setPhoneVerifyOpen] = React.useState(false);
+
   React.useEffect(() => {
     async function load() {
       try {
@@ -130,18 +138,14 @@ export default function ProfileSettingsPage() {
     setProfile((prev) => ({ ...prev, [key]: value }));
   }
 
-  const hasChanges = JSON.stringify(profile) !== JSON.stringify(initialProfile);
+  // For hasChanges, exclude email (handled via verification) from the comparison
+  const hasChanges = React.useMemo(() => {
+    const { email: _e1, ...rest1 } = profile;
+    const { email: _e2, ...rest2 } = initialProfile;
+    return JSON.stringify(rest1) !== JSON.stringify(rest2);
+  }, [profile, initialProfile]);
 
   async function handleSave() {
-    if (!profile.full_name.trim()) {
-      toast({
-        title: 'Validation error',
-        description: 'Full name cannot be empty.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setSaving(true);
     try {
       await apiPatch('/api/settings/module', {
@@ -164,6 +168,28 @@ export default function ProfileSettingsPage() {
       setSaving(false);
     }
   }
+
+  function handleChangeEmail() {
+    setPendingEmail(profile.email);
+    setEmailVerifyOpen(true);
+  }
+
+  function handleEmailVerified() {
+    // Update profile with the new verified email
+    updateField('email', pendingEmail);
+    setInitialProfile((prev) => ({ ...prev, email: pendingEmail }));
+  }
+
+  function handleVerifyPhone() {
+    setPhoneVerifyOpen(true);
+  }
+
+  function handlePhoneVerified() {
+    // The phone in profile.phone is already the new value
+    setInitialProfile((prev) => ({ ...prev, phone: profile.phone }));
+  }
+
+  const phoneChanged = profile.phone !== initialProfile.phone && profile.phone.trim() !== '';
 
   if (loading) {
     return (
@@ -221,22 +247,44 @@ export default function ProfileSettingsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
+            {/* Full Name — read-only */}
             <FormField label="Full Name" htmlFor="full-name" required>
               <Input
                 id="full-name"
                 value={profile.full_name}
-                onChange={(e) => updateField('full_name', e.target.value)}
+                readOnly
+                className="bg-muted/50 cursor-not-allowed"
                 placeholder="John Doe"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Name cannot be changed. Contact support to update your name.
+              </p>
             </FormField>
-            <FormField label="Email" htmlFor="email" description="Email cannot be changed here">
-              <Input
-                id="email"
-                value={profile.email}
-                readOnly
-                className="bg-muted/50"
-              />
+
+            {/* Email — with Change Email button */}
+            <FormField label="Email" htmlFor="email">
+              <div className="flex gap-2">
+                <Input
+                  id="email"
+                  value={pendingEmail || profile.email}
+                  onChange={(e) => setPendingEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="flex-1"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="shrink-0 self-start"
+                  onClick={handleChangeEmail}
+                  disabled={!pendingEmail || pendingEmail === initialProfile.email}
+                >
+                  Change Email
+                </Button>
+              </div>
             </FormField>
+
+            {/* Job Title — editable as-is */}
             <FormField label="Job Title" htmlFor="job-title">
               <Input
                 id="job-title"
@@ -245,13 +293,29 @@ export default function ProfileSettingsPage() {
                 placeholder="Product Manager"
               />
             </FormField>
+
+            {/* Phone — with Verify button */}
             <FormField label="Phone" htmlFor="phone">
-              <Input
-                id="phone"
-                value={profile.phone}
-                onChange={(e) => updateField('phone', e.target.value)}
-                placeholder="+1 (555) 000-0000"
-              />
+              <div className="flex gap-2">
+                <Input
+                  id="phone"
+                  value={profile.phone}
+                  onChange={(e) => updateField('phone', e.target.value)}
+                  placeholder="+1 (555) 000-0000"
+                  className="flex-1"
+                />
+                {phoneChanged && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="shrink-0 self-start"
+                    onClick={handleVerifyPhone}
+                  >
+                    Verify
+                  </Button>
+                )}
+              </div>
             </FormField>
           </div>
         </CardContent>
@@ -321,6 +385,26 @@ export default function ProfileSettingsPage() {
           Save Changes
         </Button>
       </div>
+
+      {/* Email Verification Dialog */}
+      <VerificationDialog
+        open={emailVerifyOpen}
+        onOpenChange={setEmailVerifyOpen}
+        type="email"
+        currentValue={initialProfile.email}
+        newValue={pendingEmail}
+        onVerified={handleEmailVerified}
+      />
+
+      {/* Phone Verification Dialog */}
+      <VerificationDialog
+        open={phoneVerifyOpen}
+        onOpenChange={setPhoneVerifyOpen}
+        type="phone"
+        currentValue={initialProfile.phone}
+        newValue={profile.phone}
+        onVerified={handlePhoneVerified}
+      />
     </div>
   );
 }

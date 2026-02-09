@@ -4,7 +4,7 @@ import { persist } from 'zustand/middleware';
 interface UIState {
   sidebarCollapsed: boolean;
   mobileMenuOpen: boolean;
-  theme: 'light' | 'dark' | 'system';
+  theme: 'light' | 'dark' | 'night';
   sidebarDensity: 'compact' | 'default';
   dateFormat: string;
   timeFormat: '12h' | '24h';
@@ -12,7 +12,7 @@ interface UIState {
   setSidebarCollapsed: (collapsed: boolean) => void;
   setMobileMenuOpen: (open: boolean) => void;
   toggleMobileMenu: () => void;
-  setTheme: (theme: 'light' | 'dark' | 'system') => void;
+  setTheme: (theme: 'light' | 'dark' | 'night') => void;
   setSidebarDensity: (density: 'compact' | 'default') => void;
   setDateFormat: (format: string) => void;
   setTimeFormat: (format: '12h' | '24h') => void;
@@ -23,7 +23,7 @@ export const useUIStore = create<UIState>()(
     (set) => ({
       sidebarCollapsed: false,
       mobileMenuOpen: false,
-      theme: 'light',
+      theme: 'dark',
       sidebarDensity: 'default',
       dateFormat: 'MM/DD/YYYY',
       timeFormat: '12h',
@@ -47,6 +47,17 @@ export const useUIStore = create<UIState>()(
         dateFormat: state.dateFormat,
         timeFormat: state.timeFormat,
       }),
+      version: 1,
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as Record<string, unknown>;
+        if (version === 0) {
+          // Migrate 'system' theme to 'dark'
+          if (state.theme === 'system') {
+            state.theme = 'dark';
+          }
+        }
+        return state as unknown as UIState;
+      },
     }
   )
 );

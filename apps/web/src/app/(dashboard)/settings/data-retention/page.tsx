@@ -21,6 +21,7 @@ import {
 } from '@ccd/ui';
 import { Clock, AlertTriangle, Save } from 'lucide-react';
 import { useModuleSettings } from '@/hooks/use-module-settings';
+import { EnterpriseGate } from '@/components/settings/enterprise-gate';
 import type { ModuleId } from '@ccd/shared';
 
 /* -------------------------------------------------------------------------- */
@@ -88,6 +89,7 @@ export default function DataRetentionSettingsPage() {
   }
 
   return (
+    <EnterpriseGate feature="Data retention policies">
     <div className="space-y-6">
       {/* Warning Banner */}
       <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-4">
@@ -168,5 +170,6 @@ export default function DataRetentionSettingsPage() {
         </Button>
       </div>
     </div>
+    </EnterpriseGate>
   );
 }

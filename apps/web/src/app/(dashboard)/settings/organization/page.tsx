@@ -16,7 +16,7 @@ import {
   CcdLoader,
   CcdSpinner,
 } from '@ccd/ui';
-import { Building2, Globe, Copy, Check, Save, Trash2 } from 'lucide-react';
+import { Building2, Globe, Copy, Check, Save, Trash2, CheckCircle, XCircle } from 'lucide-react';
 import { apiGet, apiPatch } from '@/lib/api';
 
 interface OrgData {
@@ -37,6 +37,10 @@ export default function OrganizationSettingsPage() {
   // Form state
   const [name, setName] = React.useState('');
   const [logoUrl, setLogoUrl] = React.useState('');
+
+  // Slug availability state
+  const [slugAvailable, setSlugAvailable] = React.useState<boolean | null>(null);
+  const [checkingSlug, setCheckingSlug] = React.useState(false);
 
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'ccdsuite.com';
 
@@ -103,6 +107,32 @@ export default function OrganizationSettingsPage() {
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '');
 
+  // Debounced slug availability check
+  React.useEffect(() => {
+    // If slug hasn't changed from current org slug, no check needed
+    if (!previewSlug || previewSlug === org?.slug) {
+      setSlugAvailable(null);
+      setCheckingSlug(false);
+      return;
+    }
+
+    setCheckingSlug(true);
+    const timer = setTimeout(async () => {
+      try {
+        const res = await apiGet<{ available: boolean; slug: string }>(
+          `/api/settings/organization/check-slug?slug=${encodeURIComponent(previewSlug)}`
+        );
+        setSlugAvailable(res.data.available);
+      } catch {
+        setSlugAvailable(null);
+      } finally {
+        setCheckingSlug(false);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [previewSlug, org?.slug]);
+
   const hasChanges = org && (name !== org.name || (logoUrl || '') !== (org.logo_url || ''));
 
   if (loading) {
@@ -166,6 +196,29 @@ export default function OrganizationSettingsPage() {
                 )}
               </Button>
             </div>
+            {/* Slug availability indicator */}
+            {previewSlug && previewSlug !== org?.slug && (
+              <div className="flex items-center gap-2">
+                {checkingSlug && (
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <CcdSpinner size="sm" />
+                    <span>Checking availability...</span>
+                  </div>
+                )}
+                {!checkingSlug && slugAvailable === true && (
+                  <div className="flex items-center gap-1.5 text-xs text-emerald-600">
+                    <CheckCircle className="h-4 w-4" />
+                    <span>Available</span>
+                  </div>
+                )}
+                {!checkingSlug && slugAvailable === false && (
+                  <div className="flex items-center gap-1.5 text-xs text-destructive">
+                    <XCircle className="h-4 w-4" />
+                    <span>Not available</span>
+                  </div>
+                )}
+              </div>
+            )}
             {previewSlug && previewSlug !== org?.slug && (
               <p className="text-xs text-amber-600">
                 Saving will change your subdomain from{' '}
@@ -214,7 +267,7 @@ export default function OrganizationSettingsPage() {
                 </Badge>
               )}
             </div>
-            <Button onClick={handleSave} disabled={saving || !hasChanges}>
+            <Button onClick={handleSave} disabled={saving || !hasChanges || slugAvailable === false}>
               {saving ? (
                 <CcdSpinner size="sm" className="mr-2" />
               ) : (
