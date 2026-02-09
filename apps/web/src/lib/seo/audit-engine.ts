@@ -46,20 +46,35 @@ async function fetchPsiData(url: string): Promise<PsiResponse | null> {
       signal: AbortSignal.timeout(60_000), // 60s timeout
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      console.error(`[SEO Audit] PSI API returned ${res.status} for ${url}`);
+      return null;
+    }
     return (await res.json()) as PsiResponse;
-  } catch {
+  } catch (err) {
+    console.error(`[SEO Audit] PSI API failed for ${url}:`, err instanceof Error ? err.message : err);
     return null;
   }
 }
 
-function extractLighthouseScores(psi: PsiResponse | null) {
+interface LighthouseScores {
+  performance: number | null;
+  seo: number | null;
+  bestPractices: number | null;
+  accessibility: number | null;
+}
+
+function extractLighthouseScores(psi: PsiResponse | null): LighthouseScores {
   const cats = psi?.lighthouseResult?.categories;
+  if (!cats) {
+    // PSI data unavailable — return nulls so UI can show "N/A"
+    return { performance: null, seo: null, bestPractices: null, accessibility: null };
+  }
   return {
-    performance: Math.round((cats?.performance?.score ?? 0) * 100),
-    seo: Math.round((cats?.seo?.score ?? 0) * 100),
-    bestPractices: Math.round((cats?.['best-practices']?.score ?? 0) * 100),
-    accessibility: Math.round((cats?.accessibility?.score ?? 0) * 100),
+    performance: cats.performance?.score != null ? Math.round(cats.performance.score * 100) : null,
+    seo: cats.seo?.score != null ? Math.round(cats.seo.score * 100) : null,
+    bestPractices: cats['best-practices']?.score != null ? Math.round(cats['best-practices'].score * 100) : null,
+    accessibility: cats.accessibility?.score != null ? Math.round(cats.accessibility.score * 100) : null,
   };
 }
 
@@ -217,7 +232,7 @@ async function analyzeTechnical(domain: string): Promise<AuditTechnical> {
 // ── Issue Generation ───────────────────────────────────────────────
 
 function generateIssues(
-  lighthouse: AuditResults['lighthouse'],
+  lighthouse: LighthouseScores,
   metaTags: AuditMetaTags,
   content: AuditContentStructure,
   technical: AuditTechnical,
@@ -225,15 +240,15 @@ function generateIssues(
 ): AuditIssue[] {
   const issues: AuditIssue[] = [];
 
-  // Lighthouse-based issues
-  if (lighthouse.performance < 50) {
+  // Lighthouse-based issues (only when PSI data is available)
+  if (lighthouse.performance != null && lighthouse.performance < 50) {
     issues.push({
       type: 'performance',
       priority: 'critical',
       title: 'Very poor performance score',
       description: `Page performance score is ${lighthouse.performance}/100. Optimize images, reduce JavaScript, and leverage browser caching.`,
     });
-  } else if (lighthouse.performance < 75) {
+  } else if (lighthouse.performance != null && lighthouse.performance < 75) {
     issues.push({
       type: 'performance',
       priority: 'high',
@@ -242,7 +257,7 @@ function generateIssues(
     });
   }
 
-  if (lighthouse.seo < 80) {
+  if (lighthouse.seo != null && lighthouse.seo < 80) {
     issues.push({
       type: 'on_page',
       priority: lighthouse.seo < 50 ? 'critical' : 'high',
@@ -251,7 +266,7 @@ function generateIssues(
     });
   }
 
-  if (lighthouse.accessibility < 70) {
+  if (lighthouse.accessibility != null && lighthouse.accessibility < 70) {
     issues.push({
       type: 'technical',
       priority: 'medium',
@@ -381,20 +396,30 @@ function computeTechnicalScore(tech: AuditTechnical): number {
 }
 
 function computeOverallScore(
-  lighthouse: AuditResults['lighthouse'],
+  lighthouse: LighthouseScores,
   metaScore: number,
   contentScore: number,
   techScore: number,
 ): number {
-  const score =
-    lighthouse.seo * 0.30 +
-    lighthouse.performance * 0.20 +
-    lighthouse.bestPractices * 0.10 +
-    lighthouse.accessibility * 0.10 +
-    metaScore * 0.15 +
-    contentScore * 0.10 +
-    techScore * 0.05;
-  return Math.round(score);
+  // Build weighted components, skipping null lighthouse scores
+  let totalWeight = 0;
+  let weightedSum = 0;
+
+  if (lighthouse.seo != null) { weightedSum += lighthouse.seo * 0.30; totalWeight += 0.30; }
+  if (lighthouse.performance != null) { weightedSum += lighthouse.performance * 0.20; totalWeight += 0.20; }
+  if (lighthouse.bestPractices != null) { weightedSum += lighthouse.bestPractices * 0.10; totalWeight += 0.10; }
+  if (lighthouse.accessibility != null) { weightedSum += lighthouse.accessibility * 0.10; totalWeight += 0.10; }
+
+  // HTML crawl components always available
+  weightedSum += metaScore * 0.15;
+  totalWeight += 0.15;
+  weightedSum += contentScore * 0.10;
+  totalWeight += 0.10;
+  weightedSum += techScore * 0.05;
+  totalWeight += 0.05;
+
+  // Normalize: if PSI data is missing, scale remaining weights to fill 100%
+  return totalWeight > 0 ? Math.round(weightedSum / totalWeight) : 0;
 }
 
 // ── Main Export ─────────────────────────────────────────────────────
@@ -458,7 +483,13 @@ export async function runSeoAudit(domain: string): Promise<AuditEngineResult> {
   const overallScore = computeOverallScore(lighthouse, metaScore, contentScore, techScore);
 
   const results: AuditResults = {
-    lighthouse,
+    lighthouse: {
+      performance: lighthouse.performance ?? 0,
+      seo: lighthouse.seo ?? 0,
+      bestPractices: lighthouse.bestPractices ?? 0,
+      accessibility: lighthouse.accessibility ?? 0,
+    },
+    psiAvailable: lighthouse.performance !== null,
     coreWebVitals,
     metaTags,
     contentStructure,

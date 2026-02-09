@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { PageHeader, Card, CardContent, Badge, Button, CcdLoader } from '@ccd/ui';
-import { Plus, Unplug } from 'lucide-react';
+import { Plus, Unplug, ExternalLink } from 'lucide-react';
 import { apiGet, apiPatch, apiDelete } from '@/lib/api';
 import { AccountDialog } from '@/components/social/account-dialog';
 import type { SocialAccount } from '@ccd/shared/types/social';
@@ -113,20 +113,56 @@ export default function SocialAccountsPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between mb-3">
                     <div className="flex items-center gap-3">
+                      {account.avatar_url ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={account.avatar_url}
+                          alt={account.account_name}
+                          className="h-10 w-10 rounded-full object-cover"
+                          onError={(e) => {
+                            // Fallback to initial letter on avatar load failure
+                            const target = e.currentTarget;
+                            target.style.display = 'none';
+                            const fallback = target.nextElementSibling as HTMLElement;
+                            if (fallback) fallback.style.display = 'flex';
+                          }}
+                        />
+                      ) : null}
                       <div
-                        className="h-10 w-10 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                        style={{ backgroundColor: platform?.color }}
+                        className="h-10 w-10 rounded-full items-center justify-center text-white text-sm font-bold"
+                        style={{
+                          backgroundColor: platform?.color,
+                          display: account.avatar_url ? 'none' : 'flex',
+                        }}
                       >
                         {account.account_name?.[0]?.toUpperCase()}
                       </div>
                       <div>
                         <p className="font-medium">{account.account_name}</p>
-                        <p className="text-xs text-muted-foreground">{platform?.label}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-muted-foreground">{platform?.label}</p>
+                          {typeof (account.metadata as Record<string, string>)?.account_type === 'string' && (
+                            <span className="text-[10px] text-muted-foreground border rounded px-1">
+                              {(account.metadata as Record<string, string>).account_type}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <Badge variant={status?.variant}>{status?.label}</Badge>
                   </div>
                   <div className="flex gap-2 mt-4">
+                    {account.account_id && account.account_id.startsWith('http') && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="flex-1"
+                        onClick={() => window.open(account.account_id!, '_blank')}
+                      >
+                        <ExternalLink className="mr-1 h-3 w-3" />
+                        Profile
+                      </Button>
+                    )}
                     {account.status !== 'active' && (
                       <Button
                         size="sm"

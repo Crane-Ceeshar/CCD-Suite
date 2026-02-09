@@ -172,6 +172,8 @@ export interface AuditResults {
     bestPractices: number;
     accessibility: number;
   };
+  /** Whether PSI data was available; if false, lighthouse scores are 0 placeholders */
+  psiAvailable?: boolean;
   coreWebVitals: CoreWebVitals;
   metaTags: AuditMetaTags;
   contentStructure: AuditContentStructure;

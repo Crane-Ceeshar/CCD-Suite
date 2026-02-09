@@ -12,7 +12,7 @@ import {
   toast,
   type Column,
 } from '@ccd/ui';
-import { Plus, Globe, Search, LayoutGrid, List } from 'lucide-react';
+import { Plus, Globe, Search, LayoutGrid, List, Pencil, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { apiGet, apiPatch, apiDelete } from '@/lib/api';
 import { ProjectDialog } from '@/components/seo/project-dialog';
@@ -152,7 +152,7 @@ export default function SEOProjectsPage() {
     {
       key: 'actions',
       header: '',
-      className: 'w-[80px]',
+      className: 'w-[120px]',
       render: (project) => (
         <div className="flex items-center gap-1">
           <Button
@@ -164,6 +164,17 @@ export default function SEOProjectsPage() {
             }}
           >
             Edit
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDelete(project.id);
+            }}
+          >
+            Delete
           </Button>
         </div>
       ),
@@ -246,26 +257,51 @@ export default function SEOProjectsPage() {
           {filtered.map((project) => {
             const config = statusConfig[project.status];
             return (
-              <Card
-                key={project.id}
-                className="cursor-pointer transition-shadow hover:shadow-md"
-                onClick={() => router.push(`/seo/projects/${project.id}`)}
-              >
-                <CardContent className="pt-6">
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      <h3 className="font-medium">{project.name}</h3>
-                      <p className="text-sm text-muted-foreground">{project.domain}</p>
+              <div key={project.id} className="relative group">
+                <Card
+                  className="cursor-pointer transition-shadow hover:shadow-md"
+                  onClick={() => router.push(`/seo/projects/${project.id}`)}
+                >
+                  <CardContent className="pt-6">
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <h3 className="font-medium">{project.name}</h3>
+                        <p className="text-sm text-muted-foreground">{project.domain}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={config?.variant}>{config?.label}</Badge>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant={config?.variant}>{config?.label}</Badge>
-                    </div>
-                  </div>
-                  {project.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
-                  )}
-                </CardContent>
-              </Card>
+                    {project.description && (
+                      <p className="text-sm text-muted-foreground line-clamp-2">{project.description}</p>
+                    )}
+                  </CardContent>
+                </Card>
+                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(project);
+                    }}
+                    title="Edit project"
+                  >
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(project.id);
+                    }}
+                    title="Delete project"
+                  >
+                    <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                  </Button>
+                </div>
+              </div>
             );
           })}
         </div>

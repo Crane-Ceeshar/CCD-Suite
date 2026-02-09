@@ -221,7 +221,7 @@ export default function AuditDetailPage() {
       </div>
 
       {/* ── Lighthouse Scores ─────────────────────────────────────────── */}
-      {results?.lighthouse && (
+      {results?.lighthouse && results.psiAvailable !== false && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Lighthouse Scores</CardTitle>
@@ -249,8 +249,25 @@ export default function AuditDetailPage() {
         </Card>
       )}
 
+      {/* ── PSI Unavailable Notice ─────────────────────────────────────── */}
+      {results && results.psiAvailable === false && (
+        <Card className="border-yellow-500/30">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <AlertTriangle className="h-5 w-5 text-yellow-400 shrink-0" />
+              <div>
+                <p className="text-sm font-medium">Google PageSpeed Insights data unavailable</p>
+                <p className="text-xs text-muted-foreground">
+                  Lighthouse scores and Core Web Vitals could not be retrieved. The score is based on HTML analysis only. Try running the audit again.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* ── Core Web Vitals ───────────────────────────────────────────── */}
-      {results?.coreWebVitals && (
+      {results?.coreWebVitals && results.psiAvailable !== false && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Core Web Vitals</CardTitle>

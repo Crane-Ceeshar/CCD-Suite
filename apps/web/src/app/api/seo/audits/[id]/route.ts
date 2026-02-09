@@ -72,3 +72,30 @@ export async function PATCH(
 
   return NextResponse.json({ success: true, data });
 }
+
+export async function DELETE(
+  _request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { error, supabase } = await requireAuth();
+  if (error) return error;
+
+  const { id } = await params;
+
+  // Cascade-delete related recommendations first
+  await supabase.from('seo_recommendations').delete().eq('audit_id', id);
+
+  const { error: deleteError } = await supabase
+    .from('seo_audits')
+    .delete()
+    .eq('id', id);
+
+  if (deleteError) {
+    return NextResponse.json(
+      { success: false, error: { message: deleteError.message } },
+      { status: 500 }
+    );
+  }
+
+  return NextResponse.json({ success: true, data: null });
+}
