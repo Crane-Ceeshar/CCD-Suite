@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { PageHeader, Card, CardContent, CardHeader, CardTitle, Badge, Button, CcdLoader, CcdSpinner, toast } from '@ccd/ui';
-import { MessageCircle, ThumbsUp, Share, Eye, Sparkles } from 'lucide-react';
+import { MessageCircle, ThumbsUp, Share, Eye, Sparkles, RefreshCw } from 'lucide-react';
 import { apiGet, apiPost } from '@/lib/api';
 import { CommentReplyDialog } from '@/components/social/comment-reply-dialog';
 import { EngagementChart } from '@/components/social/engagement-chart';
@@ -44,6 +44,25 @@ export default function EngagementPage() {
   const [replyComment, setReplyComment] = useState<SocialComment | null>(null);
   const [replyInitialContent, setReplyInitialContent] = useState<string | undefined>(undefined);
   const [suggestingReplyId, setSuggestingReplyId] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const [lastSynced, setLastSynced] = useState<string | null>(null);
+
+  async function handleSync() {
+    setSyncing(true);
+    try {
+      const res = await apiPost<{ synced_at: string; analytics: { synced: number }; comments: { new_comments: number } }>('/api/social/analytics/sync', {});
+      setLastSynced(res.data?.synced_at ?? new Date().toISOString());
+      toast({
+        title: 'Sync complete',
+        description: `${res.data?.analytics?.synced ?? 0} posts synced, ${res.data?.comments?.new_comments ?? 0} new comments`,
+      });
+      fetchData();
+    } catch (err) {
+      toast({ title: 'Sync failed', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' });
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -128,7 +147,17 @@ export default function EngagementPage() {
     <div className="space-y-6">
       <PageHeader
         title="Engagement Hub"
-        description="Monitor engagement and respond to comments"
+        description={lastSynced ? `Last synced ${new Date(lastSynced).toLocaleString()}` : 'Monitor engagement and respond to comments'}
+        actions={
+          <Button onClick={handleSync} disabled={syncing} variant="outline" size="sm">
+            {syncing ? (
+              <CcdSpinner size="sm" className="mr-2" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Sync Now
+          </Button>
+        }
       />
 
       {/* Engagement overview */}

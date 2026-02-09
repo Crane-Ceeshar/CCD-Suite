@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
+import { publishPost } from '@/lib/services/social-publisher';
+import { isConfigured } from '@/lib/services/ayrshare';
 
 export async function GET(
   _request: NextRequest,
@@ -30,7 +32,7 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error, supabase } = await requireAuth();
+  const { error, supabase, profile } = await requireAuth();
   if (error) return error;
 
   const { id } = await params;
@@ -47,10 +49,25 @@ export async function PATCH(
     ...(body.metadata !== undefined && { metadata: body.metadata }),
   };
 
-  // Handle publish action
+  // Handle publish action — actually publish via Ayrshare
   if (body.action === 'publish') {
-    updateFields.status = 'published';
-    updateFields.published_at = new Date().toISOString();
+    if (isConfigured()) {
+      const result = await publishPost(id, supabase, profile.tenant_id);
+      const { data: updated } = await supabase
+        .from('social_posts')
+        .select('*, engagement:social_engagement(*)')
+        .eq('id', id)
+        .single();
+      return NextResponse.json({
+        success: result.success,
+        data: updated,
+        publish_result: result,
+      });
+    } else {
+      // Fallback: just update status in DB
+      updateFields.status = 'published';
+      updateFields.published_at = new Date().toISOString();
+    }
   }
 
   const { data, error: updateError } = await supabase

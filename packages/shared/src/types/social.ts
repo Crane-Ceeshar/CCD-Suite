@@ -30,6 +30,8 @@ export interface SocialPost {
   account_ids: string[];
   campaign_id: string | null;
   metadata: Record<string, unknown>;
+  external_id?: string | null;
+  publish_error?: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -113,4 +115,15 @@ export interface CreateCampaignInput {
   end_date?: string;
   tags?: string[];
   budget?: number;
+}
+
+export interface SocialProviderProfile {
+  id: string;
+  tenant_id: string;
+  provider: string;
+  profile_key: string;
+  status: 'active' | 'inactive';
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
 }

@@ -140,12 +140,12 @@ export default function ComposePage() {
 
   async function handlePublish() {
     if (!content.trim() || selectedPlatforms.length === 0) {
-      alert('Please add content and select at least one platform');
+      toast({ title: 'Missing content', description: 'Please add content and select at least one platform', variant: 'destructive' });
       return;
     }
     setSaving(true);
     try {
-      await apiPost('/api/social/posts', {
+      const res = await apiPost<{ publish_result?: { success: boolean; error?: string; postIds?: Array<{ platform: string; postUrl?: string }> } }>('/api/social/posts', {
         content: content.trim(),
         platforms: selectedPlatforms,
         status: 'published',
@@ -153,10 +153,18 @@ export default function ComposePage() {
         campaign_id: campaignId || null,
       });
       logActivity('published');
-      alert('Post published successfully!');
+      const pr = res.data?.publish_result;
+      if (pr?.success) {
+        const count = pr.postIds?.length ?? selectedPlatforms.length;
+        toast({ title: 'Post published!', description: `Successfully published to ${count} platform${count > 1 ? 's' : ''}` });
+      } else if (pr?.error) {
+        toast({ title: 'Publish failed', description: pr.error, variant: 'destructive' });
+      } else {
+        toast({ title: 'Post saved', description: 'Post saved as published' });
+      }
       router.push('/social/posts');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to publish');
+      toast({ title: 'Failed to publish', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -164,11 +172,11 @@ export default function ComposePage() {
 
   async function handleSchedule() {
     if (!content.trim() || selectedPlatforms.length === 0) {
-      alert('Please add content and select at least one platform');
+      toast({ title: 'Missing content', description: 'Please add content and select at least one platform', variant: 'destructive' });
       return;
     }
     if (!scheduledAt) {
-      alert('Please select a schedule date and time');
+      toast({ title: 'Missing date', description: 'Please select a schedule date and time', variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -181,10 +189,10 @@ export default function ComposePage() {
         campaign_id: campaignId || null,
       });
       logActivity('scheduled');
-      alert('Post scheduled successfully!');
+      toast({ title: 'Post scheduled!', description: `Scheduled for ${new Date(scheduledAt).toLocaleString()}` });
       router.push('/social/posts');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to schedule');
+      toast({ title: 'Failed to schedule', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' });
     } finally {
       setSaving(false);
     }
@@ -192,7 +200,7 @@ export default function ComposePage() {
 
   async function handleSaveDraft() {
     if (!content.trim() || selectedPlatforms.length === 0) {
-      alert('Please add content and select at least one platform');
+      toast({ title: 'Missing content', description: 'Please add content and select at least one platform', variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -204,10 +212,10 @@ export default function ComposePage() {
         campaign_id: campaignId || null,
       });
       logActivity('draft');
-      alert('Draft saved successfully!');
+      toast({ title: 'Draft saved', description: 'Your draft has been saved' });
       router.push('/social/posts');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Failed to save draft');
+      toast({ title: 'Failed to save draft', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' });
     } finally {
       setSaving(false);
     }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
+import { publishPost, schedulePost } from '@/lib/services/social-publisher';
+import { isConfigured } from '@/lib/services/ayrshare';
 
 export async function GET(request: NextRequest) {
   const { error, supabase } = await requireAuth();
@@ -72,6 +74,38 @@ export async function POST(request: NextRequest) {
       { success: false, error: { message: insertError.message } },
       { status: 500 }
     );
+  }
+
+  // If Ayrshare is configured, actually publish or schedule via the API
+  if (isConfigured() && data) {
+    if (body.status === 'published') {
+      const result = await publishPost(data.id, supabase, profile.tenant_id);
+      // Re-fetch to get updated status
+      const { data: updated } = await supabase
+        .from('social_posts')
+        .select('*')
+        .eq('id', data.id)
+        .single();
+      return NextResponse.json({
+        success: result.success,
+        data: updated ?? data,
+        publish_result: result,
+      }, { status: 201 });
+    }
+
+    if (body.status === 'scheduled' && body.scheduled_at) {
+      const result = await schedulePost(data.id, body.scheduled_at, supabase, profile.tenant_id);
+      const { data: updated } = await supabase
+        .from('social_posts')
+        .select('*')
+        .eq('id', data.id)
+        .single();
+      return NextResponse.json({
+        success: true,
+        data: updated ?? data,
+        schedule_result: result,
+      }, { status: 201 });
+    }
   }
 
   return NextResponse.json({ success: true, data }, { status: 201 });

@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { PageHeader, StatCard, Card, CardContent, CardHeader, CardTitle, CcdLoader } from '@ccd/ui';
-import { ThumbsUp, MessageCircle, Share, TrendingUp } from 'lucide-react';
-import { apiGet } from '@/lib/api';
+import { PageHeader, StatCard, Card, CardContent, CardHeader, CardTitle, CcdLoader, Button, CcdSpinner, toast } from '@ccd/ui';
+import { ThumbsUp, MessageCircle, Share, TrendingUp, RefreshCw } from 'lucide-react';
+import { apiGet, apiPost } from '@/lib/api';
 import {
   ResponsiveContainer,
   BarChart,
@@ -25,6 +25,7 @@ interface AnalyticsSummary {
 
 export default function SocialAnalyticsPage() {
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [summary, setSummary] = useState<AnalyticsSummary>({
     totalLikes: 0,
     totalComments: 0,
@@ -33,50 +34,54 @@ export default function SocialAnalyticsPage() {
     chartData: [],
   });
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await apiGet<SocialEngagement[]>('/api/social/engagement');
-        const data = res.data ?? [];
+  async function loadAnalytics() {
+    try {
+      const res = await apiGet<{ likes: number; comments: number; shares: number; impressions: number }>('/api/social/engagement');
+      const data = res.data;
+      if (!data) return;
 
-        const totals = data.reduce(
-          (acc, row) => {
-            acc.likes += row.likes ?? 0;
-            acc.comments += row.comments ?? 0;
-            acc.shares += row.shares ?? 0;
-            acc.impressions += row.impressions ?? 0;
-            return acc;
-          },
-          { likes: 0, comments: 0, shares: 0, impressions: 0 }
-        );
+      const totalEngagement = (data.likes ?? 0) + (data.comments ?? 0) + (data.shares ?? 0);
+      const engagementRate =
+        (data.impressions ?? 0) > 0
+          ? Math.round((totalEngagement / (data.impressions ?? 1)) * 10000) / 100
+          : 0;
 
-        const totalEngagement = totals.likes + totals.comments + totals.shares;
-        const engagementRate =
-          totals.impressions > 0
-            ? Math.round((totalEngagement / totals.impressions) * 10000) / 100
-            : 0;
+      const chartData = [
+        { name: 'Likes', value: data.likes ?? 0 },
+        { name: 'Comments', value: data.comments ?? 0 },
+        { name: 'Shares', value: data.shares ?? 0 },
+      ];
 
-        const chartData = [
-          { name: 'Likes', value: totals.likes },
-          { name: 'Comments', value: totals.comments },
-          { name: 'Shares', value: totals.shares },
-        ];
-
-        setSummary({
-          totalLikes: totals.likes,
-          totalComments: totals.comments,
-          totalShares: totals.shares,
-          engagementRate,
-          chartData,
-        });
-      } catch {
-        // keep defaults
-      } finally {
-        setLoading(false);
-      }
+      setSummary({
+        totalLikes: data.likes ?? 0,
+        totalComments: data.comments ?? 0,
+        totalShares: data.shares ?? 0,
+        engagementRate,
+        chartData,
+      });
+    } catch {
+      // keep defaults
+    } finally {
+      setLoading(false);
     }
-    load();
+  }
+
+  useEffect(() => {
+    loadAnalytics();
   }, []);
+
+  async function handleSync() {
+    setSyncing(true);
+    try {
+      await apiPost('/api/social/analytics/sync', {});
+      toast({ title: 'Analytics refreshed', description: 'Latest data synced from your social accounts' });
+      await loadAnalytics();
+    } catch (err) {
+      toast({ title: 'Sync failed', description: err instanceof Error ? err.message : 'Unknown error', variant: 'destructive' });
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   if (loading) {
     return (
@@ -95,6 +100,16 @@ export default function SocialAnalyticsPage() {
           { label: 'Social Media', href: '/social' },
           { label: 'Analytics' },
         ]}
+        actions={
+          <Button onClick={handleSync} disabled={syncing} variant="outline" size="sm">
+            {syncing ? (
+              <CcdSpinner size="sm" className="mr-2" />
+            ) : (
+              <RefreshCw className="mr-2 h-4 w-4" />
+            )}
+            Refresh Analytics
+          </Button>
+        }
       />
 
       {/* KPI Cards */}

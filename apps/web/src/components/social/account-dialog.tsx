@@ -17,8 +17,9 @@ import {
   SelectTrigger,
   SelectValue,
   CcdSpinner,
+  toast,
 } from '@ccd/ui';
-import { Link2, User, Building2, Sparkles } from 'lucide-react';
+import { Link2, User, Building2, Sparkles, ExternalLink, Wifi } from 'lucide-react';
 import { apiPost } from '@/lib/api';
 
 // ── Platform Config ──────────────────────────────────────────────────
@@ -157,20 +158,30 @@ const initialForm: AccountFormData = {
   account_type: 'business',
 };
 
+type DialogMode = 'choose' | 'manual';
+
 // ── Component ───────────────────────────────────────────────────────
 
 export function AccountDialog({ open, onOpenChange, onSuccess }: AccountDialogProps) {
+  const [mode, setMode] = React.useState<DialogMode>('choose');
   const [form, setForm] = React.useState<AccountFormData>(initialForm);
   const [saving, setSaving] = React.useState(false);
+  const [connecting, setConnecting] = React.useState(false);
   const [error, setError] = React.useState('');
   const [urlError, setUrlError] = React.useState('');
+  const pollRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
   React.useEffect(() => {
     if (open) {
+      setMode('choose');
       setForm(initialForm);
       setError('');
       setUrlError('');
+      setConnecting(false);
     }
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
   }, [open]);
 
   function update(field: keyof AccountFormData, value: string) {
@@ -204,7 +215,45 @@ export function AccountDialog({ open, onOpenChange, onSuccess }: AccountDialogPr
 
   const selectedPlatform = platformConfigs.find((p) => p.id === form.platform);
 
-  async function handleSubmit(e: React.FormEvent) {
+  // ── Connect via Ayrshare OAuth ──────────────────────────────────
+  async function handleConnect() {
+    setConnecting(true);
+    setError('');
+
+    try {
+      const res = await apiPost<{ url: string; profileKey: string }>('/api/social/accounts/link', {
+        redirectUrl: `${window.location.origin}/api/social/accounts/callback`,
+      });
+
+      if (res.data?.url) {
+        // Open link in a popup
+        const popup = window.open(res.data.url, 'ayrshare_connect', 'width=600,height=700,scrollbars=yes');
+
+        // Poll for popup close
+        pollRef.current = setInterval(() => {
+          if (!popup || popup.closed) {
+            if (pollRef.current) clearInterval(pollRef.current);
+            pollRef.current = null;
+            setConnecting(false);
+            onSuccess();
+            onOpenChange(false);
+            toast({
+              title: 'Accounts synced',
+              description: 'Your social media accounts have been connected.',
+            });
+          }
+        }, 1000);
+      } else {
+        throw new Error('No link URL returned');
+      }
+    } catch (err) {
+      setConnecting(false);
+      setError(err instanceof Error ? err.message : 'Failed to start connection');
+    }
+  }
+
+  // ── Manual account add ──────────────────────────────────────────
+  async function handleManualSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     // Require either profile URL or display name
@@ -227,19 +276,16 @@ export function AccountDialog({ open, onOpenChange, onSuccess }: AccountDialogPr
     setUrlError('');
 
     try {
-      // Extract handle from URL
       const handle = selectedPlatform?.extractHandle(form.profile_url) ?? null;
       const displayName = form.display_name.trim() || (handle ? `${selectedPlatform?.handlePrefix ?? ''}${handle}` : '');
-
-      // Generate avatar URL using platform-specific patterns
-      const avatarUrl = handle ? `https://unavatar.io/${form.platform}/${handle}` : null;
 
       await apiPost('/api/social/accounts', {
         platform: form.platform,
         account_name: displayName,
         account_id: form.profile_url.trim() || null,
-        avatar_url: avatarUrl,
+        avatar_url: null,
         metadata: {
+          connection_type: 'manual',
           profile_url: form.profile_url.trim() || null,
           account_type: form.account_type,
           display_name: displayName,
@@ -255,16 +301,79 @@ export function AccountDialog({ open, onOpenChange, onSuccess }: AccountDialogPr
     }
   }
 
+  // ── Choose mode ─────────────────────────────────────────────────
+  if (mode === 'choose') {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Connect Social Account</DialogTitle>
+            <DialogDescription>
+              Choose how to connect your social media accounts
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-2">
+            <button
+              onClick={handleConnect}
+              disabled={connecting}
+              className="w-full flex items-center gap-4 p-4 rounded-lg border-2 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-colors text-left"
+            >
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                {connecting ? (
+                  <CcdSpinner size="sm" />
+                ) : (
+                  <Wifi className="h-5 w-5 text-primary" />
+                )}
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Connect via OAuth</p>
+                <p className="text-xs text-muted-foreground">
+                  Securely link your accounts to publish posts and track analytics
+                </p>
+              </div>
+              <ExternalLink className="h-4 w-4 text-muted-foreground ml-auto shrink-0" />
+            </button>
+
+            <button
+              onClick={() => setMode('manual')}
+              className="w-full flex items-center gap-4 p-4 rounded-lg border hover:bg-accent transition-colors text-left"
+            >
+              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                <Link2 className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="font-semibold text-sm">Add manually</p>
+                <p className="text-xs text-muted-foreground">
+                  Add account for display only (cannot publish or track analytics)
+                </p>
+              </div>
+            </button>
+          </div>
+
+          {error && <p className="text-sm text-destructive">{error}</p>}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  // ── Manual mode ─────────────────────────────────────────────────
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Connect Social Account</DialogTitle>
+          <DialogTitle>Add Account Manually</DialogTitle>
           <DialogDescription>
-            Paste your profile URL to automatically detect the platform and extract your handle
+            Paste your profile URL to detect the platform. Manual accounts are display-only and cannot publish.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleManualSubmit} className="space-y-4">
           {/* Profile URL — main input */}
           <FormField label="Profile URL">
             <div className="relative">
@@ -340,12 +449,15 @@ export function AccountDialog({ open, onOpenChange, onSuccess }: AccountDialogPr
 
           {error && <p className="text-sm text-destructive">{error}</p>}
           <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => setMode('choose')}>
+              Back
+            </Button>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={saving}>
               {saving && <CcdSpinner size="sm" className="mr-2" />}
-              Connect Account
+              Add Account
             </Button>
           </DialogFooter>
         </form>

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
+import * as ayrshare from '@/lib/services/ayrshare';
 
 export async function GET(
   _request: NextRequest,
@@ -66,6 +67,21 @@ export async function DELETE(
   if (error) return error;
 
   const { id } = await params;
+
+  // Try to unlink from Ayrshare if this was an OAuth-connected account
+  const { data: account } = await supabase
+    .from('social_accounts')
+    .select('access_token_encrypted')
+    .eq('id', id)
+    .single();
+
+  if (account?.access_token_encrypted && ayrshare.isConfigured()) {
+    try {
+      await ayrshare.deleteProfile(account.access_token_encrypted);
+    } catch {
+      // Continue with DB delete even if Ayrshare unlink fails
+    }
+  }
 
   const { error: deleteError } = await supabase
     .from('social_accounts')

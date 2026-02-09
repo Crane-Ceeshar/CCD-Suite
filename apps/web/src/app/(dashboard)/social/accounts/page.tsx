@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { PageHeader, Card, CardContent, Badge, Button, CcdLoader } from '@ccd/ui';
-import { Plus, Unplug, ExternalLink, Trash2 } from 'lucide-react';
+import { Plus, Unplug, ExternalLink, Trash2, Wifi, Link2 } from 'lucide-react';
 import { apiGet, apiPatch, apiDelete } from '@/lib/api';
 import { AccountDialog } from '@/components/social/account-dialog';
 import { PlatformIcon, getPlatformColor, platformLabels } from '@/components/social/platform-icon';
@@ -103,6 +103,7 @@ export default function SocialAccountsPage() {
             const status = statusConfig[account.status];
             const meta = account.metadata as Record<string, string> | null;
             const accountType = typeof meta?.account_type === 'string' ? meta.account_type : null;
+            const connectionType = meta?.connection_type === 'ayrshare' ? 'oauth' : 'manual';
             const profileUrl = account.account_id?.startsWith('http') ? account.account_id : null;
 
             return (
@@ -158,6 +159,18 @@ export default function SocialAccountsPage() {
                                   {accountType}
                                 </span>
                               </>
+                            )}
+                            <span className="text-muted-foreground text-[10px]">•</span>
+                            {connectionType === 'oauth' ? (
+                              <span className="inline-flex items-center gap-0.5 text-[11px] text-emerald-600">
+                                <Wifi className="h-2.5 w-2.5" />
+                                OAuth
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-0.5 text-[11px] text-muted-foreground">
+                                <Link2 className="h-2.5 w-2.5" />
+                                Manual
+                              </span>
                             )}
                           </div>
                         </div>

@@ -12,7 +12,7 @@ import {
   toast,
   type Column,
 } from '@ccd/ui';
-import { Pencil, Trash2, FileText, Search } from 'lucide-react';
+import { Pencil, Trash2, FileText, Search, RotateCcw, ExternalLink } from 'lucide-react';
 import { apiDelete, apiPatch } from '@/lib/api';
 import { PostDialog } from './post-dialog';
 import type { SocialPost } from '@ccd/shared/types/social';
@@ -91,6 +91,16 @@ export function PostsTable({ posts, loading, onRefresh }: PostsTableProps) {
     }
   }
 
+  async function handleRetry(id: string) {
+    try {
+      await apiPatch(`/api/social/posts/${id}`, { action: 'publish' });
+      toast({ title: 'Retrying publish...' });
+      onRefresh();
+    } catch {
+      toast({ title: 'Retry failed', variant: 'destructive' });
+    }
+  }
+
   const columns: Column<PostRow>[] = [
     {
       key: 'content',
@@ -155,33 +165,66 @@ export function PostsTable({ posts, loading, onRefresh }: PostsTableProps) {
     {
       key: 'actions',
       header: '',
-      className: 'w-[100px]',
-      render: (post) => (
-        <div className="flex justify-end gap-1">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              setEditPost(post);
-              setDialogOpen(true);
-            }}
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-destructive hover:text-destructive"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDelete(post.id);
-            }}
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
-      ),
+      className: 'w-[140px]',
+      render: (post) => {
+        const meta = post.metadata as Record<string, unknown> | null;
+        const platformUrls = (meta?.platform_post_urls ?? {}) as Record<string, string>;
+        const firstUrl = Object.values(platformUrls)[0];
+
+        return (
+          <div className="flex justify-end gap-1">
+            {post.status === 'failed' && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-amber-600 hover:text-amber-700"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRetry(post.id);
+                }}
+                title="Retry publish"
+              >
+                <RotateCcw className="h-4 w-4" />
+              </Button>
+            )}
+            {firstUrl && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(firstUrl, '_blank');
+                }}
+                title="View on platform"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditPost(post);
+                setDialogOpen(true);
+              }}
+            >
+              <Pencil className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleDelete(post.id);
+              }}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+        );
+      },
     },
   ];
 
