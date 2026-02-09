@@ -22,6 +22,7 @@ import {
 } from '@ccd/ui';
 import { User, Globe, Save } from 'lucide-react';
 import { apiGet, apiPatch } from '@/lib/api';
+import { createClient } from '@/lib/supabase/client';
 import { useAuthStore } from '@/stores/auth-store';
 import { VerificationDialog } from '@/components/settings/verification-dialog';
 
@@ -95,15 +96,31 @@ export default function ProfileSettingsPage() {
   React.useEffect(() => {
     async function load() {
       try {
+        // 1. Fetch profile directly from Supabase for accurate core data
+        const supabase = createClient();
+        const { data: { user: supaUser } } = await supabase.auth.getUser();
+        let dbProfile: { full_name: string; email: string; avatar_url: string | null } | null = null;
+
+        if (supaUser) {
+          const { data } = await supabase
+            .from('profiles')
+            .select('full_name, email, avatar_url')
+            .eq('id', supaUser.id)
+            .single();
+          dbProfile = data;
+        }
+
+        // 2. Fetch extended settings (phone, job_title, language, timezone)
         const res = await apiGet<{ value: Partial<ProfileData> }>(
           '/api/settings/module?module=platform&key=profile'
         );
-
         const saved = res.data?.value ?? {};
+
+        // 3. Merge: DB profile (most accurate) → saved settings → auth store fallback
         const merged: ProfileData = {
-          full_name: saved.full_name || authUser?.full_name || '',
-          email: saved.email || authUser?.email || '',
-          avatar_url: saved.avatar_url || authUser?.avatar_url || '',
+          full_name: dbProfile?.full_name || saved.full_name || authUser?.full_name || '',
+          email: dbProfile?.email || saved.email || authUser?.email || '',
+          avatar_url: dbProfile?.avatar_url || saved.avatar_url || authUser?.avatar_url || '',
           job_title: saved.job_title || '',
           phone: saved.phone || '',
           language: saved.language || 'en',
@@ -113,7 +130,7 @@ export default function ProfileSettingsPage() {
         setProfile(merged);
         setInitialProfile(merged);
       } catch {
-        // Fall back to auth user data if settings API fails
+        // Fall back to auth user data if everything fails
         if (authUser) {
           const fallback: ProfileData = {
             full_name: authUser.full_name || '',

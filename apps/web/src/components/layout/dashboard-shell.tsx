@@ -20,6 +20,8 @@ import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { InviteMembersDialog } from '@/components/team/invite-members-dialog';
 import { useUIStore } from '@/stores/ui-store';
+import { useAuthStore } from '@/stores/auth-store';
+import type { PlanTier, ModuleId } from '@ccd/shared';
 
 interface DashboardShellProps {
   user: {
@@ -28,13 +30,30 @@ interface DashboardShellProps {
     email: string;
     avatar_url: string | null;
     user_type: string;
+    tenant_id?: string;
+    is_active?: boolean;
+    metadata?: Record<string, unknown>;
+    role_title?: string;
+    created_at?: string;
+    updated_at?: string;
   };
   tenant: {
     id: string;
     name: string;
     slug: string;
+    plan?: string;
+    logo_url?: string | null;
+    max_users?: number;
+    is_active?: boolean;
     trial_ends_at?: string | null;
-    settings?: { modules_enabled?: string[] };
+    settings?: {
+      modules_enabled?: string[];
+      features?: Record<string, boolean>;
+      brand_color?: string;
+      custom_domain?: string;
+    };
+    created_at?: string;
+    updated_at?: string;
   };
   children: React.ReactNode;
 }
@@ -47,6 +66,60 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
   const [inviteOpen, setInviteOpen] = React.useState(false);
   const canInvite = ['admin', 'owner'].includes(user.user_type);
   const { toggleMobileMenu } = useUIStore();
+
+  // Hydrate the Zustand auth store so client components (profile, billing, etc.) have access
+  const setAuthUser = useAuthStore((s) => s.setUser);
+  const setAuthSession = useAuthStore((s) => s.setSession);
+  const setAuthLoading = useAuthStore((s) => s.setLoading);
+  const setAllowedModules = useAuthStore((s) => s.setAllowedModules);
+
+  React.useEffect(() => {
+    const mappedUser = {
+      id: user.id,
+      tenant_id: user.tenant_id || tenant.id,
+      email: user.email,
+      full_name: user.full_name,
+      avatar_url: user.avatar_url,
+      user_type: user.user_type,
+      is_active: user.is_active ?? true,
+      metadata: user.metadata ?? {},
+      created_at: user.created_at ?? '',
+      updated_at: user.updated_at ?? '',
+    };
+
+    const mappedTenant = {
+      id: tenant.id,
+      name: tenant.name,
+      slug: tenant.slug,
+      plan: (tenant.plan ?? 'starter') as PlanTier,
+      logo_url: tenant.logo_url ?? null,
+      settings: {
+        modules_enabled: (tenant.settings?.modules_enabled ?? []) as ModuleId[],
+        features: tenant.settings?.features ?? {},
+        brand_color: tenant.settings?.brand_color,
+        custom_domain: tenant.settings?.custom_domain,
+      },
+      max_users: tenant.max_users ?? 5,
+      is_active: tenant.is_active ?? true,
+      trial_ends_at: tenant.trial_ends_at ?? null,
+      created_at: tenant.created_at ?? '',
+      updated_at: tenant.updated_at ?? '',
+    };
+
+    const session = {
+      access_token: '',
+      refresh_token: '',
+      user: mappedUser,
+      tenant: mappedTenant,
+      modules: (tenant.settings?.modules_enabled ?? []) as ModuleId[],
+      expires_at: 0,
+    };
+
+    setAuthUser(mappedUser);
+    setAuthSession(session);
+    setAllowedModules((tenant.settings?.modules_enabled ?? []) as ModuleId[]);
+    setAuthLoading(false);
+  }, [user, tenant, setAuthUser, setAuthSession, setAuthLoading, setAllowedModules]);
 
   // Trial banner calculation
   const trialDaysRemaining = React.useMemo(() => {

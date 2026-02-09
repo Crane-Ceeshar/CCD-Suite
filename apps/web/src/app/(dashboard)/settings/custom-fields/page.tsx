@@ -1,6 +1,7 @@
 'use client';
 
 import * as React from 'react';
+import { EnterpriseGate } from '@/components/settings/enterprise-gate';
 import {
   Card,
   CardContent,
@@ -234,6 +235,7 @@ export default function CustomFieldsSettingsPage() {
   }, [activeModule]);
 
   return (
+    <EnterpriseGate feature="Custom fields">
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -295,5 +297,6 @@ export default function CustomFieldsSettingsPage() {
         </CardContent>
       </Card>
     </div>
+    </EnterpriseGate>
   );
 }

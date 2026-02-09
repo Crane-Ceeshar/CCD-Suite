@@ -25,6 +25,7 @@ import {
   Lock,
 } from 'lucide-react';
 import { usePlanGate } from '@/hooks/use-plan-gate';
+import { ENTERPRISE_ONLY_SETTINGS } from '@ccd/shared';
 
 /* -------------------------------------------------------------------------- */
 /*  Search Index                                                               */
@@ -277,8 +278,12 @@ export default function SettingsLayout({
                   <ul className="space-y-0.5">
                     {group.items.map((item) => {
                       const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+                      const isLockedItem =
+                        !isEnterprise &&
+                        !isLockedGroup &&
+                        ENTERPRISE_ONLY_SETTINGS.includes(item.href);
                       return (
-                        <li key={item.href}>
+                        <li key={item.href} className={isLockedItem ? 'opacity-60' : ''}>
                           <Link
                             href={item.href}
                             className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150 whitespace-nowrap ${
@@ -289,7 +294,7 @@ export default function SettingsLayout({
                           >
                             <item.icon className={`h-4 w-4 shrink-0 ${isActive ? 'text-primary' : ''}`} />
                             {item.label}
-                            {isLockedGroup && <Lock className="h-3 w-3 ml-auto text-muted-foreground" />}
+                            {(isLockedGroup || isLockedItem) && <Lock className="h-3 w-3 ml-auto text-muted-foreground" />}
                           </Link>
                         </li>
                       );

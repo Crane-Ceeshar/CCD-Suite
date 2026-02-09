@@ -11,7 +11,6 @@ import {
   TabsList,
   TabsTrigger,
   TabsContent,
-  ScrollArea,
 } from '../primitives';
 import { cn } from '../lib/utils';
 
@@ -49,11 +48,11 @@ function ModuleSettingsDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent
         className={cn(
-          'max-w-[800px] w-[95vw] p-0 gap-0 max-h-[85vh] flex flex-col'
+          '!flex max-w-[800px] w-[95vw] p-0 gap-0 max-h-[85vh] flex-col overflow-hidden'
         )}
       >
         {/* Header */}
-        <div className="px-6 pt-6 pb-0">
+        <div className="px-6 pt-6 pb-0 shrink-0">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-3">
               {icon && (
@@ -77,7 +76,7 @@ function ModuleSettingsDialog({
 
         {/* Tabs */}
         <Tabs defaultValue={firstTab} className="flex-1 flex flex-col min-h-0">
-          <div className="px-6 pt-4 border-b">
+          <div className="px-6 pt-4 border-b shrink-0">
             <TabsList className="h-auto p-0 bg-transparent gap-0 w-full justify-start">
               {tabs.map((tab) => (
                 <TabsTrigger
@@ -97,16 +96,14 @@ function ModuleSettingsDialog({
           </div>
 
           {/* Tab content — scrollable */}
-          <div className="flex-1 min-h-0 overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-y-auto">
             {tabs.map((tab) => (
               <TabsContent
                 key={tab.value}
                 value={tab.value}
-                className="mt-0 h-full data-[state=inactive]:hidden"
+                className="mt-0 data-[state=inactive]:hidden"
               >
-                <ScrollArea className="h-full max-h-[calc(85vh-180px)]">
-                  <div className="p-6">{tab.content}</div>
-                </ScrollArea>
+                <div className="p-6">{tab.content}</div>
               </TabsContent>
             ))}
           </div>
