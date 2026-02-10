@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DashboardShell } from '@/components/layout/dashboard-shell';
+import { QueryProvider } from '@/providers/query-provider';
 
 export default async function DashboardLayout({
   children,
@@ -26,8 +27,10 @@ export default async function DashboardLayout({
   }
 
   return (
-    <DashboardShell user={profile} tenant={profile.tenants}>
-      {children}
-    </DashboardShell>
+    <QueryProvider>
+      <DashboardShell user={profile} tenant={profile.tenants}>
+        {children}
+      </DashboardShell>
+    </QueryProvider>
   );
 }

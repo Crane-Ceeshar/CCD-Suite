@@ -17,6 +17,7 @@ import {
   ScrollText,
   Columns3,
   Database,
+  Gauge,
   Paintbrush,
   Clock,
   Search,
@@ -45,6 +46,7 @@ const searchIndex = [
   { label: 'Audit Log', keywords: ['audit', 'log', 'activity', 'history', 'changes', 'changelog'], href: '/settings/audit-log', group: 'Administration' },
   { label: 'Custom Fields', keywords: ['custom fields', 'fields', 'metadata', 'properties'], href: '/settings/custom-fields', group: 'Administration' },
   { label: 'Data Management', keywords: ['data', 'export', 'import', 'backup', 'restore'], href: '/settings/data', group: 'Administration' },
+  { label: 'Usage', keywords: ['usage', 'resources', 'counts', 'quota', 'workspace'], href: '/settings/usage', group: 'Administration' },
   { label: 'Branding', keywords: ['branding', 'brand', 'logo', 'colors', 'white label', 'typography'], href: '/settings/branding', group: 'Customization' },
   { label: 'Data Retention', keywords: ['retention', 'cleanup', 'delete', 'archive', 'policy'], href: '/settings/data-retention', group: 'Customization' },
 ];
@@ -90,6 +92,7 @@ const settingsGroups = [
       { href: '/settings/audit-log', label: 'Audit Log', icon: ScrollText },
       { href: '/settings/custom-fields', label: 'Custom Fields', icon: Columns3 },
       { href: '/settings/data', label: 'Data Management', icon: Database },
+      { href: '/settings/usage', label: 'Usage', icon: Gauge },
     ],
   },
   {

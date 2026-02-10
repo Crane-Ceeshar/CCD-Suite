@@ -57,3 +57,16 @@ export interface ContentApproval {
   comments: string | null;
   created_at: string;
 }
+
+export interface ContentTemplate {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string | null;
+  content_type: ContentType;
+  body_template: string | null;
+  metadata_template: Record<string, unknown>;
+  is_system: boolean;
+  created_by: string | null;
+  created_at: string;
+}

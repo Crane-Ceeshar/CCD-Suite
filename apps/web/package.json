@@ -11,6 +11,13 @@
     "test": "playwright test",
     "test:api": "playwright test tests/crm-api.spec.ts",
     "test:ui": "playwright test tests/crm-ui.spec.ts",
+    "test:analytics-api": "playwright test --project=analytics-api-tests",
+    "test:analytics-ui": "playwright test --project=analytics-e2e-tests",
+    "test:content-api": "playwright test --project=content-api-tests",
+    "test:content-ui": "playwright test --project=content-e2e-tests",
+    "test:analytics": "playwright test --project=analytics-api-tests --project=analytics-e2e-tests",
+    "test:content": "playwright test --project=content-api-tests --project=content-e2e-tests",
+    "test:all": "playwright test",
     "test:report": "playwright show-report"
   },
   "dependencies": {
@@ -23,6 +30,13 @@
     "@supabase/ssr": "^0.5.0",
     "@supabase/supabase-js": "^2.45.0",
     "@tanstack/react-query": "^5.50.0",
+    "@tiptap/extension-character-count": "^3.19.0",
+    "@tiptap/extension-image": "^3.19.0",
+    "@tiptap/extension-link": "^3.19.0",
+    "@tiptap/extension-placeholder": "^3.19.0",
+    "@tiptap/extension-typography": "^3.19.0",
+    "@tiptap/react": "^3.19.0",
+    "@tiptap/starter-kit": "^3.19.0",
     "@vercel/speed-insights": "^1.3.1",
     "cheerio": "^1.2.0",
     "framer-motion": "^12.33.0",
@@ -33,6 +47,7 @@
     "recharts": "^3.7.0",
     "resend": "^6.9.1",
     "serwist": "^9.5.5",
+    "zod": "^3.24.0",
     "zustand": "^4.5.0"
   },
   "devDependencies": {

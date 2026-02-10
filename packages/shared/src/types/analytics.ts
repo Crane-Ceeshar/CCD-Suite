@@ -40,3 +40,18 @@ export interface Metric {
   dimensions: Record<string, unknown>;
   recorded_at: string;
 }
+
+export type ReportType = 'performance' | 'content' | 'social' | 'seo' | 'custom';
+
+export interface AnalyticsReport {
+  id: string;
+  tenant_id: string;
+  name: string;
+  description: string | null;
+  report_type: ReportType;
+  config: Record<string, unknown>;
+  schedule: Record<string, unknown> | null;
+  last_run_at: string | null;
+  created_by: string | null;
+  created_at: string;
+}

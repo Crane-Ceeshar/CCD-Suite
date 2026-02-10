@@ -25,19 +25,57 @@ export default defineConfig({
       name: 'setup',
       testMatch: /auth\.setup\.ts/,
     },
-    // API integration tests
+    // CRM API integration tests
     {
-      name: 'api-tests',
+      name: 'crm-api-tests',
       testMatch: /crm-api\.spec\.ts/,
       use: {
         storageState: authFile,
       },
       dependencies: ['setup'],
     },
-    // UI E2E tests
+    // CRM UI E2E tests
     {
-      name: 'e2e-tests',
+      name: 'crm-e2e-tests',
       testMatch: /crm-ui\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authFile,
+      },
+      dependencies: ['setup'],
+    },
+    // Analytics API integration tests
+    {
+      name: 'analytics-api-tests',
+      testMatch: /analytics-api\.spec\.ts/,
+      use: {
+        storageState: authFile,
+      },
+      dependencies: ['setup'],
+    },
+    // Content API integration tests
+    {
+      name: 'content-api-tests',
+      testMatch: /content-api\.spec\.ts/,
+      use: {
+        storageState: authFile,
+      },
+      dependencies: ['setup'],
+    },
+    // Analytics UI E2E tests
+    {
+      name: 'analytics-e2e-tests',
+      testMatch: /analytics-ui\.spec\.ts/,
+      use: {
+        ...devices['Desktop Chrome'],
+        storageState: authFile,
+      },
+      dependencies: ['setup'],
+    },
+    // Content UI E2E tests
+    {
+      name: 'content-e2e-tests',
+      testMatch: /content-ui\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         storageState: authFile,
