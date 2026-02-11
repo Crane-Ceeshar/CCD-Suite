@@ -35,12 +35,13 @@ export function useModuleSettings<T extends Record<string, any>>({
   React.useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    apiGet<{ value: T } | null>(
+    apiGet<T | null>(
       `/api/settings/module?module=${encodeURIComponent(module)}&key=${encodeURIComponent(key)}`
     )
       .then((res) => {
-        if (!cancelled && res.data?.value) {
-          const merged = { ...defaults, ...res.data.value };
+        if (!cancelled && res.data) {
+          // The API returns the raw value object directly in res.data
+          const merged = { ...defaults, ...(res.data as T) };
           setSettings(merged);
           setSnapshot(JSON.stringify(merged));
         }

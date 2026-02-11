@@ -21,6 +21,7 @@ import {
   toast,
 } from '@ccd/ui';
 import { useCreateExpense, useUpdateExpense } from '@/hooks/use-finance';
+import { apiGet } from '@/lib/api';
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                      */
@@ -113,7 +114,19 @@ export function ExpenseDialog({ open, onOpenChange, expense }: ExpenseDialogProp
           notes: expense.notes ?? '',
         });
       } else {
-        setForm(emptyForm());
+        // Fetch default currency from finance settings for new expenses
+        const defaults = emptyForm();
+        apiGet<{ defaultCurrency?: string }>('/api/settings/module?module=finance&key=currency.preferences')
+          .then((res) => {
+            const data = res.data as { defaultCurrency?: string } | null;
+            if (data?.defaultCurrency) {
+              defaults.currency = data.defaultCurrency;
+            }
+            setForm(defaults);
+          })
+          .catch(() => {
+            setForm(defaults);
+          });
       }
       setErrors({});
     }

@@ -11,6 +11,25 @@ import { useCreateInvoice, useUpdateInvoice, useSendInvoice } from '@/hooks/use-
 import { apiGet } from '@/lib/api';
 import Link from 'next/link';
 
+/* -------------------------------------------------------------------------- */
+/*  Payment-terms → due-date helper                                            */
+/* -------------------------------------------------------------------------- */
+
+function computeDueDate(issueDate: string, paymentTerms: string): string {
+  const base = new Date(issueDate);
+  if (isNaN(base.getTime())) return '';
+  let days = 30;
+  switch (paymentTerms) {
+    case 'due_on_receipt': days = 0; break;
+    case 'net15': days = 15; break;
+    case 'net30': days = 30; break;
+    case 'net60': days = 60; break;
+    case 'net90': days = 90; break;
+  }
+  base.setDate(base.getDate() + days);
+  return base.toISOString().split('T')[0];
+}
+
 interface LineItem {
   description: string;
   quantity: number;
@@ -33,11 +52,13 @@ export function InvoiceForm({ invoice, onSaved }: InvoiceFormProps) {
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState('');
   const [taxRate, setTaxRate] = useState(0);
+  const [currency, setCurrency] = useState('USD');
   const [notes, setNotes] = useState('');
   const [items, setItems] = useState<LineItem[]>([
     { description: '', quantity: 1, unit_price: 0 },
   ]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
 
   // Client selectors
   const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
@@ -55,6 +76,47 @@ export function InvoiceForm({ invoice, onSaved }: InvoiceFormProps) {
       .catch(() => {})
       .finally(() => setInvoiceNumberLoading(false));
   };
+
+  // Fetch finance settings to apply as defaults for new invoices
+  useEffect(() => {
+    if (isEditMode) return; // Don't override existing invoice values
+
+    const today = new Date().toISOString().split('T')[0];
+
+    // Fetch tax, currency, and invoice settings in parallel
+    Promise.allSettled([
+      apiGet<{ defaultTaxRate?: string }>('/api/settings/module?module=finance&key=tax.preferences'),
+      apiGet<{ defaultCurrency?: string }>('/api/settings/module?module=finance&key=currency.preferences'),
+      apiGet<{ paymentTerms?: string; defaultNotes?: string }>('/api/settings/module?module=finance&key=invoices.preferences'),
+    ]).then(([taxResult, currencyResult, invoiceResult]) => {
+      // Apply tax rate from settings
+      if (taxResult.status === 'fulfilled' && taxResult.value.data) {
+        const taxData = taxResult.value.data as { defaultTaxRate?: string };
+        const rate = parseFloat(taxData.defaultTaxRate ?? '0');
+        if (!isNaN(rate)) setTaxRate(rate);
+      }
+
+      // Apply currency from settings
+      if (currencyResult.status === 'fulfilled' && currencyResult.value.data) {
+        const currData = currencyResult.value.data as { defaultCurrency?: string };
+        if (currData.defaultCurrency) setCurrency(currData.defaultCurrency);
+      }
+
+      // Apply payment terms (→ due date) and default notes from settings
+      if (invoiceResult.status === 'fulfilled' && invoiceResult.value.data) {
+        const invData = invoiceResult.value.data as { paymentTerms?: string; defaultNotes?: string };
+        if (invData.paymentTerms) {
+          setDueDate(computeDueDate(today, invData.paymentTerms));
+        }
+        if (invData.defaultNotes) {
+          setNotes(invData.defaultNotes);
+        }
+      }
+
+      setSettingsLoaded(true);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode]);
 
   useEffect(() => {
     // Only auto-generate for new invoices (not edit mode)
@@ -86,6 +148,7 @@ export function InvoiceForm({ invoice, onSaved }: InvoiceFormProps) {
       setIssueDate(invoice.issue_date ?? new Date().toISOString().split('T')[0]);
       setDueDate(invoice.due_date ?? '');
       setTaxRate(invoice.tax_rate ?? 0);
+      setCurrency(invoice.currency ?? 'USD');
       setNotes(invoice.notes ?? '');
       if (invoice.items && invoice.items.length > 0) {
         setItems(
@@ -120,7 +183,7 @@ export function InvoiceForm({ invoice, onSaved }: InvoiceFormProps) {
   const total = subtotal + taxAmount;
 
   const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
+    new Intl.NumberFormat('en-US', { style: 'currency', currency }).format(amount);
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -147,7 +210,7 @@ export function InvoiceForm({ invoice, onSaved }: InvoiceFormProps) {
     issue_date: issueDate,
     due_date: dueDate || undefined,
     tax_rate: taxRate,
-    currency: 'USD',
+    currency,
     notes: notes || undefined,
     items: items.filter((item) => item.description.trim()),
   });
@@ -243,17 +306,35 @@ export function InvoiceForm({ invoice, onSaved }: InvoiceFormProps) {
                   <p className="text-sm text-destructive mt-1">{errors.invoiceNumber}</p>
                 )}
               </div>
-              <div>
-                <Label htmlFor="tax-rate">Tax Rate (%)</Label>
-                <Input
-                  id="tax-rate"
-                  type="number"
-                  min={0}
-                  max={100}
-                  step={0.01}
-                  value={taxRate}
-                  onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
-                />
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label htmlFor="tax-rate">Tax Rate (%)</Label>
+                  <Input
+                    id="tax-rate"
+                    type="number"
+                    min={0}
+                    max={100}
+                    step={0.01}
+                    value={taxRate}
+                    onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
+                  />
+                </div>
+                <div>
+                  <Label>Currency</Label>
+                  <Select value={currency} onValueChange={setCurrency}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Currency" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="USD">USD</SelectItem>
+                      <SelectItem value="EUR">EUR</SelectItem>
+                      <SelectItem value="GBP">GBP</SelectItem>
+                      <SelectItem value="JPY">JPY</SelectItem>
+                      <SelectItem value="CAD">CAD</SelectItem>
+                      <SelectItem value="AUD">AUD</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
