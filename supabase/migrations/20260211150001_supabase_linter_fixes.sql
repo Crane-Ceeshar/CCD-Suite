@@ -1064,5 +1064,15 @@ DROP INDEX IF EXISTS idx_notifications_user;
 DROP INDEX IF EXISTS idx_api_keys_tenant;
 DROP INDEX IF EXISTS idx_webhooks_tenant;
 
+-- -----------------------------------------------------------------------
+-- SECTION 7: PERFORMANCE — Fix sprints initplan (bare auth.uid())
+-- -----------------------------------------------------------------------
+
+DROP POLICY IF EXISTS sprints_tenant_isolation ON public.sprints;
+CREATE POLICY sprints_tenant_isolation ON public.sprints
+  FOR ALL
+  USING (tenant_id = (SELECT tenant_id FROM public.profiles WHERE id = (SELECT auth.uid())))
+  WITH CHECK (tenant_id = (SELECT tenant_id FROM public.profiles WHERE id = (SELECT auth.uid())));
+
 -- Reload PostgREST schema cache
 NOTIFY pgrst, 'reload schema';
