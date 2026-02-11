@@ -289,7 +289,7 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
 
       {/* Trial banner */}
       {showTrialBanner && (
-        <div className="flex items-center justify-center gap-3 px-4 py-2.5 bg-gradient-to-r from-amber-500/10 via-amber-500/15 to-amber-500/10 border-b border-amber-500/20">
+        <div data-print-hide className="flex items-center justify-center gap-3 px-4 py-2.5 bg-gradient-to-r from-amber-500/10 via-amber-500/15 to-amber-500/10 border-b border-amber-500/20">
           <Clock className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0" />
           <p className="text-sm text-amber-800 dark:text-amber-300">
             <span className="font-semibold">Free trial:</span>{' '}

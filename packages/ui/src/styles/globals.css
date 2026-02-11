@@ -138,3 +138,114 @@
     font-family: 'Jeko', 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
+
+/* ── Print Styles ── */
+@media print {
+  /* Reset colors for print — force light background regardless of theme */
+  :root,
+  .dark,
+  .night {
+    --background: 0 0% 100% !important;
+    --foreground: 0 0% 5% !important;
+    --card: 0 0% 100% !important;
+    --card-foreground: 0 0% 5% !important;
+    --muted-foreground: 0 0% 40% !important;
+    --border: 0 0% 80% !important;
+    color-scheme: light !important;
+  }
+
+  /* Hide the entire app shell (header, sidebar, trial banner, buttons) */
+  header,
+  aside,
+  [data-print-hide] {
+    display: none !important;
+  }
+
+  /* Force white background and black text everywhere */
+  *,
+  *::before,
+  *::after {
+    color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body,
+  html {
+    background: white !important;
+    color: black !important;
+    overflow: visible !important;
+    height: auto !important;
+    width: auto !important;
+  }
+
+  body * {
+    overflow: visible !important;
+  }
+
+  /* Remove the flex layout and overflow hidden from the shell */
+  body > div,
+  body > div > div,
+  body > div > div > div,
+  main,
+  main > div,
+  main > div > div {
+    display: block !important;
+    overflow: visible !important;
+    height: auto !important;
+    max-height: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: transparent !important;
+  }
+
+  /* The printable invoice area — the only thing that shows */
+  [data-print-invoice] {
+    display: block !important;
+    width: 100% !important;
+    max-width: none !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Clean card rendering */
+  [data-print-invoice] > div {
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Ensure all text in the invoice is dark */
+  [data-print-invoice] * {
+    color: black !important;
+    background: transparent !important;
+  }
+
+  /* Muted text stays visible but lighter */
+  [data-print-invoice] .text-muted-foreground {
+    color: #555 !important;
+  }
+
+  /* Table borders print properly */
+  [data-print-invoice] .border-b,
+  [data-print-invoice] .border-t {
+    border-color: #ddd !important;
+  }
+
+  /* Green text for paid amounts */
+  [data-print-invoice] .text-green-600 {
+    color: #16a34a !important;
+  }
+
+  /* Page settings */
+  @page {
+    size: A4;
+    margin: 1.5cm 2cm;
+  }
+}

@@ -1,8 +1,15 @@
 'use client';
 
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from '@ccd/ui';
-import { Plus, Trash2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import {
+  Card, CardContent, CardHeader, CardTitle, Button, Input, Label, toast,
+  Select, SelectTrigger, SelectValue, SelectContent, SelectItem,
+} from '@ccd/ui';
+import { Plus, Trash2, ArrowLeft, Loader2, RefreshCw } from 'lucide-react';
+import { useCreateInvoice, useUpdateInvoice, useSendInvoice } from '@/hooks/use-finance';
+import { apiGet } from '@/lib/api';
+import Link from 'next/link';
 
 interface LineItem {
   description: string;
@@ -10,8 +17,19 @@ interface LineItem {
   unit_price: number;
 }
 
-export function InvoiceForm() {
+interface InvoiceFormProps {
+  invoice?: any;
+  onSaved?: () => void;
+}
+
+export function InvoiceForm({ invoice, onSaved }: InvoiceFormProps) {
+  const router = useRouter();
+  const isEditMode = !!invoice;
+
   const [invoiceNumber, setInvoiceNumber] = useState('');
+  const [invoiceNumberLoading, setInvoiceNumberLoading] = useState(false);
+  const [companyId, setCompanyId] = useState<string>('');
+  const [contactId, setContactId] = useState<string>('');
   const [issueDate, setIssueDate] = useState(new Date().toISOString().split('T')[0]);
   const [dueDate, setDueDate] = useState('');
   const [taxRate, setTaxRate] = useState(0);
@@ -19,6 +37,67 @@ export function InvoiceForm() {
   const [items, setItems] = useState<LineItem[]>([
     { description: '', quantity: 1, unit_price: 0 },
   ]);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Client selectors
+  const [companies, setCompanies] = useState<{ id: string; name: string }[]>([]);
+  const [contacts, setContacts] = useState<{ id: string; first_name: string; last_name: string }[]>([]);
+
+  // Auto-generate invoice number for new invoices
+  const fetchNextInvoiceNumber = () => {
+    setInvoiceNumberLoading(true);
+    apiGet<{ invoice_number: string }>('/api/finance/invoices/next-number')
+      .then((res) => {
+        if (res.data?.invoice_number) {
+          setInvoiceNumber(res.data.invoice_number);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setInvoiceNumberLoading(false));
+  };
+
+  useEffect(() => {
+    // Only auto-generate for new invoices (not edit mode)
+    if (!isEditMode) {
+      fetchNextInvoiceNumber();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEditMode]);
+
+  useEffect(() => {
+    apiGet<{ id: string; name: string }[]>('/api/crm/companies?limit=200')
+      .then((res) => setCompanies(res.data ?? []))
+      .catch(() => {});
+    apiGet<{ id: string; first_name: string; last_name: string }[]>('/api/crm/contacts?limit=200')
+      .then((res) => setContacts(res.data ?? []))
+      .catch(() => {});
+  }, []);
+
+  const createInvoice = useCreateInvoice();
+  const updateInvoice = useUpdateInvoice(invoice?.id ?? '');
+  const sendInvoice = useSendInvoice();
+
+  // Pre-populate fields in edit mode
+  useEffect(() => {
+    if (invoice) {
+      setInvoiceNumber(invoice.invoice_number ?? '');
+      setCompanyId(invoice.company_id ?? '');
+      setContactId(invoice.contact_id ?? '');
+      setIssueDate(invoice.issue_date ?? new Date().toISOString().split('T')[0]);
+      setDueDate(invoice.due_date ?? '');
+      setTaxRate(invoice.tax_rate ?? 0);
+      setNotes(invoice.notes ?? '');
+      if (invoice.items && invoice.items.length > 0) {
+        setItems(
+          invoice.items.map((item: any) => ({
+            description: item.description ?? '',
+            quantity: item.quantity ?? 1,
+            unit_price: item.unit_price ?? 0,
+          }))
+        );
+      }
+    }
+  }, [invoice]);
 
   const addItem = () => {
     setItems([...items, { description: '', quantity: 1, unit_price: 0 }]);
@@ -43,6 +122,83 @@ export function InvoiceForm() {
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount);
 
+  const validate = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!invoiceNumber.trim()) {
+      newErrors.invoiceNumber = 'Invoice number is required';
+    }
+
+    const hasValidItem = items.some(
+      (item) => item.description.trim() && item.quantity > 0 && item.unit_price > 0
+    );
+    if (!hasValidItem) {
+      newErrors.items = 'At least one line item with a description, quantity, and price is required';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const buildPayload = () => ({
+    invoice_number: invoiceNumber,
+    company_id: companyId || undefined,
+    contact_id: contactId || undefined,
+    issue_date: issueDate,
+    due_date: dueDate || undefined,
+    tax_rate: taxRate,
+    currency: 'USD',
+    notes: notes || undefined,
+    items: items.filter((item) => item.description.trim()),
+  });
+
+  const handleSaveAsDraft = async () => {
+    if (!validate()) return;
+
+    try {
+      if (isEditMode) {
+        await updateInvoice.mutateAsync(buildPayload());
+        toast({ title: 'Success', description: 'Invoice updated' });
+        onSaved?.();
+        router.push(`/finance/invoices/${invoice.id}`);
+      } else {
+        const result = await createInvoice.mutateAsync(buildPayload());
+        const created = result.data as { id: string };
+        toast({ title: 'Success', description: 'Invoice created' });
+        onSaved?.();
+        router.push(`/finance/invoices/${created.id}`);
+      }
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save invoice', variant: 'destructive' });
+    }
+  };
+
+  const handleSaveAndSend = async () => {
+    if (!validate()) return;
+
+    try {
+      let invoiceId: string;
+
+      if (isEditMode) {
+        await updateInvoice.mutateAsync(buildPayload());
+        invoiceId = invoice.id;
+      } else {
+        const result = await createInvoice.mutateAsync(buildPayload());
+        invoiceId = (result.data as { id: string }).id;
+      }
+
+      await sendInvoice.mutateAsync(invoiceId);
+      toast({ title: 'Success', description: 'Invoice created and sent' });
+      onSaved?.();
+      router.push(`/finance/invoices/${invoiceId}`);
+    } catch {
+      toast({ title: 'Error', description: 'Failed to save and send invoice', variant: 'destructive' });
+    }
+  };
+
+  const isSaving = createInvoice.isPending || updateInvoice.isPending;
+  const isSending = sendInvoice.isPending;
+
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="lg:col-span-2 space-y-6">
@@ -55,12 +211,37 @@ export function InvoiceForm() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="invoice-number">Invoice Number</Label>
-                <Input
-                  id="invoice-number"
-                  placeholder="INV-0001"
-                  value={invoiceNumber}
-                  onChange={(e) => setInvoiceNumber(e.target.value)}
-                />
+                <div className="relative">
+                  <Input
+                    id="invoice-number"
+                    placeholder={invoiceNumberLoading ? 'Generating...' : 'C-INV-2026-1'}
+                    value={invoiceNumber}
+                    onChange={(e) => {
+                      setInvoiceNumber(e.target.value);
+                      if (errors.invoiceNumber) {
+                        setErrors((prev) => ({ ...prev, invoiceNumber: '' }));
+                      }
+                    }}
+                    disabled={invoiceNumberLoading}
+                    className={invoiceNumberLoading ? 'pr-10' : !isEditMode ? 'pr-10' : ''}
+                  />
+                  {invoiceNumberLoading && (
+                    <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />
+                  )}
+                  {!invoiceNumberLoading && !isEditMode && (
+                    <button
+                      type="button"
+                      onClick={fetchNextInvoiceNumber}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                      title="Regenerate invoice number"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                {errors.invoiceNumber && (
+                  <p className="text-sm text-destructive mt-1">{errors.invoiceNumber}</p>
+                )}
               </div>
               <div>
                 <Label htmlFor="tax-rate">Tax Rate (%)</Label>
@@ -73,6 +254,46 @@ export function InvoiceForm() {
                   value={taxRate}
                   onChange={(e) => setTaxRate(parseFloat(e.target.value) || 0)}
                 />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Company</Label>
+                <Select
+                  value={companyId || 'none'}
+                  onValueChange={(v) => setCompanyId(v === 'none' ? '' : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select company" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No company</SelectItem>
+                    {companies.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Contact</Label>
+                <Select
+                  value={contactId || 'none'}
+                  onValueChange={(v) => setContactId(v === 'none' ? '' : v)}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select contact" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">No contact</SelectItem>
+                    {contacts.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.first_name} {c.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -171,6 +392,10 @@ export function InvoiceForm() {
                   </div>
                 </div>
               ))}
+
+              {errors.items && (
+                <p className="text-sm text-destructive mt-1">{errors.items}</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -199,8 +424,33 @@ export function InvoiceForm() {
         </Card>
 
         <div className="space-y-2">
-          <Button className="w-full">Save as Draft</Button>
-          <Button variant="outline" className="w-full">Save & Send</Button>
+          <Button
+            className="w-full"
+            onClick={handleSaveAsDraft}
+            disabled={isSaving || isSending}
+          >
+            {isSaving && !isSending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            {isEditMode ? 'Update Invoice' : 'Save as Draft'}
+          </Button>
+          <Button
+            variant="outline"
+            className="w-full"
+            onClick={handleSaveAndSend}
+            disabled={isSaving || isSending}
+          >
+            {isSending && (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            )}
+            Save & Send
+          </Button>
+          <Link href="/finance/invoices" className="block">
+            <Button variant="ghost" className="w-full">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Cancel
+            </Button>
+          </Link>
         </div>
       </div>
     </div>

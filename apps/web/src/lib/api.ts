@@ -13,7 +13,7 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   };
 }
 
-export async function apiGet<T = unknown>(path: string): Promise<{ success: boolean; data: T }> {
+export async function apiGet<T = unknown>(path: string): Promise<{ success: boolean; data: T; [key: string]: unknown }> {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}${path}`, { headers });
   if (!res.ok) {
