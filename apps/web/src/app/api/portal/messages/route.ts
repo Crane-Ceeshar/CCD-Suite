@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error: queryError } = await supabase
     .from('portal_messages')
-    .select('*, sender:profiles(id, full_name, avatar_url)')
+    .select('*')
     .eq('portal_project_id', portalProjectId)
     .order('created_at', { ascending: true });
 
@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       attachments: attachments ?? [],
       is_internal: is_internal ?? false,
     })
-    .select('*, sender:profiles(id, full_name, avatar_url)')
+    .select('*')
     .single();
 
   if (insertError) {

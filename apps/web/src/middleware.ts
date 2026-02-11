@@ -27,7 +27,7 @@ const MODULE_ROUTES: Record<string, string> = {
   '/ai': 'ai',
 };
 
-const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/admin/login'];
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/admin/login', '/portal/verify', '/client', '/api/portal/verify', '/api/portal/session', '/api/client'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -53,6 +53,16 @@ export async function middleware(request: NextRequest) {
 
   // Skip public routes
   if (PUBLIC_ROUTES.some((route) => pathname === route || (route !== '/' && pathname.startsWith(route)))) {
+    // Client portal pages (not API routes or verify page) require a portal_session cookie
+    if (pathname.startsWith('/client') && !pathname.startsWith('/api/client')) {
+      const portalSession = request.cookies.get('portal_session');
+      if (!portalSession?.value) {
+        const url = request.nextUrl.clone();
+        url.pathname = '/portal/verify';
+        url.searchParams.set('error', 'session_required');
+        return NextResponse.redirect(url);
+      }
+    }
     const { response } = await updateSession(request);
     return response;
   }

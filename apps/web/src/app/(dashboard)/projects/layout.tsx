@@ -2,7 +2,7 @@
 
 import { ModuleShell } from '@/components/layout/module-shell';
 import { ProjectsSettingsDialog } from '@/components/projects/projects-settings-dialog';
-import { LayoutDashboard, Kanban, List, GanttChart, Clock, Zap } from 'lucide-react';
+import { LayoutDashboard, Kanban, List, GanttChart, Clock, Zap, BarChart3 } from 'lucide-react';
 
 const navItems = [
   { label: 'Dashboard', href: '/projects', icon: <LayoutDashboard /> },
@@ -11,6 +11,7 @@ const navItems = [
   { label: 'Timeline', href: '/projects/timeline', icon: <GanttChart /> },
   { label: 'Time Tracking', href: '/projects/time-tracking', icon: <Clock /> },
   { label: 'Sprints', href: '/projects/sprints', icon: <Zap /> },
+  { label: 'Analytics', href: '/projects/analytics', icon: <BarChart3 /> },
 ];
 
 export default function ProjectsLayout({ children }: { children: React.ReactNode }) {

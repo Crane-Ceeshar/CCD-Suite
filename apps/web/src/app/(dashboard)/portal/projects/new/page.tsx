@@ -1,22 +1,51 @@
 'use client';
 
-import { useState } from 'react';
-import { PageHeader, Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from '@ccd/ui';
+import * as React from 'react';
+import { PageHeader, Card, CardContent, CardHeader, CardTitle, Button, Input, Label, CcdSpinner } from '@ccd/ui';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { apiPost } from '@/lib/api';
 
 export default function NewPortalProjectPage() {
-  const [formData, setFormData] = useState({
+  const router = useRouter();
+  const [formData, setFormData] = React.useState({
     name: '',
     description: '',
     start_date: '',
     end_date: '',
-    client_email: '',
+    budget: '',
   });
+  const [saving, setSaving] = React.useState(false);
+  const [error, setError] = React.useState('');
 
   const update = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData((prev) => ({ ...prev, [field]: value }));
   };
+
+  async function handleCreate() {
+    if (!formData.name.trim()) {
+      setError('Project name is required');
+      return;
+    }
+    setSaving(true);
+    setError('');
+    try {
+      const payload = {
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+        start_date: formData.start_date || null,
+        end_date: formData.end_date || null,
+        budget: formData.budget ? parseFloat(formData.budget) : null,
+      };
+      const res = await apiPost<{ id: string }>('/api/portal/projects', payload);
+      router.push(`/portal/projects/${res.data.id}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create project');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -51,7 +80,7 @@ export default function NewPortalProjectPage() {
               <Label htmlFor="description">Description</Label>
               <textarea
                 id="description"
-                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 placeholder="Describe what this project is about..."
                 value={formData.description}
                 onChange={(e) => update('description', e.target.value)}
@@ -77,33 +106,28 @@ export default function NewPortalProjectPage() {
                 />
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Client Access</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
             <div>
-              <Label htmlFor="client_email">Client Email</Label>
+              <Label htmlFor="budget">Budget</Label>
               <Input
-                id="client_email"
-                type="email"
-                value={formData.client_email}
-                onChange={(e) => update('client_email', e.target.value)}
-                placeholder="client@company.com"
+                id="budget"
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.budget}
+                onChange={(e) => update('budget', e.target.value)}
+                placeholder="10000"
               />
-              <p className="text-xs text-muted-foreground mt-1">
-                A magic link invite will be sent to this email
-              </p>
             </div>
           </CardContent>
         </Card>
 
+        {error && <p className="text-sm text-destructive">{error}</p>}
+
         <div className="flex gap-3">
-          <Button>Create Project</Button>
-          <Button variant="outline">Create & Send Invite</Button>
+          <Button onClick={handleCreate} disabled={saving}>
+            {saving && <CcdSpinner size="sm" className="mr-2" />}
+            Create Project
+          </Button>
           <Link href="/portal/projects">
             <Button variant="ghost">Cancel</Button>
           </Link>
