@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { Badge, Button, CcdSpinner } from '@ccd/ui';
+import { Badge, Button, CcdSpinner, cn } from '@ccd/ui';
 import { Send, Trash2 } from 'lucide-react';
 import { apiGet, apiPost, apiDelete } from '@/lib/api';
 
@@ -18,9 +18,10 @@ interface Message {
 interface MessageThreadProps {
   projectId: string;
   refreshKey?: number;
+  fullHeight?: boolean;
 }
 
-export function MessageThread({ projectId, refreshKey }: MessageThreadProps) {
+export function MessageThread({ projectId, refreshKey, fullHeight }: MessageThreadProps) {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [messageText, setMessageText] = React.useState('');
@@ -106,8 +107,8 @@ export function MessageThread({ projectId, refreshKey }: MessageThreadProps) {
   const sortedMessages = [...messages].reverse();
 
   return (
-    <div className="space-y-4">
-      <div ref={scrollRef} className="space-y-3 max-h-[400px] overflow-y-auto">
+    <div className={cn('space-y-4', fullHeight && 'flex flex-col h-full')}>
+      <div ref={scrollRef} className={cn('space-y-3 overflow-y-auto', fullHeight ? 'flex-1' : 'max-h-[400px]')}>
         {sortedMessages.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
             No messages yet. Start a conversation.

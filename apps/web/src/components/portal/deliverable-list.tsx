@@ -41,8 +41,36 @@ function formatFileSize(bytes: number | null): string {
 export function DeliverableList({ projectId, deliverables, onRefresh }: DeliverableListProps) {
   const [updating, setUpdating] = React.useState<string | null>(null);
   const [deleting, setDeleting] = React.useState<string | null>(null);
+  const [downloading, setDownloading] = React.useState<string | null>(null);
   const [feedbackText, setFeedbackText] = React.useState('');
   const [feedbackForId, setFeedbackForId] = React.useState<string | null>(null);
+
+  async function handleDownload(deliverable: Deliverable) {
+    if (!deliverable.file_url) return;
+    setDownloading(deliverable.id);
+    try {
+      const res = await fetch('/api/uploads/download-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bucket: 'project-files', path: deliverable.file_url }),
+      });
+      const result = await res.json();
+      if (result.success && result.data?.signedUrl) {
+        // Open signed URL in new tab to trigger download
+        const a = document.createElement('a');
+        a.href = result.data.signedUrl;
+        a.download = deliverable.file_name || 'download';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setDownloading(null);
+    }
+  }
 
   async function handleStatusChange(deliverableId: string, newStatus: string, feedback?: string) {
     setUpdating(deliverableId);
@@ -142,6 +170,18 @@ export function DeliverableList({ projectId, deliverables, onRefresh }: Delivera
 
             {/* Action buttons */}
             <div className="flex items-center gap-1 shrink-0">
+              {d.file_url && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="h-7 w-7 text-muted-foreground hover:text-primary"
+                  onClick={() => handleDownload(d)}
+                  disabled={downloading === d.id}
+                  title="Download file"
+                >
+                  {downloading === d.id ? <CcdSpinner size="sm" /> : <Download className="h-3.5 w-3.5" />}
+                </Button>
+              )}
               {d.status === 'pending_review' && (
                 <>
                   <Button

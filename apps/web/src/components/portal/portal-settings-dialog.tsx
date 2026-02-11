@@ -18,7 +18,8 @@ import {
   CcdSpinner,
   CcdLoader,
 } from '@ccd/ui';
-import { Save, Globe, Palette, Shield, Bell } from 'lucide-react';
+import { Save, Globe, Palette, Shield, Bell, Link2 } from 'lucide-react';
+import { ClientAccessManager } from '@/components/portal/client-access-manager';
 import { useModuleSettings } from '@/hooks/use-module-settings';
 
 interface PortalSettingsDialogProps {
@@ -329,6 +330,19 @@ function NotificationsTabContent() {
   );
 }
 
+// --- Client Access Tab ---
+
+function ClientAccessTabContent() {
+  return (
+    <div className="space-y-2">
+      <p className="text-sm text-muted-foreground">
+        Generate magic links to invite clients to the portal. Manage and revoke active access tokens.
+      </p>
+      <ClientAccessManager />
+    </div>
+  );
+}
+
 // --- Main Dialog ---
 
 export function PortalSettingsDialog({
@@ -356,6 +370,12 @@ export function PortalSettingsDialog({
       icon: <Bell />,
       content: <NotificationsTabContent />,
     },
+    {
+      value: 'client-access',
+      label: 'Invitations',
+      icon: <Link2 />,
+      content: <ClientAccessTabContent />,
+    },
   ];
 
   return (
@@ -363,7 +383,7 @@ export function PortalSettingsDialog({
       open={open}
       onOpenChange={onOpenChange}
       title={`${mod?.name || 'Client Portal'} Settings`}
-      description="Configure portal branding, access controls, and notification preferences."
+      description="Configure portal branding, access controls, notifications, and client invitations."
       tabs={tabs}
       moduleColor={mod?.color}
       icon={<Globe />}

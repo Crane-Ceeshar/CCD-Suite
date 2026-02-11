@@ -19,9 +19,10 @@ function PageHeader({
   description,
   breadcrumbs,
   actions,
+  children,
   className,
   ...props
-}: PageHeaderProps) {
+}: PageHeaderProps & { children?: React.ReactNode }) {
   return (
     <div className={cn('space-y-2', className)} {...props}>
       {breadcrumbs && breadcrumbs.length > 0 && (
@@ -50,7 +51,7 @@ function PageHeader({
             <p className="text-muted-foreground">{description}</p>
           )}
         </div>
-        {actions && <div className="flex items-center gap-2">{actions}</div>}
+        {(actions || children) && <div className="flex items-center gap-2">{actions ?? children}</div>}
       </div>
     </div>
   );

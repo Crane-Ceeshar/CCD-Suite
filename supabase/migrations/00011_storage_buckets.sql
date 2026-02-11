@@ -18,7 +18,7 @@ values (
   'content-assets',
   'content-assets',
   false,
-  52428800 -- 50MB
+  209715200 -- 200MB
 );
 
 -- Project files bucket (private)
@@ -27,7 +27,7 @@ values (
   'project-files',
   'project-files',
   false,
-  104857600 -- 100MB
+  524288000 -- 500MB
 );
 
 -- Storage policies

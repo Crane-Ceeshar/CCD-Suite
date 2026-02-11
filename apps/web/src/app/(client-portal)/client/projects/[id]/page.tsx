@@ -95,6 +95,37 @@ export default function ClientProjectDetailPage() {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [newMessage, setNewMessage] = React.useState('');
   const [sending, setSending] = React.useState(false);
+  const [downloadingId, setDownloadingId] = React.useState<string | null>(null);
+
+  async function handleDownload(deliverable: Deliverable) {
+    if (!deliverable.file_url) return;
+    setDownloadingId(deliverable.id);
+    try {
+      const res = await fetch('/api/client/downloads', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          bucket: 'project-files',
+          path: deliverable.file_url,
+          deliverableId: deliverable.id,
+        }),
+      });
+      const result = await res.json();
+      if (result.success && result.data?.signedUrl) {
+        const a = document.createElement('a');
+        a.href = result.data.signedUrl;
+        a.download = deliverable.file_name || 'download';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setDownloadingId(null);
+    }
+  }
 
   React.useEffect(() => {
     if (!id) return;
@@ -266,15 +297,18 @@ export default function ClientProjectDetailPage() {
                           )}
                         </div>
                         {d.file_url && (
-                          <a
-                            href={d.file_url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="shrink-0 p-1.5 rounded hover:bg-muted"
+                          <button
+                            onClick={() => handleDownload(d)}
+                            disabled={downloadingId === d.id}
+                            className="shrink-0 p-1.5 rounded hover:bg-muted disabled:opacity-50"
                             title="Download"
                           >
-                            <Download className="h-4 w-4 text-muted-foreground" />
-                          </a>
+                            {downloadingId === d.id ? (
+                              <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                            ) : (
+                              <Download className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </button>
                         )}
                       </div>
                     );

@@ -1,8 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { PageHeader, Card, CardContent, CardHeader, CardTitle, Badge, CcdSpinner } from '@ccd/ui';
-import { FileText } from 'lucide-react';
+import { PageHeader, Card, CardContent, CardHeader, CardTitle, Badge, CcdSpinner, Button } from '@ccd/ui';
+import { FileText, Download } from 'lucide-react';
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
 
@@ -16,6 +16,7 @@ interface Deliverable {
   title: string;
   description: string | null;
   status: string;
+  file_url: string | null;
   file_name: string | null;
   file_size: number | null;
   created_at: string;
@@ -69,7 +70,37 @@ export default function FilesPage() {
     load();
   }, []);
 
+  const [downloadingId, setDownloadingId] = React.useState<string | null>(null);
+
   const projectMap = new Map(projects.map((p) => [p.id, p.name]));
+
+  async function handleDownload(e: React.MouseEvent, d: Deliverable) {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!d.file_url) return;
+    setDownloadingId(d.id);
+    try {
+      const res = await fetch('/api/uploads/download-url', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ bucket: 'project-files', path: d.file_url }),
+      });
+      const result = await res.json();
+      if (result.success && result.data?.signedUrl) {
+        const a = document.createElement('a');
+        a.href = result.data.signedUrl;
+        a.download = d.file_name || 'download';
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setDownloadingId(null);
+    }
+  }
 
   if (loading) {
     return (
@@ -112,6 +143,18 @@ export default function FilesPage() {
                       {d.file_size && <span>{formatFileSize(d.file_size)}</span>}
                     </div>
                   </div>
+                  {d.file_url && (
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-muted-foreground hover:text-primary shrink-0"
+                      onClick={(e) => handleDownload(e, d)}
+                      disabled={downloadingId === d.id}
+                      title="Download file"
+                    >
+                      {downloadingId === d.id ? <CcdSpinner size="sm" /> : <Download className="h-3.5 w-3.5" />}
+                    </Button>
+                  )}
                   <Badge className={`text-xs ${badgeClass}`}>{d.status.replace(/_/g, ' ')}</Badge>
                   <span className="text-xs text-muted-foreground">
                     {new Date(d.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
