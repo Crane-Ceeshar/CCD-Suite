@@ -1071,8 +1071,8 @@ DROP INDEX IF EXISTS idx_webhooks_tenant;
 DROP POLICY IF EXISTS sprints_tenant_isolation ON public.sprints;
 CREATE POLICY sprints_tenant_isolation ON public.sprints
   FOR ALL
-  USING (tenant_id = (SELECT tenant_id FROM public.profiles WHERE id = (SELECT auth.uid())))
-  WITH CHECK (tenant_id = (SELECT tenant_id FROM public.profiles WHERE id = (SELECT auth.uid())));
+  USING (tenant_id = (SELECT public.get_current_tenant_id()))
+  WITH CHECK (tenant_id = (SELECT public.get_current_tenant_id()));
 
 -- Reload PostgREST schema cache
 NOTIFY pgrst, 'reload schema';
