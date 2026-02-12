@@ -1,5 +1,5 @@
 import 'dotenv/config';
-import Fastify from 'fastify';
+import Fastify, { FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import rateLimit from '@fastify/rate-limit';
 import { supabasePlugin } from './plugins/supabase.js';
@@ -70,7 +70,7 @@ async function buildApp() {
   await app.register(adminRoutes, { prefix: '/api/admin' });
 
   // Global error handler
-  app.setErrorHandler((error, request, reply) => {
+  app.setErrorHandler((error: FastifyError, request, reply) => {
     app.log.error(error);
 
     const statusCode = error.statusCode ?? 500;
