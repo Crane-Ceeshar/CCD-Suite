@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
 import { sendEmail } from '@/lib/email';
+import { getEmailTemplate, renderTemplate } from '@/lib/api/email-templates';
 import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
@@ -95,22 +96,15 @@ export async function POST(request: NextRequest) {
 
   // Send invitation email
   try {
+    const template = await getEmailTemplate(profile.tenant_id, 'email_template_portal_invite');
+    const vars = {
+      first_name: contact.first_name,
+      action_url: inviteUrl,
+    };
     await sendEmail({
       to: contact.email,
-      subject: 'You\'ve been invited to the Client Portal',
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Hello ${contact.first_name},</h2>
-          <p>You've been invited to access your client portal. Click the link below to get started:</p>
-          <p style="margin: 24px 0;">
-            <a href="${inviteUrl}"
-               style="background-color: #0047AB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-              Access Portal
-            </a>
-          </p>
-          <p style="color: #666; font-size: 14px;">This link will expire in 7 days.</p>
-        </div>
-      `,
+      subject: renderTemplate(template.subject, vars),
+      html: renderTemplate(template.body_html, vars),
     });
   } catch (err) {
     return NextResponse.json(

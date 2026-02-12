@@ -9,7 +9,8 @@ interface UseAiGenerateOptions {
 }
 
 interface GenerateResult {
-  content: string;
+  result?: string;
+  content?: string;
   model: string;
   tokens_used: number | null;
 }
@@ -40,7 +41,7 @@ export function useAiGenerate({ type, module }: UseAiGenerateOptions) {
 
         if (abortRef.current) return;
 
-        const content = res.data.content ?? res.data.toString();
+        const content = res.data.result ?? res.data.content ?? '';
         setResult(content);
 
         // Log activity in background — fire and forget

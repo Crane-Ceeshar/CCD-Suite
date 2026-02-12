@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { AdminShell } from '@/components/layout/admin-shell';
+import { QueryProvider } from '@/providers/query-provider';
 
 export default async function AdminLayout({
   children,
@@ -33,8 +34,10 @@ export default async function AdminLayout({
   }
 
   return (
-    <AdminShell user={profile} tenant={profile.tenants}>
-      {children}
-    </AdminShell>
+    <QueryProvider>
+      <AdminShell user={profile} tenant={profile.tenants}>
+        {children}
+      </AdminShell>
+    </QueryProvider>
   );
 }

@@ -22,7 +22,7 @@ import {
   Share2,
   RefreshCw,
 } from 'lucide-react';
-import { apiGet, apiPost } from '@/lib/api';
+import { useAiInsights, useGenerateInsights, useMarkInsightRead } from '@/hooks/use-ai';
 import type { AiInsight } from '@ccd/shared';
 
 const CATEGORIES = [
@@ -46,39 +46,28 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export default function InsightsPage() {
-  const [insights, setInsights] = React.useState<AiInsight[]>([]);
   const [activeCategory, setActiveCategory] = React.useState('all');
-  const [isLoading, setIsLoading] = React.useState(true);
-  const [isGenerating, setIsGenerating] = React.useState(false);
+  const { insights, isLoading, reload } = useAiInsights(activeCategory);
+  const { generate, isGenerating } = useGenerateInsights();
+  const { markRead } = useMarkInsightRead();
 
-  React.useEffect(() => {
-    loadInsights();
-  }, []);
-
-  async function loadInsights() {
-    setIsLoading(true);
-    try {
-      const res = await apiGet<AiInsight[]>('/api/ai/insights');
-      setInsights(res.data);
-    } catch {
-      // Silently fail
-    } finally {
-      setIsLoading(false);
+  async function handleGenerate() {
+    const result = await generate(activeCategory);
+    if (result) {
+      await reload(activeCategory);
     }
   }
 
-  async function handleGenerate(category: string) {
-    setIsGenerating(true);
-    try {
-      await apiPost('/api/ai/insights', {
-        category: category === 'all' ? 'crm' : category,
-      });
-      await loadInsights();
-    } catch {
-      // Silently fail
-    } finally {
-      setIsGenerating(false);
+  async function handleInsightClick(insight: AiInsight) {
+    if (!insight.is_read) {
+      await markRead(insight.id);
+      await reload(activeCategory);
     }
+  }
+
+  function handleCategoryChange(cat: string) {
+    setActiveCategory(cat);
+    reload(cat);
   }
 
   const filtered =
@@ -97,7 +86,7 @@ export default function InsightsPage() {
         ]}
         actions={
           <Button
-            onClick={() => handleGenerate(activeCategory)}
+            onClick={handleGenerate}
             disabled={isGenerating}
             className="bg-emerald-600 hover:bg-emerald-700"
           >
@@ -121,7 +110,7 @@ export default function InsightsPage() {
         {CATEGORIES.map((cat) => (
           <button
             key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
+            onClick={() => handleCategoryChange(cat.id)}
             className={`flex items-center gap-1.5 rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
               activeCategory === cat.id
                 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300'
@@ -149,7 +138,7 @@ export default function InsightsPage() {
             </p>
             <Button
               variant="outline"
-              onClick={() => handleGenerate(activeCategory)}
+              onClick={handleGenerate}
               disabled={isGenerating}
             >
               <RefreshCw className="mr-2 h-4 w-4" />
@@ -160,7 +149,13 @@ export default function InsightsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filtered.map((insight) => (
-            <Card key={insight.id} className="hover:shadow-sm transition-shadow">
+            <Card
+              key={insight.id}
+              className={`hover:shadow-sm transition-shadow cursor-pointer ${
+                !insight.is_read ? 'border-l-4 border-l-emerald-500' : ''
+              }`}
+              onClick={() => handleInsightClick(insight)}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
                   <CardTitle className="text-base leading-tight">{insight.title}</CardTitle>
@@ -181,6 +176,9 @@ export default function InsightsPage() {
                     {insight.category}
                   </Badge>
                   <span>{new Date(insight.created_at).toLocaleDateString()}</span>
+                  {!insight.is_read && (
+                    <Badge className="bg-emerald-100 text-emerald-700 text-xs">New</Badge>
+                  )}
                 </div>
               </CardContent>
             </Card>

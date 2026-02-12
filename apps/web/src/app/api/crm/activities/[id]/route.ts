@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
+import { dbError, success } from '@/lib/api/responses';
+import { validateUuid } from '@/lib/api/security';
+import { sanitizeObject } from '@/lib/api/sanitize';
 
 export async function PATCH(
   request: NextRequest,
@@ -9,7 +12,10 @@ export async function PATCH(
   if (error) return error;
 
   const { id } = await params;
-  const body = await request.json();
+  const uuidError = validateUuid(id, 'Activity');
+  if (uuidError) return uuidError;
+
+  const body = sanitizeObject(await request.json());
 
   const updateFields: Record<string, unknown> = {};
   if (body.title !== undefined) updateFields.title = body.title;
@@ -30,14 +36,9 @@ export async function PATCH(
     )
     .single();
 
-  if (updateError) {
-    return NextResponse.json(
-      { success: false, error: { message: updateError.message } },
-      { status: 500 }
-    );
-  }
+  if (updateError) return dbError(updateError, 'Activity');
 
-  return NextResponse.json({ success: true, data });
+  return success(data);
 }
 
 export async function DELETE(
@@ -48,15 +49,17 @@ export async function DELETE(
   if (error) return error;
 
   const { id } = await params;
+  const uuidError = validateUuid(id, 'Activity');
+  if (uuidError) return uuidError;
 
-  const { error: deleteError } = await supabase.from('activities').delete().eq('id', id);
+  const { data: deleted, error: deleteError } = await supabase
+    .from('activities')
+    .delete()
+    .eq('id', id)
+    .select()
+    .single();
 
-  if (deleteError) {
-    return NextResponse.json(
-      { success: false, error: { message: deleteError.message } },
-      { status: 500 }
-    );
-  }
+  if (deleteError) return dbError(deleteError, 'Activity');
 
-  return NextResponse.json({ success: true, data: null });
+  return success(deleted);
 }

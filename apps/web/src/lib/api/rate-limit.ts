@@ -18,7 +18,7 @@ if (typeof setInterval !== 'undefined') {
   }, 5 * 60 * 1000);
 }
 
-interface RateLimitOptions {
+export interface RateLimitOptions {
   windowMs?: number;
   max?: number;
   keyPrefix?: string;
@@ -41,6 +41,10 @@ export const RATE_LIMIT_PRESETS = {
   admin: { windowMs: 60_000, max: 120, keyPrefix: 'admin' } as RateLimitOptions,
   /** Sensitive operations — token verify, password change (3 req / 60s) */
   sensitive: { windowMs: 60_000, max: 3, keyPrefix: 'sensitive' } as RateLimitOptions,
+  /** AI chat & generation endpoints (30 req / 60s) */
+  ai: { windowMs: 60_000, max: 30, keyPrefix: 'ai' } as RateLimitOptions,
+  /** AI analysis & insight generation (15 req / 60s) */
+  aiHeavy: { windowMs: 60_000, max: 15, keyPrefix: 'ai-heavy' } as RateLimitOptions,
 } as const;
 
 /* -------------------------------------------------------------------------- */

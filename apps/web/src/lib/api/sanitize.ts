@@ -17,16 +17,27 @@ const DANGEROUS_ATTRS =
 /** javascript: / vbscript: / data: protocol in href / src */
 const DANGEROUS_PROTOCOLS = /(href|src|action)\s*=\s*["']?\s*(javascript|vbscript|data)\s*:/gi;
 
+/** Standalone dangerous protocol prefixes (e.g. in URL fields) */
+const STANDALONE_DANGEROUS_PROTOCOL = /^\s*(javascript|vbscript|data)\s*:/i;
+
 /**
  * Strip dangerous HTML tags, attributes, and protocol handlers.
  * Leaves safe text and basic formatting intact.
+ * Loops until output stabilises to catch nested payloads like <<script>script>.
  */
 export function sanitizeHtml(input: string): string {
   if (!input) return input;
-  return input
-    .replace(DANGEROUS_TAGS, '')
-    .replace(DANGEROUS_ATTRS, '')
-    .replace(DANGEROUS_PROTOCOLS, '$1=""');
+  let prev = '';
+  let current = input;
+  // Loop until the output stabilises (handles nested tag tricks)
+  while (current !== prev) {
+    prev = current;
+    current = current
+      .replace(DANGEROUS_TAGS, '')
+      .replace(DANGEROUS_ATTRS, '')
+      .replace(DANGEROUS_PROTOCOLS, '$1=""');
+  }
+  return current;
 }
 
 /**
@@ -34,6 +45,10 @@ export function sanitizeHtml(input: string): string {
  */
 export function containsUnsafeHtml(input: string): boolean {
   if (!input) return false;
+  // Reset lastIndex to avoid stateful regex issues with /g flag
+  DANGEROUS_TAGS.lastIndex = 0;
+  DANGEROUS_ATTRS.lastIndex = 0;
+  DANGEROUS_PROTOCOLS.lastIndex = 0;
   return (
     DANGEROUS_TAGS.test(input) ||
     DANGEROUS_ATTRS.test(input) ||
@@ -47,12 +62,14 @@ export function containsUnsafeHtml(input: string): boolean {
 
 /**
  * Sanitize search input for use in ILIKE / text search queries.
- * Escapes SQL-like metacharacters to prevent injection.
+ * Strips SQL injection patterns and escapes metacharacters.
  */
 export function sanitizeSearchQuery(input: string): string {
   if (!input) return input;
+  // Strip SQL injection patterns first
+  let cleaned = stripSqlPatterns(input);
   // Escape SQL LIKE metacharacters and backslash
-  return input
+  return cleaned
     .replace(/\\/g, '\\\\')
     .replace(/%/g, '\\%')
     .replace(/_/g, '\\_')
@@ -150,12 +167,46 @@ export function sanitizeFilename(input: string): string {
 /* -------------------------------------------------------------------------- */
 
 /**
- * Sanitize a string value for storage — strips dangerous HTML
- * and trims whitespace.
+ * Dangerous SQL keywords / patterns that should never appear in stored text.
+ * Matches multi-word SQL sequences commonly used in injection attacks.
+ */
+const SQL_INJECTION_PATTERNS = [
+  /\bUNION\s+SELECT\b/gi,
+  /\bSELECT\s+\*\s+FROM\b/gi,
+  /\bDROP\s+TABLE\b/gi,
+  /\bINSERT\s+INTO\b/gi,
+  /\bDELETE\s+FROM\b/gi,
+  /\bUPDATE\s+\w+\s+SET\b/gi,
+  /\bEXEC(\s+|\s*\()/gi,
+  /\bpg_sleep\s*\(/gi,
+  /;\s*--/g,
+  /'\s*OR\s+\d+\s*=\s*\d+/gi,
+  /'\s*OR\s+'\w+'\s*=\s*'\w+/gi,
+];
+
+/**
+ * Strip dangerous SQL injection patterns from stored text values.
+ */
+function stripSqlPatterns(input: string): string {
+  let result = input;
+  for (const pattern of SQL_INJECTION_PATTERNS) {
+    result = result.replace(pattern, '');
+  }
+  return result;
+}
+
+/**
+ * Sanitize a string value for storage — strips dangerous HTML,
+ * SQL injection patterns, dangerous protocols, and trims whitespace.
  */
 export function sanitizeInput(input: string): string {
   if (!input) return input;
-  return sanitizeHtml(input.trim());
+  let cleaned = sanitizeHtml(input.trim());
+  // Strip dangerous standalone protocols (e.g. javascript:alert(1))
+  cleaned = cleaned.replace(STANDALONE_DANGEROUS_PROTOCOL, '');
+  // Strip dangerous SQL patterns
+  cleaned = stripSqlPatterns(cleaned);
+  return cleaned;
 }
 
 /**

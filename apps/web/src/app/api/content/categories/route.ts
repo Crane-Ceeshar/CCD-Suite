@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/supabase/auth-helpers';
 import { success, dbError } from '@/lib/api/responses';
 import { validateBody } from '@/lib/api/validate';
 import { categoryCreateSchema } from '@/lib/api/schemas/content';
+import { sanitizeObject } from '@/lib/api/sanitize';
 
 /**
  * GET /api/content/categories
@@ -30,8 +31,9 @@ export async function POST(request: NextRequest) {
   const { error: authError, supabase, profile } = await requireAuth();
   if (authError) return authError;
 
-  const { data: body, error: bodyError } = await validateBody(request, categoryCreateSchema);
+  const { data: rawBody, error: bodyError } = await validateBody(request, categoryCreateSchema);
   if (bodyError) return bodyError;
+  const body = sanitizeObject(rawBody as Record<string, unknown>) as typeof rawBody;
 
   const slug =
     body.slug ||

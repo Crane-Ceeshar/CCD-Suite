@@ -1,6 +1,7 @@
 import { requireAdmin, createAdminServiceClient } from '@/lib/supabase/admin';
 import { success, dbError } from '@/lib/api/responses';
 import { rateLimit, RATE_LIMIT_PRESETS } from '@/lib/api/rate-limit';
+import { APP_TABLES } from '@/lib/constants/app-tables';
 
 interface BreakdownItem {
   category: string;
@@ -48,18 +49,17 @@ export async function GET() {
   });
   totalScore += rateLimitScore;
 
-  // 3. RLS enabled on all tables? (+20)
+  // 3. RLS enabled on all application tables? (+20)
   let rlsScore = 20;
   const { data: tables } = await serviceClient
-    .from('pg_catalog.pg_tables' as string)
-    .select('tablename, rowsecurity')
-    .eq('schemaname', 'public');
+    .rpc('check_rls_status', { table_names: APP_TABLES as unknown as string[] });
 
   if (tables) {
-    const disabledTables = (tables as { tablename: string; rowsecurity: boolean }[])
-      .filter((t) => !t.rowsecurity);
-    if (disabledTables.length > 0) {
-      rlsScore = 0;
+    const allTables = tables as { tablename: string; rowsecurity: boolean }[];
+    const disabledTables = allTables.filter((t) => !t.rowsecurity);
+    if (disabledTables.length > 0 && allTables.length > 0) {
+      const enabledCount = allTables.length - disabledTables.length;
+      rlsScore = Math.round((enabledCount / allTables.length) * 20);
     }
   } else {
     // Can't verify — give partial credit

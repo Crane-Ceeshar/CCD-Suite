@@ -7,7 +7,7 @@ create table public.tenants (
     check (plan in ('starter', 'professional', 'enterprise', 'custom')),
   logo_url text,
   settings jsonb not null default '{
-    "modules_enabled": ["crm", "analytics", "content", "seo", "social", "client_portal", "projects", "finance", "hr"],
+    "modules_enabled": ["crm", "analytics", "content", "seo", "social", "client_portal", "projects", "finance", "hr", "ai"],
     "features": {}
   }'::jsonb,
   max_users integer not null default 5,

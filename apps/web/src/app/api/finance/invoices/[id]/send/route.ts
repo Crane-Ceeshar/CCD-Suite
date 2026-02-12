@@ -4,6 +4,7 @@ import { success, error as errorResponse, dbError } from '@/lib/api/responses';
 import { rateLimit } from '@/lib/api/rate-limit';
 import { logAudit } from '@/lib/api/audit';
 import { sendEmail } from '@/lib/email';
+import { getEmailTemplate, renderTemplate } from '@/lib/api/email-templates';
 
 /**
  * POST /api/finance/invoices/:id/send
@@ -178,10 +179,16 @@ export async function POST(
     `;
 
     try {
+      const template = await getEmailTemplate(profile.tenant_id, 'email_template_invoice');
+      const vars = {
+        invoice_number: invoice.invoice_number,
+        tenant_name: tenantName,
+        invoice_html: emailHtml,
+      };
       await sendEmail({
         to: contact.email,
-        subject: `Invoice ${invoice.invoice_number} from ${tenantName}`,
-        html: emailHtml,
+        subject: renderTemplate(template.subject, vars),
+        html: renderTemplate(template.body_html, vars),
       });
       emailSent = true;
     } catch (err) {

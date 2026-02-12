@@ -117,48 +117,90 @@ export function ChatInterface({ moduleContext, entityContext, compact }: ChatInt
     };
     addMessage(userMsg);
 
+    const requestBody = {
+      content: userContent,
+      conversation_id: activeConversationId ?? undefined,
+      module_context: moduleContext,
+      entity_context: entityContext,
+    };
+
     try {
-      // Use non-streaming endpoint for reliability
-      const res = await apiPost<{
-        conversation_id: string;
-        message: { role: string; content: string; model: string; tokens_used: number | null };
-      }>('/api/ai/chat', {
-        content: userContent,
-        conversation_id: activeConversationId ?? undefined,
-        module_context: moduleContext,
-        entity_context: entityContext,
-      });
+      // Primary: streaming endpoint for real-time token-by-token responses
+      let streamError = false;
+      await apiStream(
+        '/api/ai/chat/stream',
+        requestBody,
+        (text) => {
+          appendStreamingContent(text);
+        },
+        (meta) => {
+          // Stream complete — create assistant message from accumulated content
+          const finalContent = useAIStore.getState().streamingContent;
+          const assistantMsg: AiMessage = {
+            id: `temp-${Date.now()}-assistant`,
+            conversation_id: meta.conversation_id ?? activeConversationId ?? '',
+            role: 'assistant',
+            content: finalContent,
+            tokens_used: meta.tokens_used,
+            model: meta.model,
+            metadata: {},
+            created_at: new Date().toISOString(),
+          };
+          addMessage(assistantMsg);
+          setStreamingContent('');
 
-      // Set conversation ID if new
-      if (!activeConversationId) {
-        setActiveConversationId(res.data.conversation_id);
-        loadConversations();
+          // Set conversation ID if new
+          if (!activeConversationId && meta.conversation_id) {
+            setActiveConversationId(meta.conversation_id);
+            loadConversations();
+          }
+        },
+        () => {
+          streamError = true;
+        }
+      );
+
+      if (streamError) {
+        throw new Error('Stream failed');
       }
+    } catch {
+      // Fallback: non-streaming endpoint for reliability
+      setStreamingContent('');
+      try {
+        const res = await apiPost<{
+          conversation_id: string;
+          message: { role: string; content: string; model: string; tokens_used: number | null };
+        }>('/api/ai/chat', requestBody);
 
-      // Add assistant response
-      const assistantMsg: AiMessage = {
-        id: `temp-${Date.now()}-assistant`,
-        conversation_id: res.data.conversation_id,
-        role: 'assistant',
-        content: res.data.message.content,
-        tokens_used: res.data.message.tokens_used,
-        model: res.data.message.model,
-        metadata: {},
-        created_at: new Date().toISOString(),
-      };
-      addMessage(assistantMsg);
-    } catch (error) {
-      const errMsg: AiMessage = {
-        id: `temp-${Date.now()}-error`,
-        conversation_id: activeConversationId ?? '',
-        role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.',
-        tokens_used: null,
-        model: null,
-        metadata: {},
-        created_at: new Date().toISOString(),
-      };
-      addMessage(errMsg);
+        if (!activeConversationId) {
+          setActiveConversationId(res.data.conversation_id);
+          loadConversations();
+        }
+
+        const assistantMsg: AiMessage = {
+          id: `temp-${Date.now()}-assistant`,
+          conversation_id: res.data.conversation_id,
+          role: 'assistant',
+          content: res.data.message.content,
+          tokens_used: res.data.message.tokens_used,
+          model: res.data.message.model,
+          metadata: {},
+          created_at: new Date().toISOString(),
+        };
+        addMessage(assistantMsg);
+      } catch {
+        const errMsg: AiMessage = {
+          id: `temp-${Date.now()}-error`,
+          conversation_id: activeConversationId ?? '',
+          role: 'assistant',
+          content: 'Sorry, something went wrong. Please try again.',
+          tokens_used: null,
+          model: null,
+          metadata: {},
+          created_at: new Date().toISOString(),
+        };
+        addMessage(errMsg);
+      }
     } finally {
       setIsStreaming(false);
       setStreamingContent('');

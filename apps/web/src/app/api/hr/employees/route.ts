@@ -5,6 +5,7 @@ import { validateBody, validateQuery } from '@/lib/api/validate';
 import { createEmployeeSchema, employeeListQuerySchema } from '@/lib/api/schemas/hr';
 import { rateLimit } from '@/lib/api/rate-limit';
 import { logAudit } from '@/lib/api/audit';
+import { sanitizeObject, sanitizeSearchQuery } from '@/lib/api/sanitize';
 
 /**
  * GET /api/hr/employees
@@ -36,7 +37,8 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (search) {
-    dbQuery = dbQuery.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`);
+    const safe = sanitizeSearchQuery(search);
+    dbQuery = dbQuery.or(`first_name.ilike.%${safe}%,last_name.ilike.%${safe}%,email.ilike.%${safe}%`);
   }
   if (status) {
     dbQuery = dbQuery.eq('status', status);
@@ -68,8 +70,9 @@ export async function POST(request: NextRequest) {
   const { limited, response: limitResp } = rateLimit(user.id, { max: 50, keyPrefix: 'hr:employees:create' });
   if (limited) return limitResp!;
 
-  const { data: body, error: bodyError } = await validateBody(request, createEmployeeSchema);
+  const { data: rawBody, error: bodyError } = await validateBody(request, createEmployeeSchema);
   if (bodyError) return bodyError;
+  const body = sanitizeObject(rawBody as Record<string, unknown>) as typeof rawBody;
 
   const { data: employee, error: insertError } = await supabase
     .from('employees')

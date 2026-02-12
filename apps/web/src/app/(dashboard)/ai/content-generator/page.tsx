@@ -20,8 +20,10 @@ import {
   Sparkles,
   Copy,
   Check,
+  BookOpen,
 } from 'lucide-react';
 import { apiPost } from '@/lib/api';
+import { useSaveToLibrary } from '@/hooks/use-ai-library';
 
 const CONTENT_TYPES = [
   { id: 'blog_post', label: 'Blog Post', icon: PenTool, description: 'Engaging blog articles' },
@@ -38,6 +40,23 @@ export default function ContentGeneratorPage() {
   const [result, setResult] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const [saved, setSaved] = React.useState(false);
+  const { save, isSaving } = useSaveToLibrary();
+
+  async function handleSaveToLibrary() {
+    if (!result) return;
+    const typeLabel = CONTENT_TYPES.find((t) => t.id === selectedType)?.label ?? selectedType;
+    const item = await save({
+      title: `${typeLabel} — ${prompt.trim().slice(0, 60)}`,
+      content: result,
+      type: selectedType,
+      prompt: prompt.trim(),
+    });
+    if (item) {
+      setSaved(true);
+      setTimeout(() => setSaved(false), 2000);
+    }
+  }
 
   async function handleGenerate() {
     if (!prompt.trim()) return;
@@ -144,14 +163,24 @@ export default function ContentGeneratorPage() {
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardTitle className="text-base">Generated Content</CardTitle>
             {result && (
-              <Button variant="ghost" size="sm" onClick={handleCopy}>
-                {copied ? (
-                  <Check className="mr-1 h-3.5 w-3.5 text-emerald-500" />
-                ) : (
-                  <Copy className="mr-1 h-3.5 w-3.5" />
-                )}
-                {copied ? 'Copied!' : 'Copy'}
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="sm" onClick={handleSaveToLibrary} disabled={isSaving}>
+                  {saved ? (
+                    <Check className="mr-1 h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <BookOpen className="mr-1 h-3.5 w-3.5" />
+                  )}
+                  {saved ? 'Saved!' : isSaving ? 'Saving...' : 'Save to Library'}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={handleCopy}>
+                  {copied ? (
+                    <Check className="mr-1 h-3.5 w-3.5 text-emerald-500" />
+                  ) : (
+                    <Copy className="mr-1 h-3.5 w-3.5" />
+                  )}
+                  {copied ? 'Copied!' : 'Copy'}
+                </Button>
+              </div>
             )}
           </CardHeader>
           <CardContent className="flex-1">

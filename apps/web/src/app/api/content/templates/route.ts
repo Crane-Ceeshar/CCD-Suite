@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/supabase/auth-helpers';
 import { success, dbError } from '@/lib/api/responses';
 import { validateBody } from '@/lib/api/validate';
 import { templateCreateSchema } from '@/lib/api/schemas/content';
+import { sanitizeObject } from '@/lib/api/sanitize';
 
 /**
  * GET /api/content/templates
@@ -31,8 +32,9 @@ export async function POST(request: NextRequest) {
   const { error: authError, supabase, user, profile } = await requireAuth();
   if (authError) return authError;
 
-  const { data: body, error: bodyError } = await validateBody(request, templateCreateSchema);
+  const { data: rawBody, error: bodyError } = await validateBody(request, templateCreateSchema);
   if (bodyError) return bodyError;
+  const body = sanitizeObject(rawBody as Record<string, unknown>) as typeof rawBody;
 
   const { data, error: insertError } = await supabase
     .from('content_templates')

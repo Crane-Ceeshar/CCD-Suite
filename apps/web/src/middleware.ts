@@ -27,12 +27,20 @@ const MODULE_ROUTES: Record<string, string> = {
   '/ai': 'ai',
 };
 
-const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/admin/login', '/portal/verify', '/client', '/api/portal/verify', '/api/portal/session', '/api/client'];
+const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/admin/login', '/portal/verify', '/client', '/api/portal/verify', '/api/portal/session', '/api/client', '/api/health', '/api/csp-report'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hostname = request.headers.get('host') || '';
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'ccdsuite.com';
+
+  // ── API key fast-path ──
+  // Requests with a `ccd_` bearer token targeting /api/ routes skip session
+  // refresh entirely — the route handler validates the key via requireApiKey().
+  const authHeader = request.headers.get('authorization') || '';
+  if (pathname.startsWith('/api/') && authHeader.includes('ccd_')) {
+    return NextResponse.next();
+  }
 
   // ── Subdomain detection ──
   // Parse subdomain (skip localhost and dev environments)

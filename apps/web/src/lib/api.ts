@@ -74,7 +74,7 @@ export async function apiStream(
   path: string,
   body: unknown,
   onText: (text: string) => void,
-  onDone?: (meta: { model: string; tokens_used: number | null }) => void,
+  onDone?: (meta: { model: string; tokens_used: number | null; conversation_id?: string }) => void,
   onError?: (error: string) => void
 ): Promise<void> {
   const headers = await getAuthHeaders();

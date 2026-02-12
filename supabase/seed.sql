@@ -11,7 +11,7 @@ values (
   'enterprise',
   50,
   '{
-    "modules_enabled": ["crm", "analytics", "content", "seo", "social", "client_portal", "projects", "finance", "hr"],
+    "modules_enabled": ["crm", "analytics", "content", "seo", "social", "client_portal", "projects", "finance", "hr", "ai"],
     "features": {
       "ai_enabled": true,
       "custom_branding": true
@@ -35,7 +35,7 @@ insert into public.user_type_definitions (tenant_id, name, slug, description, mo
 values
   ('00000000-0000-0000-0000-000000000001', 'Admin', 'admin',
    'Full access to all modules',
-   array['crm', 'analytics', 'content', 'seo', 'social', 'client_portal', 'projects', 'finance', 'hr'],
+   array['crm', 'analytics', 'content', 'seo', 'social', 'client_portal', 'projects', 'finance', 'hr', 'ai'],
    true),
   ('00000000-0000-0000-0000-000000000001', 'Sales', 'sales',
    'Access to CRM and Analytics',

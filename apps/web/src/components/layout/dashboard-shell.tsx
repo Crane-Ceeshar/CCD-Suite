@@ -15,12 +15,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@ccd/ui';
-import { LogOut, Settings, Bell, HelpCircle, UserPlus, Clock, Zap, Menu, Search, X } from 'lucide-react';
+import {
+  LogOut, Settings, Bell, HelpCircle, UserPlus, Clock, Zap, Menu, Search, X,
+  Sparkles, MessageCircle, PenTool, Lightbulb, BotMessageSquare, BookOpen, LayoutDashboard, Database,
+} from 'lucide-react';
+import { getModulesForUserType } from '@ccd/shared';
 import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { InviteMembersDialog } from '@/components/team/invite-members-dialog';
 import { useUIStore } from '@/stores/ui-store';
 import { useAuthStore } from '@/stores/auth-store';
+import { AnnouncementBanner } from '@/components/ui/announcement-banner';
 import type { PlanTier, ModuleId } from '@ccd/shared';
 
 interface DashboardShellProps {
@@ -65,6 +70,7 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
   const [searchExpanded, setSearchExpanded] = React.useState(false);
   const [inviteOpen, setInviteOpen] = React.useState(false);
   const canInvite = ['admin', 'owner'].includes(user.user_type);
+  const hasAiAccess = getModulesForUserType(user.user_type).includes('ai');
   const { toggleMobileMenu } = useUIStore();
 
   // Hydrate the Zustand auth store so client components (profile, billing, etc.) have access
@@ -199,6 +205,57 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
             <Search className="h-4 w-4" />
           </Button>
 
+          {/* AI quick-access dropdown */}
+          {hasAiAccess && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 md:h-9 md:w-9 rounded-full text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950 transition-colors"
+                  title="AI Assistant"
+                >
+                  <Sparkles className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-52" align="end" sideOffset={8}>
+                <DropdownMenuLabel className="text-xs text-muted-foreground">
+                  AI Assistant
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/ai/assistant')}>
+                  <MessageCircle className="mr-2 h-4 w-4" />
+                  New Chat
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/ai/content-generator')}>
+                  <PenTool className="mr-2 h-4 w-4" />
+                  Content Generator
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/ai/insights')}>
+                  <Lightbulb className="mr-2 h-4 w-4" />
+                  Insights
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/ai/automations')}>
+                  <BotMessageSquare className="mr-2 h-4 w-4" />
+                  Automations
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/ai/library')}>
+                  <BookOpen className="mr-2 h-4 w-4" />
+                  Content Library
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/ai/knowledge-base')}>
+                  <Database className="mr-2 h-4 w-4" />
+                  Knowledge Base
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/ai')}>
+                  <LayoutDashboard className="mr-2 h-4 w-4" />
+                  AI Dashboard
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+
           {canInvite && (
             <Button
               variant="outline"
@@ -309,6 +366,9 @@ export function DashboardShell({ user, tenant, children }: DashboardShellProps) 
 
       {/* Page content — modules add their own sidebar via per-module layout.tsx */}
       <main className="flex-1 overflow-auto">
+        <div className="px-3 md:px-6 pt-4">
+          <AnnouncementBanner />
+        </div>
         {children}
       </main>
 

@@ -104,6 +104,7 @@ export const MODULES: Record<ModuleId, ModuleDefinition> = {
     icon: 'sparkles',
     basePath: '/ai',
     phase: 4,
+    hidden: true,
   },
   admin: {
     id: 'admin',

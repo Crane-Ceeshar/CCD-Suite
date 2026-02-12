@@ -5,6 +5,7 @@ import { validateBody, validateQuery } from '@/lib/api/validate';
 import { createDepartmentSchema, departmentListQuerySchema } from '@/lib/api/schemas/hr';
 import { rateLimit } from '@/lib/api/rate-limit';
 import { logAudit } from '@/lib/api/audit';
+import { sanitizeObject, sanitizeSearchQuery } from '@/lib/api/sanitize';
 
 /**
  * GET /api/hr/departments
@@ -36,7 +37,8 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (search) {
-    dbQuery = dbQuery.ilike('name', `%${search}%`);
+    const safe = sanitizeSearchQuery(search);
+    dbQuery = dbQuery.ilike('name', `%${safe}%`);
   }
 
   const { data, error: queryError, count } = await dbQuery;
@@ -81,8 +83,9 @@ export async function POST(request: NextRequest) {
   const { limited, response: limitResp } = rateLimit(user.id, { max: 50, keyPrefix: 'hr:departments:create' });
   if (limited) return limitResp!;
 
-  const { data: body, error: bodyError } = await validateBody(request, createDepartmentSchema);
+  const { data: rawBody, error: bodyError } = await validateBody(request, createDepartmentSchema);
   if (bodyError) return bodyError;
+  const body = sanitizeObject(rawBody as Record<string, unknown>) as typeof rawBody;
 
   const { data: department, error: insertError } = await supabase
     .from('departments')

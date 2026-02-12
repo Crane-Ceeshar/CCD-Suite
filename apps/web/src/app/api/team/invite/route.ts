@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { randomBytes } from 'crypto';
 import { requireTenantAdmin, createAdminServiceClient } from '@/lib/supabase/tenant-admin';
 import { sendEmail } from '@/lib/email';
+import { getEmailTemplate, renderTemplate } from '@/lib/api/email-templates';
 
 export async function POST(request: NextRequest) {
   const { error, supabase, user, profile } = await requireTenantAdmin();
@@ -168,35 +169,20 @@ export async function POST(request: NextRequest) {
     : `https://${baseDomain}/dashboard`;
 
   try {
+    const template = await getEmailTemplate(profile.tenant_id, 'email_template_invite');
+    const vars = {
+      inviter_name: profile.full_name || profile.email,
+      tenant_name: tenant.name,
+      user_type,
+      message: message || '',
+      action_url: dashboardUrl,
+      email: email.toLowerCase(),
+      temp_password: tempPassword,
+    };
     await sendEmail({
       to: email.toLowerCase(),
-      subject: `You've been invited to join ${tenant.name} on CCD Suite`,
-      html: `
-        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <h2 style="color: #1a1a1a; margin-bottom: 16px;">You've been invited!</h2>
-          <p style="color: #4a4a4a; line-height: 1.6;">
-            <strong>${profile.full_name || profile.email}</strong> has invited you to join
-            <strong>${tenant.name}</strong> on CCD Suite as a <strong>${user_type}</strong>.
-          </p>
-          ${message ? `<div style="background: #f5f5f5; border-radius: 8px; padding: 16px; margin: 16px 0;"><p style="color: #4a4a4a; margin: 0; font-style: italic;">"${message}"</p></div>` : ''}
-          <p style="color: #4a4a4a; line-height: 1.6;">
-            A temporary password has been created for your account. Please log in and change your password immediately.
-          </p>
-          <div style="text-align: center; margin: 32px 0;">
-            <a href="${dashboardUrl}" style="background: #0047AB; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
-              Open Dashboard
-            </a>
-          </div>
-          <p style="color: #888; font-size: 13px;">
-            Your login email: <strong>${email}</strong><br/>
-            Your temporary password: <strong>${tempPassword}</strong>
-          </p>
-          <hr style="border: none; border-top: 1px solid #eee; margin: 24px 0;" />
-          <p style="color: #aaa; font-size: 12px;">
-            This invitation was sent from CCD Suite. If you didn't expect this, you can ignore this email.
-          </p>
-        </div>
-      `,
+      subject: renderTemplate(template.subject, vars),
+      html: renderTemplate(template.body_html, vars),
     });
   } catch {
     // Email sending failed but user was created — still return success

@@ -82,7 +82,7 @@ export default function DashboardPage() {
   }
 
   const roleModules = getModulesForUserType(user.user_type)
-    .filter((id) => id !== 'admin');
+    .filter((id) => { const mod = MODULES[id]; return mod && !mod.hidden; });
   const tenantModules: string[] = user.tenants?.settings?.modules_enabled ?? [];
   const allowedModules = tenantModules.length > 0
     ? roleModules.filter((id) => tenantModules.includes(id))

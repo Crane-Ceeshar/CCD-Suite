@@ -11,9 +11,9 @@ const DEFAULT_TEMPLATES = [
   },
   {
     key: 'email_template_invite',
-    name: 'User Invitation',
-    subject: 'You\'ve been invited to CCD Suite',
-    body_html: '<h1>You\'re Invited!</h1><p>An administrator has invited you to join their organisation on CCD Suite.</p>',
+    name: 'Team Invitation',
+    subject: "You've been invited to join {{tenant_name}} on CCD Suite",
+    body_html: '<h1>You\'re Invited!</h1><p><strong>{{inviter_name}}</strong> has invited you to join <strong>{{tenant_name}}</strong> as a <strong>{{user_type}}</strong>.</p>',
   },
   {
     key: 'email_template_password_reset',
@@ -26,6 +26,24 @@ const DEFAULT_TEMPLATES = [
     name: 'General Notification',
     subject: 'CCD Suite Notification',
     body_html: '<h1>Notification</h1><p>You have a new notification from CCD Suite.</p>',
+  },
+  {
+    key: 'email_template_portal_invite',
+    name: 'Client Portal Invitation',
+    subject: "You've been invited to the Client Portal",
+    body_html: '<h2>Hello {{first_name}},</h2><p>You\'ve been invited to access your client portal.</p><p><a href="{{action_url}}">Access Portal</a></p><p style="color:#666;font-size:14px;">This link expires in 7 days.</p>',
+  },
+  {
+    key: 'email_template_invoice',
+    name: 'Invoice Email',
+    subject: 'Invoice {{invoice_number}} from {{tenant_name}}',
+    body_html: '{{invoice_html}}',
+  },
+  {
+    key: 'email_template_contract',
+    name: 'Contract Signing',
+    subject: 'Contract: {{contract_title}} — Please Review and Sign',
+    body_html: '<h2>Hello {{first_name}},</h2><p>You have a new contract to review: <strong>{{contract_title}}</strong></p>{{#message}}<p>{{message}}</p>{{/message}}<p><a href="{{action_url}}">Review &amp; Sign Contract</a></p><p style="color:#666;font-size:14px;">This link expires in 7 days.</p>',
   },
 ];
 

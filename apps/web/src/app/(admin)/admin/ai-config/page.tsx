@@ -11,7 +11,7 @@ import {
   CcdLoader,
   CcdSpinner,
 } from '@ccd/ui';
-import { Save, BrainCircuit } from 'lucide-react';
+import { Save, BrainCircuit, MessageSquare, Cpu, Clock } from 'lucide-react';
 import { apiGet, apiPatch } from '@/lib/api';
 
 interface AiSettings {
@@ -21,13 +21,21 @@ interface AiSettings {
   monthly_token_budget: number;
   monthly_tokens_used: number;
   features_enabled: Record<string, boolean>;
+  system_prompt?: string;
+  available_models?: string[];
+  conversation_retention_days?: number;
+  insight_retention_days?: number;
+  generation_retention_days?: number;
+  last_token_reset_at?: string | null;
 }
 
-const MODELS = [
-  { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
-  { id: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet' },
-  { id: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku' },
+const ALL_MODELS = [
+  { id: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4', description: 'Best balance of intelligence and speed', tier: 'recommended' },
+  { id: 'claude-3-5-sonnet-20241022', label: 'Claude 3.5 Sonnet', description: 'Previous-gen high-performance model', tier: 'standard' },
+  { id: 'claude-3-5-haiku-20241022', label: 'Claude 3.5 Haiku', description: 'Fastest, most cost-effective for simple tasks', tier: 'economy' },
 ];
+
+const DEFAULT_AVAILABLE_MODELS = ALL_MODELS.map((m) => m.id);
 
 const FEATURES = [
   { key: 'chat', label: 'AI Chat', description: 'Interactive AI assistant for all modules' },
@@ -49,6 +57,11 @@ export default function AdminAiConfigPage() {
     insights: true,
     automations: false,
   });
+  const [systemPrompt, setSystemPrompt] = React.useState('');
+  const [availableModels, setAvailableModels] = React.useState<string[]>(DEFAULT_AVAILABLE_MODELS);
+  const [convRetention, setConvRetention] = React.useState(90);
+  const [insightRetention, setInsightRetention] = React.useState(180);
+  const [genRetention, setGenRetention] = React.useState(90);
 
   React.useEffect(() => {
     apiGet<AiSettings>('/api/admin/settings/ai')
@@ -59,6 +72,11 @@ export default function AdminAiConfigPage() {
           setMaxTokens(res.data.max_tokens_per_request);
           setBudget(res.data.monthly_token_budget);
           setFeatures(res.data.features_enabled);
+          setSystemPrompt(res.data.system_prompt ?? '');
+          setAvailableModels(res.data.available_models ?? DEFAULT_AVAILABLE_MODELS);
+          setConvRetention(res.data.conversation_retention_days ?? 90);
+          setInsightRetention(res.data.insight_retention_days ?? 180);
+          setGenRetention(res.data.generation_retention_days ?? 90);
         }
       })
       .catch(() => {})
@@ -73,10 +91,23 @@ export default function AdminAiConfigPage() {
         max_tokens_per_request: maxTokens,
         monthly_token_budget: budget,
         features_enabled: features,
+        system_prompt: systemPrompt,
+        available_models: availableModels,
+        conversation_retention_days: convRetention,
+        insight_retention_days: insightRetention,
+        generation_retention_days: genRetention,
       });
       if (res.data) setSettings(res.data);
     } catch { /* ignore */ }
     setSaving(false);
+  }
+
+  function toggleModel(modelId: string) {
+    setAvailableModels((prev) =>
+      prev.includes(modelId)
+        ? prev.filter((m) => m !== modelId)
+        : [...prev, modelId]
+    );
   }
 
   const usagePercent = settings
@@ -121,7 +152,7 @@ export default function AdminAiConfigPage() {
                 onChange={(e) => setModel(e.target.value)}
                 className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
-                {MODELS.map((m) => (
+                {ALL_MODELS.map((m) => (
                   <option key={m.id} value={m.id}>{m.label}</option>
                 ))}
               </select>
@@ -204,6 +235,140 @@ export default function AdminAiConfigPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* System Prompt */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <MessageSquare className="h-4 w-4" />
+            System Prompt
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Customise the AI assistant&apos;s behaviour. The system prompt is prepended to every conversation and shapes how the AI responds.
+          </p>
+          <textarea
+            value={systemPrompt}
+            onChange={(e) => setSystemPrompt(e.target.value)}
+            placeholder={`Example:\nYou are a helpful AI assistant for ${settings ? 'our' : 'a'} digital agency. Always be professional, concise, and use British English spelling. When discussing data, cite specific numbers. Never provide financial or legal advice.`}
+            className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 min-h-[140px] resize-y"
+            maxLength={4000}
+          />
+          <p className="text-xs text-muted-foreground text-right">
+            {systemPrompt.length} / 4,000 characters
+          </p>
+        </CardContent>
+      </Card>
+
+      {/* Available Models */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Cpu className="h-4 w-4" />
+            Available Models
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">
+            Select which AI models are available for your organisation. The preferred model (set above) will be used as the default.
+          </p>
+          {ALL_MODELS.map((m) => {
+            const isChecked = availableModels.includes(m.id);
+            const isPreferred = model === m.id;
+            return (
+              <label
+                key={m.id}
+                className={`flex items-center justify-between rounded-lg border p-3 cursor-pointer hover:bg-muted/50 ${
+                  isPreferred ? 'border-red-300 bg-red-50/50 dark:bg-red-950/20' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={isChecked}
+                    onChange={() => toggleModel(m.id)}
+                    disabled={isPreferred}
+                    className="rounded border-gray-300 text-red-600 focus:ring-red-500 h-4 w-4"
+                  />
+                  <div>
+                    <p className="text-sm font-medium">
+                      {m.label}
+                      {isPreferred && (
+                        <span className="ml-2 text-xs text-red-600 font-normal">(Preferred)</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground">{m.description}</p>
+                  </div>
+                </div>
+                <span className="text-xs text-muted-foreground capitalize">{m.tier}</span>
+              </label>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      {/* Data Retention */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            Data Retention
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            Configure how long AI data is retained before automatic cleanup. Set to 0 to keep data forever.
+            Token usage resets automatically on the 1st of each month.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Conversations</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={convRetention}
+                  onChange={(e) => setConvRetention(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  min={0}
+                />
+                <span className="text-xs text-muted-foreground whitespace-nowrap">days</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Insights</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={insightRetention}
+                  onChange={(e) => setInsightRetention(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  min={0}
+                />
+                <span className="text-xs text-muted-foreground whitespace-nowrap">days</span>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-sm font-medium">Generation Jobs</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  value={genRetention}
+                  onChange={(e) => setGenRetention(Math.max(0, parseInt(e.target.value, 10) || 0))}
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
+                  min={0}
+                />
+                <span className="text-xs text-muted-foreground whitespace-nowrap">days</span>
+              </div>
+            </div>
+          </div>
+          {settings?.last_token_reset_at && (
+            <p className="text-xs text-muted-foreground">
+              Last token reset: {new Date(settings.last_token_reset_at).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}
+            </p>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }

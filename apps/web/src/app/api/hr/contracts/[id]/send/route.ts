@@ -7,6 +7,7 @@ import { sendContractSchema } from '@/lib/api/schemas/hr';
 import { rateLimit } from '@/lib/api/rate-limit';
 import { logAudit } from '@/lib/api/audit';
 import { sendEmail } from '@/lib/email';
+import { getEmailTemplate, renderTemplate } from '@/lib/api/email-templates';
 
 export async function POST(
   request: NextRequest,
@@ -75,23 +76,17 @@ export async function POST(
   const signUrl = `${baseUrl}/hr/sign/${token}`;
 
   try {
+    const template = await getEmailTemplate(profile.tenant_id, 'email_template_contract');
+    const vars = {
+      first_name: contract.employee.first_name,
+      contract_title: contract.title,
+      message: body.message || '',
+      action_url: signUrl,
+    };
     await sendEmail({
       to: contract.employee.email,
-      subject: `Contract: ${contract.title} — Please Review and Sign`,
-      html: `
-        <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Hello ${contract.employee.first_name},</h2>
-          <p>You have a new contract to review and sign: <strong>${contract.title}</strong></p>
-          ${body.message ? `<p>${body.message}</p>` : ''}
-          <p style="margin: 24px 0;">
-            <a href="${signUrl}"
-               style="background-color: #0047AB; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
-              Review &amp; Sign Contract
-            </a>
-          </p>
-          <p style="color: #666; font-size: 14px;">This link will expire in 7 days.</p>
-        </div>
-      `,
+      subject: renderTemplate(template.subject, vars),
+      html: renderTemplate(template.body_html, vars),
     });
   } catch (err) {
     return NextResponse.json(

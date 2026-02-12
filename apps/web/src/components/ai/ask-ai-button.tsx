@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Sparkles, X, Send, Minimize2 } from 'lucide-react';
 import { Button, Card, CcdSpinner } from '@ccd/ui';
 import { ChatMessage } from './chat-message';
-import { apiPost } from '@/lib/api';
+import { apiPost, apiStream } from '@/lib/api';
 import type { AiMessage } from '@ccd/shared';
 
 interface AskAiButtonProps {
@@ -21,18 +21,22 @@ export function AskAiButton({ moduleContext, entityContext }: AskAiButtonProps) 
   const [input, setInput] = React.useState('');
   const [messages, setMessages] = React.useState<AiMessage[]>([]);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [streamingContent, setStreamingContent] = React.useState('');
   const [conversationId, setConversationId] = React.useState<string | null>(null);
   const messagesEndRef = React.useRef<HTMLDivElement>(null);
+  const streamContentRef = React.useRef('');
 
   React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, streamingContent]);
 
   async function handleSend() {
     if (!input.trim() || isLoading) return;
     const userContent = input.trim();
     setInput('');
     setIsLoading(true);
+    setStreamingContent('');
+    streamContentRef.current = '';
 
     // Optimistic user message
     const userMsg: AiMessage = {
@@ -47,46 +51,91 @@ export function AskAiButton({ moduleContext, entityContext }: AskAiButtonProps) 
     };
     setMessages((prev) => [...prev, userMsg]);
 
+    const requestBody = {
+      content: userContent,
+      conversation_id: conversationId ?? undefined,
+      module_context: moduleContext,
+      entity_context: entityContext,
+    };
+
     try {
-      const res = await apiPost<{
-        conversation_id: string;
-        message: { role: string; content: string; model: string; tokens_used: number | null };
-      }>('/api/ai/chat', {
-        content: userContent,
-        conversation_id: conversationId ?? undefined,
-        module_context: moduleContext,
-        entity_context: entityContext,
-      });
+      let streamError = false;
+      await apiStream(
+        '/api/ai/chat/stream',
+        requestBody,
+        (text) => {
+          streamContentRef.current += text;
+          setStreamingContent(streamContentRef.current);
+        },
+        (meta) => {
+          const assistantMsg: AiMessage = {
+            id: `temp-${Date.now()}-assistant`,
+            conversation_id: meta.conversation_id ?? conversationId ?? '',
+            role: 'assistant',
+            content: streamContentRef.current,
+            tokens_used: meta.tokens_used,
+            model: meta.model,
+            metadata: {},
+            created_at: new Date().toISOString(),
+          };
+          setMessages((prev) => [...prev, assistantMsg]);
+          setStreamingContent('');
+          streamContentRef.current = '';
 
-      if (!conversationId) {
-        setConversationId(res.data.conversation_id);
+          if (!conversationId && meta.conversation_id) {
+            setConversationId(meta.conversation_id);
+          }
+        },
+        () => {
+          streamError = true;
+        }
+      );
+
+      if (streamError) {
+        throw new Error('Stream failed');
       }
-
-      const assistantMsg: AiMessage = {
-        id: `temp-${Date.now()}-assistant`,
-        conversation_id: res.data.conversation_id,
-        role: 'assistant',
-        content: res.data.message.content,
-        tokens_used: res.data.message.tokens_used,
-        model: res.data.message.model,
-        metadata: {},
-        created_at: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
     } catch {
-      const errorMsg: AiMessage = {
-        id: `temp-${Date.now()}-error`,
-        conversation_id: '',
-        role: 'assistant',
-        content: 'Sorry, something went wrong. Please try again.',
-        tokens_used: null,
-        model: null,
-        metadata: {},
-        created_at: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, errorMsg]);
+      // Fallback to non-streaming
+      setStreamingContent('');
+      streamContentRef.current = '';
+      try {
+        const res = await apiPost<{
+          conversation_id: string;
+          message: { role: string; content: string; model: string; tokens_used: number | null };
+        }>('/api/ai/chat', requestBody);
+
+        if (!conversationId) {
+          setConversationId(res.data.conversation_id);
+        }
+
+        const assistantMsg: AiMessage = {
+          id: `temp-${Date.now()}-assistant`,
+          conversation_id: res.data.conversation_id,
+          role: 'assistant',
+          content: res.data.message.content,
+          tokens_used: res.data.message.tokens_used,
+          model: res.data.message.model,
+          metadata: {},
+          created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, assistantMsg]);
+      } catch {
+        const errorMsg: AiMessage = {
+          id: `temp-${Date.now()}-error`,
+          conversation_id: '',
+          role: 'assistant',
+          content: 'Sorry, something went wrong. Please try again.',
+          tokens_used: null,
+          model: null,
+          metadata: {},
+          created_at: new Date().toISOString(),
+        };
+        setMessages((prev) => [...prev, errorMsg]);
+      }
     } finally {
       setIsLoading(false);
+      setStreamingContent('');
+      streamContentRef.current = '';
     }
   }
 
@@ -147,6 +196,9 @@ export function AskAiButton({ moduleContext, entityContext }: AskAiButtonProps) 
                 content={msg.content}
               />
             ))}
+            {isLoading && streamingContent && (
+              <ChatMessage role="assistant" content={streamingContent} isStreaming />
+            )}
             <div ref={messagesEndRef} />
           </div>
         )}

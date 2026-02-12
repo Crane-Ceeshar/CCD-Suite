@@ -1,0 +1,118 @@
+/**
+ * Comprehensive list of all application tables in the public schema.
+ * Used by the security scanner and score endpoints to check RLS status.
+ * Keep in sync with Supabase migrations.
+ */
+export const APP_TABLES = [
+  // Core
+  'tenants',
+  'profiles',
+  // CRM
+  'companies',
+  'contacts',
+  'pipelines',
+  'pipeline_stages',
+  'deals',
+  'activities',
+  'products',
+  // Projects
+  'projects',
+  'project_members',
+  'tasks',
+  'time_entries',
+  'sprints',
+  'task_dependencies',
+  'project_links',
+  // Content
+  'content_categories',
+  'content_items',
+  'content_assets',
+  'content_approvals',
+  'content_templates',
+  'content_roles',
+  'content_comments',
+  'content_versions',
+  // Analytics
+  'dashboards',
+  'widgets',
+  'metrics',
+  'analytics_reports',
+  'analytics_goals',
+  'analytics_alerts',
+  'custom_metrics',
+  // Notifications
+  'notifications',
+  'portal_notifications',
+  // Finance
+  'invoices',
+  'invoice_items',
+  'expenses',
+  'payments',
+  // HR
+  'departments',
+  'employees',
+  'leave_requests',
+  'attendance_records',
+  'payroll_runs',
+  'payroll_items',
+  'leave_balances',
+  'employee_documents',
+  'performance_reviews',
+  'salary_history',
+  'leave_policies',
+  'public_holidays',
+  'contract_templates',
+  'contracts',
+  'document_signatures',
+  'hr_form_tokens',
+  // SEO
+  'seo_projects',
+  'seo_audits',
+  'seo_keywords',
+  'seo_rank_history',
+  'seo_backlinks',
+  'seo_recommendations',
+  // Social
+  'social_campaigns',
+  'social_accounts',
+  'social_posts',
+  'social_engagement',
+  'social_comments',
+  'social_provider_profiles',
+  // Client Portal
+  'portal_projects',
+  'portal_milestones',
+  'portal_deliverables',
+  'portal_messages',
+  'portal_access_tokens',
+  // AI
+  'ai_conversations',
+  'ai_messages',
+  'ai_generation_jobs',
+  'ai_settings',
+  'ai_insights',
+  'ai_automations',
+  'ai_content_library',
+  'ai_usage_daily',
+  'ai_automation_runs',
+  'ai_knowledge_base',
+  'ai_embeddings',
+  // Admin
+  'activity_logs',
+  'system_settings',
+  'api_keys',
+  'system_announcements',
+  'feature_flags',
+  'feature_flag_overrides',
+  // Cross-module
+  'pending_invitations',
+  'webhooks',
+  'custom_field_definitions',
+  'publishing_integrations',
+  'publish_log',
+  'tenant_usage',
+  // Security
+  'security_events',
+  'blocked_ips',
+  'security_scan_results',
+] as const;

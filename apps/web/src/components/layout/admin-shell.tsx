@@ -31,6 +31,7 @@ import {
   KeyRound,
   Activity,
   Shield,
+  TrendingUp,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
@@ -61,6 +62,7 @@ const NAV_SECTIONS: NavSection[] = [
       { href: '/admin/email-templates', label: 'Emails', icon: Mail },
       { href: '/admin/settings', label: 'Settings', icon: Settings },
       { href: '/admin/ai-config', label: 'AI Config', icon: BrainCircuit },
+      { href: '/admin/ai-analytics', label: 'AI Analytics', icon: TrendingUp },
       { href: '/admin/api-keys', label: 'API Keys', icon: KeyRound },
       { href: '/admin/activity', label: 'Activity', icon: Activity },
     ],

@@ -1,5 +1,8 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
+import { dbError, success } from '@/lib/api/responses';
+import { validateUuid } from '@/lib/api/security';
+import { sanitizeObject } from '@/lib/api/sanitize';
 
 export async function GET(
   _request: NextRequest,
@@ -9,6 +12,8 @@ export async function GET(
   if (error) return error;
 
   const { id } = await params;
+  const uuidError = validateUuid(id, 'Contact');
+  if (uuidError) return uuidError;
 
   const { data, error: queryError } = await supabase
     .from('contacts')
@@ -16,12 +21,7 @@ export async function GET(
     .eq('id', id)
     .single();
 
-  if (queryError) {
-    return NextResponse.json(
-      { success: false, error: { message: queryError.message } },
-      { status: 404 }
-    );
-  }
+  if (queryError) return dbError(queryError, 'Contact');
 
   // Fetch linked portal projects for this contact
   const { data: portalProjects } = await supabase
@@ -30,10 +30,7 @@ export async function GET(
     .eq('contact_id', id)
     .order('created_at', { ascending: false });
 
-  return NextResponse.json({
-    success: true,
-    data: { ...data, portal_projects: portalProjects ?? [] },
-  });
+  return success({ ...data, portal_projects: portalProjects ?? [] });
 }
 
 export async function PATCH(
@@ -44,7 +41,10 @@ export async function PATCH(
   if (error) return error;
 
   const { id } = await params;
-  const body = await request.json();
+  const uuidError = validateUuid(id, 'Contact');
+  if (uuidError) return uuidError;
+
+  const body = sanitizeObject(await request.json());
 
   const { data, error: updateError } = await supabase
     .from('contacts')
@@ -68,14 +68,9 @@ export async function PATCH(
     .select('*, company:companies(id, name)')
     .single();
 
-  if (updateError) {
-    return NextResponse.json(
-      { success: false, error: { message: updateError.message } },
-      { status: 500 }
-    );
-  }
+  if (updateError) return dbError(updateError, 'Contact');
 
-  return NextResponse.json({ success: true, data });
+  return success(data);
 }
 
 export async function DELETE(
@@ -86,15 +81,17 @@ export async function DELETE(
   if (error) return error;
 
   const { id } = await params;
+  const uuidError = validateUuid(id, 'Contact');
+  if (uuidError) return uuidError;
 
-  const { error: deleteError } = await supabase.from('contacts').delete().eq('id', id);
+  const { data: deleted, error: deleteError } = await supabase
+    .from('contacts')
+    .delete()
+    .eq('id', id)
+    .select()
+    .single();
 
-  if (deleteError) {
-    return NextResponse.json(
-      { success: false, error: { message: deleteError.message } },
-      { status: 500 }
-    );
-  }
+  if (deleteError) return dbError(deleteError, 'Contact');
 
-  return NextResponse.json({ success: true, data: null });
+  return success(deleted);
 }

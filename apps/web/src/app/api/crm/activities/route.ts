@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
+import { dbError, success } from '@/lib/api/responses';
+import { sanitizeObject } from '@/lib/api/sanitize';
 
 export async function GET(request: NextRequest) {
   const { error, supabase } = await requireAuth();
@@ -30,12 +32,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error: queryError, count } = await query;
 
-  if (queryError) {
-    return NextResponse.json(
-      { success: false, error: { message: queryError.message } },
-      { status: 500 }
-    );
-  }
+  if (queryError) return dbError(queryError, 'Failed to fetch activities');
 
   return NextResponse.json({ success: true, data, count });
 }
@@ -44,7 +41,7 @@ export async function POST(request: NextRequest) {
   const { error, supabase, user, profile } = await requireAuth();
   if (error) return error;
 
-  const body = await request.json();
+  const body = sanitizeObject(await request.json());
 
   const { data, error: insertError } = await supabase
     .from('activities')
@@ -64,12 +61,7 @@ export async function POST(request: NextRequest) {
     )
     .single();
 
-  if (insertError) {
-    return NextResponse.json(
-      { success: false, error: { message: insertError.message } },
-      { status: 500 }
-    );
-  }
+  if (insertError) return dbError(insertError, 'Failed to create activity');
 
-  return NextResponse.json({ success: true, data }, { status: 201 });
+  return success(data, 201);
 }

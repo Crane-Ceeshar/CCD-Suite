@@ -20,7 +20,17 @@ export async function PATCH(request: NextRequest) {
   if (error) return error;
 
   const body = await request.json();
-  const { preferred_model, max_tokens_per_request, monthly_token_budget, features_enabled } = body;
+  const {
+    preferred_model,
+    max_tokens_per_request,
+    monthly_token_budget,
+    features_enabled,
+    system_prompt,
+    available_models,
+    conversation_retention_days,
+    insight_retention_days,
+    generation_retention_days,
+  } = body;
 
   // Check if settings already exist
   const { data: existing } = await supabase
@@ -38,6 +48,11 @@ export async function PATCH(request: NextRequest) {
     if (max_tokens_per_request !== undefined) updates.max_tokens_per_request = max_tokens_per_request;
     if (monthly_token_budget !== undefined) updates.monthly_token_budget = monthly_token_budget;
     if (features_enabled !== undefined) updates.features_enabled = features_enabled;
+    if (system_prompt !== undefined) updates.system_prompt = system_prompt;
+    if (available_models !== undefined) updates.available_models = available_models;
+    if (conversation_retention_days !== undefined) updates.conversation_retention_days = conversation_retention_days;
+    if (insight_retention_days !== undefined) updates.insight_retention_days = insight_retention_days;
+    if (generation_retention_days !== undefined) updates.generation_retention_days = generation_retention_days;
 
     result = await supabase
       .from('ai_settings')
@@ -60,6 +75,8 @@ export async function PATCH(request: NextRequest) {
           insights: true,
           automations: false,
         },
+        system_prompt: system_prompt ?? '',
+        available_models: available_models ?? ['claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022', 'claude-3-5-haiku-20241022'],
       })
       .select('*')
       .single();

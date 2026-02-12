@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
+import { dbError, success } from '@/lib/api/responses';
+import { sanitizeObject, sanitizeSearchQuery } from '@/lib/api/sanitize';
 
 export async function GET(request: NextRequest) {
   const { error, supabase } = await requireAuth();
@@ -19,7 +21,8 @@ export async function GET(request: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (search) {
-    query = query.or(`name.ilike.%${search}%,industry.ilike.%${search}%,email.ilike.%${search}%`);
+    const safe = sanitizeSearchQuery(search);
+    query = query.or(`name.ilike.%${safe}%,industry.ilike.%${safe}%,email.ilike.%${safe}%`);
   }
   if (status) {
     query = query.eq('status', status);
@@ -27,12 +30,7 @@ export async function GET(request: NextRequest) {
 
   const { data, error: queryError, count } = await query;
 
-  if (queryError) {
-    return NextResponse.json(
-      { success: false, error: { message: queryError.message } },
-      { status: 500 }
-    );
-  }
+  if (queryError) return dbError(queryError, 'Failed to fetch companies');
 
   return NextResponse.json({ success: true, data, count });
 }
@@ -41,7 +39,7 @@ export async function POST(request: NextRequest) {
   const { error, supabase, user, profile } = await requireAuth();
   if (error) return error;
 
-  const body = await request.json();
+  const body = sanitizeObject(await request.json());
 
   const { data, error: insertError } = await supabase
     .from('companies')
@@ -63,12 +61,7 @@ export async function POST(request: NextRequest) {
     .select()
     .single();
 
-  if (insertError) {
-    return NextResponse.json(
-      { success: false, error: { message: insertError.message } },
-      { status: 500 }
-    );
-  }
+  if (insertError) return dbError(insertError, 'Failed to create company');
 
-  return NextResponse.json({ success: true, data }, { status: 201 });
+  return success(data, 201);
 }
