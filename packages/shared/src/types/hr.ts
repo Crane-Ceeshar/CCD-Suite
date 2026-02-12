@@ -4,6 +4,8 @@ export type LeaveType = 'annual' | 'sick' | 'personal' | 'maternity' | 'paternit
 export type LeaveStatus = 'pending' | 'approved' | 'rejected';
 export type AttendanceStatus = 'present' | 'absent' | 'late' | 'half_day';
 export type PayrollStatus = 'draft' | 'processing' | 'completed' | 'cancelled';
+export type DocumentType = 'offer_letter' | 'contract' | 'id_document' | 'certification' | 'tax_form' | 'other';
+export type ReviewStatus = 'draft' | 'submitted' | 'acknowledged';
 
 export interface Department {
   id: string;
@@ -12,9 +14,11 @@ export interface Department {
   description: string | null;
   head_id: string | null;
   created_at: string;
+  updated_at: string;
   // Joined
   head?: Employee;
   employees?: Employee[];
+  employee_count?: number;
 }
 
 export interface Employee {
@@ -169,4 +173,152 @@ export interface CreatePayrollRunInput {
   period_end: string;
   currency?: string;
   notes?: string;
+}
+
+// ── Enterprise Feature Interfaces ──
+
+export interface LeaveBalance {
+  id: string;
+  tenant_id: string;
+  employee_id: string;
+  leave_type: LeaveType;
+  year: number;
+  total_days: number;
+  used_days: number;
+  remaining_days: number;
+  carry_over_days: number;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  employee?: Employee;
+}
+
+export interface EmployeeDocument {
+  id: string;
+  tenant_id: string;
+  employee_id: string;
+  name: string;
+  type: DocumentType;
+  file_url: string | null;
+  file_size: number | null;
+  expiry_date: string | null;
+  notes: string | null;
+  uploaded_by: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  employee?: Employee;
+}
+
+export interface PerformanceReview {
+  id: string;
+  tenant_id: string;
+  employee_id: string;
+  reviewer_id: string | null;
+  review_period: string;
+  review_date: string;
+  rating: number | null;
+  strengths: string | null;
+  areas_for_improvement: string | null;
+  goals: string | null;
+  overall_comments: string | null;
+  status: ReviewStatus;
+  acknowledged_at: string | null;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+  // Joined
+  employee?: Employee;
+  reviewer?: Employee;
+}
+
+export interface SalaryHistory {
+  id: string;
+  tenant_id: string;
+  employee_id: string;
+  effective_date: string;
+  previous_salary: number | null;
+  new_salary: number;
+  currency: string;
+  reason: string | null;
+  changed_by: string | null;
+  created_at: string;
+}
+
+export interface LeavePolicy {
+  id: string;
+  tenant_id: string;
+  name: string;
+  employment_type: EmploymentType | 'all';
+  leave_type: LeaveType;
+  days_per_year: number;
+  carry_over_max: number;
+  requires_approval: boolean;
+  min_notice_days: number;
+  max_consecutive_days: number | null;
+  is_active: boolean;
+  metadata: Record<string, unknown>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PublicHoliday {
+  id: string;
+  tenant_id: string;
+  name: string;
+  date: string;
+  region: string;
+  is_recurring: boolean;
+  created_at: string;
+}
+
+// ── Enterprise Input Types ──
+
+export interface UpdateLeaveBalanceInput {
+  total_days?: number;
+  used_days?: number;
+  carry_over_days?: number;
+}
+
+export interface CreatePerformanceReviewInput {
+  employee_id: string;
+  reviewer_id?: string;
+  review_period: string;
+  review_date?: string;
+  rating?: number;
+  strengths?: string;
+  areas_for_improvement?: string;
+  goals?: string;
+  overall_comments?: string;
+}
+
+export interface UpdatePerformanceReviewInput {
+  reviewer_id?: string;
+  review_period?: string;
+  review_date?: string;
+  rating?: number;
+  strengths?: string;
+  areas_for_improvement?: string;
+  goals?: string;
+  overall_comments?: string;
+  status?: ReviewStatus;
+}
+
+export interface CreateLeavePolicyInput {
+  name: string;
+  employment_type: EmploymentType | 'all';
+  leave_type: LeaveType;
+  days_per_year: number;
+  carry_over_max?: number;
+  requires_approval?: boolean;
+  min_notice_days?: number;
+  max_consecutive_days?: number;
+}
+
+export interface CreatePublicHolidayInput {
+  name: string;
+  date: string;
+  region?: string;
+  is_recurring?: boolean;
 }
