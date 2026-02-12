@@ -236,7 +236,7 @@ async function checkRlsPolicies(serviceClient: ReturnType<typeof createAdminServ
     .rpc('check_rls_policies', { table_names: APP_TABLES as unknown as string[] });
 
   if (policies) {
-    type PolicyRow = { tablename: string; policyname: string; cmd: string; qual: string | null };
+    type PolicyRow = { tablename: string; policyname: string; cmd: string; qual: string | null; roles: string[] | null };
     const policyRows = policies as PolicyRow[];
     const tablesWithPolicies = new Set(policyRows.map((p) => p.tablename));
 
@@ -254,21 +254,40 @@ async function checkRlsPolicies(serviceClient: ReturnType<typeof createAdminServ
       }
     }
 
-    // Detect overly permissive policies: USING (true) on non-INSERT commands
+    // Detect overly permissive policies: USING (true) on non-INSERT commands.
+    // A policy scoped to only the "authenticated" role with USING (true) is
+    // acceptable — it restricts anon access while giving all logged-in users
+    // read access (common for global config tables like feature_flags).
     for (const policy of policyRows) {
       if (
         policy.qual
         && policy.qual.trim().toLowerCase() === 'true'
         && policy.cmd !== 'INSERT'
       ) {
-        findings.push({
-          id: randomUUID(),
-          severity: 'medium',
-          category: 'rls',
-          title: `Overly permissive policy on ${policy.tablename}`,
-          description: `Policy "${policy.policyname}" uses USING (true) for ${policy.cmd}, granting unrestricted access.`,
-          recommendation: `Review and restrict the ${policy.cmd} policy on ${policy.tablename} to enforce tenant isolation or role-based access.`,
-        });
+        // Check if the policy is narrowly scoped to authenticated only
+        const roles = policy.roles ?? [];
+        const isAuthOnly = roles.length === 1 && roles[0] === 'authenticated';
+
+        if (isAuthOnly) {
+          // Role-scoped USING(true) is acceptable — just informational
+          findings.push({
+            id: randomUUID(),
+            severity: 'info',
+            category: 'rls',
+            title: `Role-scoped open policy on ${policy.tablename}`,
+            description: `Policy "${policy.policyname}" uses USING (true) for ${policy.cmd} but is restricted to the authenticated role.`,
+            recommendation: `Acceptable for global config tables. Consider tenant isolation if data is tenant-specific.`,
+          });
+        } else {
+          findings.push({
+            id: randomUUID(),
+            severity: 'medium',
+            category: 'rls',
+            title: `Overly permissive policy on ${policy.tablename}`,
+            description: `Policy "${policy.policyname}" uses USING (true) for ${policy.cmd}, granting unrestricted access.`,
+            recommendation: `Review and restrict the ${policy.cmd} policy on ${policy.tablename} to enforce tenant isolation or role-based access.`,
+          });
+        }
       }
     }
   } else {
