@@ -82,6 +82,15 @@ export default defineConfig({
       },
       dependencies: ['setup'],
     },
+    // Security tests (XSS, SQL injection, auth, tenant isolation, rate limiting, CSRF, session)
+    {
+      name: 'security-tests',
+      testMatch: /security\/.*\.test\.ts/,
+      use: {
+        storageState: authFile,
+      },
+      dependencies: ['setup'],
+    },
   ],
 
   webServer: {

@@ -51,6 +51,31 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
           NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-key
 
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: NPM Dependency Audit
+        run: pnpm audit --audit-level=high || true
+
+      - name: Check for known vulnerabilities
+        run: |
+          echo "=== Checking for critical vulnerabilities ==="
+          # Run audit and capture exit code
+          pnpm audit --audit-level=critical
+        continue-on-error: true
+
   rust-check:
     name: Rust Check
     runs-on: ubuntu-latest

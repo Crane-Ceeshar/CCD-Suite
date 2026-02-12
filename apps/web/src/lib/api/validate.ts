@@ -5,10 +5,35 @@ type ValidationResult<T> =
   | { data: T; error: null }
   | { data: null; error: ReturnType<typeof validationError> };
 
+/** Default max body size: 1 MB */
+const DEFAULT_MAX_BODY_SIZE = 1 * 1024 * 1024;
+/** Max body size for file uploads: 10 MB */
+export const MAX_UPLOAD_BODY_SIZE = 10 * 1024 * 1024;
+
 export async function validateBody<O, D extends ZodTypeDef, I>(
   request: Request,
-  schema: ZodType<O, D, I>
+  schema: ZodType<O, D, I>,
+  options?: { maxSize?: number }
 ): Promise<ValidationResult<O>> {
+  // Check Content-Length if provided
+  const contentLength = request.headers.get('content-length');
+  const maxSize = options?.maxSize ?? DEFAULT_MAX_BODY_SIZE;
+
+  if (contentLength) {
+    const size = parseInt(contentLength, 10);
+    if (!isNaN(size) && size > maxSize) {
+      return {
+        data: null,
+        error: validationError([
+          {
+            path: 'body',
+            message: `Request body too large. Maximum size is ${Math.round(maxSize / 1024 / 1024)}MB`,
+          },
+        ]),
+      };
+    }
+  }
+
   let raw: unknown;
   try {
     raw = await request.json();
