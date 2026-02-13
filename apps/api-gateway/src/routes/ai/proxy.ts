@@ -3,11 +3,15 @@ import type { FastifyInstance } from 'fastify';
 const AI_SERVICES_URL = process.env.AI_SERVICES_URL || 'http://localhost:5100';
 
 interface ChatBody {
-  content: string;
+  content?: string;
   conversation_id?: string;
   module_context?: string;
   entity_context?: { entity_type: string; entity_id: string; entity_data?: Record<string, unknown> };
   max_tokens?: number;
+  // Passthrough mode: caller already built the messages array
+  messages?: { role: string; content: string }[];
+  model?: string;
+  stream?: boolean;
 }
 
 interface GenerateBody {
@@ -34,7 +38,36 @@ export async function proxyRoutes(fastify: FastifyInstance) {
   // Chat (non-streaming) — forward to AI services, persist messages
   // ----------------------------------------------------------------
   fastify.post<{ Body: ChatBody }>('/chat', async (request, reply) => {
-    const { content, conversation_id, module_context, entity_context, max_tokens } = request.body;
+    const { messages: passthroughMessages, module_context, entity_context, max_tokens } = request.body;
+
+    // --- Passthrough mode: caller already built the messages array ---
+    if (Array.isArray(passthroughMessages) && passthroughMessages.length > 0) {
+      const aiResp = await fetch(`${AI_SERVICES_URL}/api/ai/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: passthroughMessages,
+          module_context,
+          entity_context,
+          max_tokens,
+        }),
+      });
+
+      if (!aiResp.ok) {
+        const errText = await aiResp.text();
+        reply.status(aiResp.status).send({
+          success: false,
+          error: { code: 'AI_SERVICE_ERROR', message: errText },
+        });
+        return;
+      }
+
+      const aiData = await aiResp.json();
+      return aiData;
+    }
+
+    // --- Legacy mode: gateway manages conversation & messages ---
+    const { content, conversation_id } = request.body;
 
     // Get or create conversation
     let convId = conversation_id;
@@ -66,7 +99,7 @@ export async function proxyRoutes(fastify: FastifyInstance) {
         role: m.role,
         content: m.content,
       })),
-      { role: 'user', content },
+      { role: 'user', content: content ?? '' },
     ];
 
     // Save user message
@@ -75,7 +108,7 @@ export async function proxyRoutes(fastify: FastifyInstance) {
       .insert({
         conversation_id: convId,
         role: 'user',
-        content,
+        content: content ?? '',
         metadata: {},
       });
 
@@ -114,7 +147,7 @@ export async function proxyRoutes(fastify: FastifyInstance) {
       });
 
     // Auto-title conversation if it's the first message
-    if (!conversation_id) {
+    if (!conversation_id && content) {
       const title = content.length > 60 ? content.substring(0, 57) + '...' : content;
       await fastify.supabase
         .from('ai_conversations')
@@ -140,7 +173,55 @@ export async function proxyRoutes(fastify: FastifyInstance) {
   // Chat stream (SSE) — proxy SSE from AI services, save on done
   // ----------------------------------------------------------------
   fastify.post<{ Body: ChatBody }>('/chat/stream', async (request, reply) => {
-    const { content, conversation_id, module_context, entity_context, max_tokens } = request.body;
+    const { messages: passthroughMessages, module_context, entity_context, max_tokens } = request.body;
+
+    // --- Passthrough mode: caller already built the messages array ---
+    if (Array.isArray(passthroughMessages) && passthroughMessages.length > 0) {
+      const aiResp = await fetch(`${AI_SERVICES_URL}/api/ai/chat/stream`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          messages: passthroughMessages,
+          module_context,
+          entity_context,
+          max_tokens,
+        }),
+      });
+
+      if (!aiResp.ok || !aiResp.body) {
+        const errText = await aiResp.text();
+        reply.status(aiResp.status).send({
+          success: false,
+          error: { code: 'AI_SERVICE_ERROR', message: errText },
+        });
+        return;
+      }
+
+      // Proxy SSE through without DB operations
+      reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+      });
+
+      const reader = aiResp.body.getReader();
+      const decoder = new TextDecoder();
+
+      try {
+        let reading = true;
+        while (reading) {
+          const { done, value } = await reader.read();
+          if (done) { reading = false; break; }
+          reply.raw.write(decoder.decode(value, { stream: true }));
+        }
+      } finally {
+        reply.raw.end();
+      }
+      return;
+    }
+
+    // --- Legacy mode: gateway manages conversation & messages ---
+    const { content, conversation_id } = request.body;
 
     // Get or create conversation
     let convId = conversation_id;
@@ -172,13 +253,13 @@ export async function proxyRoutes(fastify: FastifyInstance) {
         role: m.role,
         content: m.content,
       })),
-      { role: 'user', content },
+      { role: 'user', content: content ?? '' },
     ];
 
     // Save user message
     await fastify.supabase
       .from('ai_messages')
-      .insert({ conversation_id: convId, role: 'user', content, metadata: {} });
+      .insert({ conversation_id: convId, role: 'user', content: content ?? '', metadata: {} });
 
     // Forward to AI services SSE endpoint
     const aiResp = await fetch(`${AI_SERVICES_URL}/api/ai/chat/stream`, {
@@ -258,7 +339,7 @@ export async function proxyRoutes(fastify: FastifyInstance) {
       }
 
       // Auto-title if new conversation
-      if (!conversation_id) {
+      if (!conversation_id && content) {
         const title = content.length > 60 ? content.substring(0, 57) + '...' : content;
         await fastify.supabase
           .from('ai_conversations')

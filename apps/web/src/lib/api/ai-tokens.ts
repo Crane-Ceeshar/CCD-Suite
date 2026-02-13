@@ -6,7 +6,7 @@ const DEFAULT_FEATURES_ENABLED = {
   chat: true,
   content_generation: true,
   insights: true,
-  automations: false,
+  automations: true,
 };
 
 interface AiSettings {
