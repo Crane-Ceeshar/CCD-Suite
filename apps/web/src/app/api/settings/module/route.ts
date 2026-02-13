@@ -138,29 +138,28 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
-  // Compute shallow diff and log changes (skip prototype-polluting keys)
+  // Compute shallow diff and log changes using Map (avoids property injection)
   const adminClient = createAdminServiceClient();
   const oldVal = oldSetting?.value ?? {};
-  const changes: Record<string, { old: unknown; new: unknown }> = {};
+  const changes = new Map<string, { old: unknown; new: unknown }>();
   if (typeof value === 'object' && value && typeof oldVal === 'object' && oldVal) {
     for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
-      // Guard against prototype pollution via user-controlled keys
       if (k === '__proto__' || k === 'constructor' || k === 'prototype') continue;
       if (!Object.prototype.hasOwnProperty.call(value, k)) continue;
       const oldV = (oldVal as Record<string, unknown>)[k];
       if (JSON.stringify(v) !== JSON.stringify(oldV)) {
-        changes[k] = { old: oldV, new: v };
+        changes.set(k, { old: oldV, new: v });
       }
     }
   }
-  if (Object.keys(changes).length > 0) {
+  if (changes.size > 0) {
     await adminClient.from('activity_logs').insert({
       tenant_id: profile.tenant_id,
       user_id: user.id,
       action: 'settings.updated',
       resource_type: 'system_settings',
       resource_id: null,
-      details: { module: moduleName, key, changes },
+      details: { module: moduleName, key, changes: Object.fromEntries(changes) },
     });
   }
 

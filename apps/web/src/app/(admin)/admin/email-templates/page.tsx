@@ -20,17 +20,44 @@ interface EmailTemplate {
   is_customized: boolean;
 }
 
-/** Sanitize HTML for safe preview rendering — strips script/iframe/event handlers */
+/** Dangerous tag names removed during preview sanitization */
+const DANGEROUS_PREVIEW_TAGS = new Set([
+  'script', 'iframe', 'object', 'embed', 'form', 'link', 'meta',
+  'style', 'svg', 'math', 'base', 'applet',
+]);
+
+/** Sanitize HTML for safe preview rendering using browser-native DOMParser */
 function sanitizePreviewHtml(html: string): string {
-  return html
-    // Remove script/iframe/object/embed tags and their content
-    .replace(/<\s*(?:script|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*(?:script|iframe|object|embed)\s*>/gi, '')
-    // Remove any remaining self-closing dangerous tags
-    .replace(/<\s*(?:script|iframe|object|embed)[^>]*\/?>/gi, '')
-    // Remove event handler attributes
-    .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi, '')
-    // Remove javascript:/vbscript: protocols
-    .replace(/(?:href|src|action)\s*=\s*["']?\s*(?:javascript|vbscript)\s*:/gi, 'data-blocked=');
+  if (typeof window === 'undefined') return '';
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+
+  // Remove dangerous elements
+  for (const tag of Array.from(DANGEROUS_PREVIEW_TAGS)) {
+    const els = doc.body.querySelectorAll(tag);
+    for (let i = els.length - 1; i >= 0; i--) {
+      els[i].remove();
+    }
+  }
+
+  // Remove on* event handler attributes and dangerous protocols from all elements
+  const allEls = doc.body.querySelectorAll('*');
+  for (let i = 0; i < allEls.length; i++) {
+    const el = allEls[i];
+    const attrs = Array.from(el.attributes);
+    for (const attr of attrs) {
+      const name = attr.name.toLowerCase();
+      if (name.startsWith('on')) {
+        el.removeAttribute(attr.name);
+      } else if (
+        (name === 'href' || name === 'src' || name === 'action') &&
+        /^\s*(?:javascript|vbscript|data)\s*:/i.test(attr.value)
+      ) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  }
+
+  return doc.body.innerHTML;
 }
 
 export default function AdminEmailTemplatesPage() {

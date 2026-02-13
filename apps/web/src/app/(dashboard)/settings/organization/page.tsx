@@ -240,22 +240,31 @@ export default function OrganizationSettingsPage() {
             <p className="text-xs text-muted-foreground">
               Enter a URL for your organization logo. This will be shown in the sidebar and portal.
             </p>
-            {logoUrl && /^https?:\/\//i.test(logoUrl) && (
-              <div className="mt-2 flex items-center gap-3">
-                <div className="h-12 w-12 rounded-lg border overflow-hidden bg-muted flex items-center justify-center">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={logoUrl}
-                    alt="Logo preview"
-                    className="h-full w-full object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
+            {(() => {
+              let safeLogoUrl: string | null = null;
+              try {
+                const parsed = new URL(logoUrl);
+                if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+                  safeLogoUrl = parsed.href;
+                }
+              } catch { /* invalid URL — skip preview */ }
+              return safeLogoUrl ? (
+                <div className="mt-2 flex items-center gap-3">
+                  <div className="h-12 w-12 rounded-lg border overflow-hidden bg-muted flex items-center justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={safeLogoUrl}
+                      alt="Logo preview"
+                      className="h-full w-full object-contain"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                      }}
+                    />
+                  </div>
+                  <span className="text-xs text-muted-foreground">Logo preview</span>
                 </div>
-                <span className="text-xs text-muted-foreground">Logo preview</span>
-              </div>
-            )}
+              ) : null;
+            })()}
           </div>
 
           {/* Save */}
