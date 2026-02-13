@@ -18,9 +18,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Validate email format
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
+  // Validate email format (RFC 5321-like, bounded quantifiers to prevent ReDoS)
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+  if (!emailRegex.test(email) || email.length > 254) {
     return NextResponse.json(
       { success: false, error: { message: 'Invalid email address' } },
       { status: 400 }

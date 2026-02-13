@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
 import { sendEmail } from '@/lib/email';
+import { stripHtmlTags } from '@/lib/api/sanitize';
 
 export async function POST(
   request: NextRequest,
@@ -67,7 +68,7 @@ export async function POST(
       tenant_id: profile.tenant_id,
       type: 'email',
       title: `Email: ${subject}`,
-      description: body_html.replace(/<[^>]*>/g, '').substring(0, 500),
+      description: stripHtmlTags(body_html).substring(0, 500),
       contact_id: id,
       company_id: contact.company_id,
       deal_id: deal_id || null,
@@ -77,7 +78,7 @@ export async function POST(
         subject,
         to: contact.email,
         sent_at: new Date().toISOString(),
-        body_preview: body_html.replace(/<[^>]*>/g, '').substring(0, 200),
+        body_preview: stripHtmlTags(body_html).substring(0, 200),
       },
       created_by: user.id,
     })

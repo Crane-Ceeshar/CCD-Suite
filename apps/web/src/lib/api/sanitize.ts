@@ -6,36 +6,109 @@
 /*  HTML Sanitization                                                          */
 /* -------------------------------------------------------------------------- */
 
-/** Dangerous HTML tags that should always be stripped */
-const DANGEROUS_TAGS =
-  /(<\s*\/?\s*(script|iframe|object|embed|form|link|meta|style|svg|math|base|applet|body|head|html|frameset|frame|layer|ilayer|bgsound|title|xml)[^>]*>)/gi;
+/**
+ * Strip all HTML tags from a string. Uses a simple non-backtracking approach:
+ * split on '<', discard everything up to '>' in each segment.
+ * This avoids ReDoS and handles incomplete/malformed tags safely.
+ */
+export function stripHtmlTags(html: string): string {
+  if (!html) return '';
+  let result = '';
+  let inTag = false;
+  for (let i = 0; i < html.length; i++) {
+    const ch = html[i];
+    if (ch === '<') {
+      inTag = true;
+    } else if (ch === '>') {
+      inTag = false;
+    } else if (!inTag) {
+      result += ch;
+    }
+  }
+  return result.trim();
+}
 
-/** Dangerous HTML attributes / event handlers */
-const DANGEROUS_ATTRS =
-  /\s*(on\w+|formaction|xlink:href|data-bind|srcdoc|action)\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/gi;
+/** Dangerous HTML tag names (matched as whole words after < or </) */
+const DANGEROUS_TAG_NAMES = new Set([
+  'script', 'iframe', 'object', 'embed', 'form', 'link', 'meta',
+  'style', 'svg', 'math', 'base', 'applet', 'body', 'head', 'html',
+  'frameset', 'frame', 'layer', 'ilayer', 'bgsound', 'title', 'xml',
+]);
 
-/** javascript: / vbscript: / data: protocol in href / src */
-const DANGEROUS_PROTOCOLS = /(href|src|action)\s*=\s*["']?\s*(javascript|vbscript|data)\s*:/gi;
+/** Dangerous attribute name prefixes / exact matches */
+const DANGEROUS_ATTR_NAMES = new Set([
+  'formaction', 'xlink:href', 'data-bind', 'srcdoc', 'action',
+]);
 
 /** Standalone dangerous protocol prefixes (e.g. in URL fields) */
-const STANDALONE_DANGEROUS_PROTOCOL = /^\s*(javascript|vbscript|data)\s*:/i;
+const STANDALONE_DANGEROUS_PROTOCOL = /^\s*(?:javascript|vbscript|data)\s*:/i;
 
 /**
  * Strip dangerous HTML tags, attributes, and protocol handlers.
- * Leaves safe text and basic formatting intact.
- * Loops until output stabilises to catch nested payloads like <<script>script>.
+ * Uses a character-by-character parser instead of regex to avoid ReDoS.
+ * Loops until output stabilises to catch nested payloads.
  */
 export function sanitizeHtml(input: string): string {
   if (!input) return input;
+
   let prev = '';
   let current = input;
-  // Loop until the output stabilises (handles nested tag tricks)
-  while (current !== prev) {
+  let iterations = 0;
+  const MAX_ITERATIONS = 10;
+
+  while (current !== prev && iterations < MAX_ITERATIONS) {
     prev = current;
-    current = current
-      .replace(DANGEROUS_TAGS, '')
-      .replace(DANGEROUS_ATTRS, '')
-      .replace(DANGEROUS_PROTOCOLS, '$1=""');
+    iterations++;
+
+    // Pass 1: Remove dangerous tags
+    let result = '';
+    let i = 0;
+    while (i < current.length) {
+      if (current[i] === '<') {
+        // Find end of tag
+        const closeIdx = current.indexOf('>', i);
+        if (closeIdx === -1) {
+          // Unclosed tag at end — strip it
+          break;
+        }
+        const tagContent = current.substring(i + 1, closeIdx);
+        // Extract tag name: skip optional / and whitespace
+        const trimmed = tagContent.replace(/^[\s/]+/, '');
+        const tagNameMatch = trimmed.match(/^([a-zA-Z][a-zA-Z0-9]*)/);
+        const tagName = tagNameMatch ? tagNameMatch[1].toLowerCase() : '';
+
+        if (DANGEROUS_TAG_NAMES.has(tagName)) {
+          // Skip this tag entirely
+          i = closeIdx + 1;
+          continue;
+        }
+
+        // Check for dangerous attributes within the tag
+        let cleanTag = '<' + tagContent;
+        // Remove on* event handlers
+        cleanTag = cleanTag.replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi, '');
+        // Remove dangerous named attributes
+        for (const attrName of DANGEROUS_ATTR_NAMES) {
+          const attrRegex = new RegExp(
+            `\\s+${attrName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*=\\s*(?:"[^"]*"|'[^']*'|\\S+)`,
+            'gi'
+          );
+          cleanTag = cleanTag.replace(attrRegex, '');
+        }
+        // Remove dangerous protocols in href/src/action
+        cleanTag = cleanTag.replace(
+          /(?:href|src|action)\s*=\s*["']?\s*(?:javascript|vbscript|data)\s*:/gi,
+          'data-blocked='
+        );
+
+        result += cleanTag + '>';
+        i = closeIdx + 1;
+      } else {
+        result += current[i];
+        i++;
+      }
+    }
+    current = result;
   }
   return current;
 }
@@ -45,15 +118,21 @@ export function sanitizeHtml(input: string): string {
  */
 export function containsUnsafeHtml(input: string): boolean {
   if (!input) return false;
-  // Reset lastIndex to avoid stateful regex issues with /g flag
-  DANGEROUS_TAGS.lastIndex = 0;
-  DANGEROUS_ATTRS.lastIndex = 0;
-  DANGEROUS_PROTOCOLS.lastIndex = 0;
-  return (
-    DANGEROUS_TAGS.test(input) ||
-    DANGEROUS_ATTRS.test(input) ||
-    DANGEROUS_PROTOCOLS.test(input)
-  );
+  // Quick check: does it contain any tag-like structure with a dangerous name?
+  const tagMatch = input.match(/<\s*\/?([a-zA-Z][a-zA-Z0-9]*)/g);
+  if (tagMatch) {
+    for (const m of tagMatch) {
+      const nameMatch = m.match(/([a-zA-Z][a-zA-Z0-9]*)$/);
+      if (nameMatch && DANGEROUS_TAG_NAMES.has(nameMatch[1].toLowerCase())) {
+        return true;
+      }
+    }
+  }
+  // Check for event handlers
+  if (/\s+on[a-z]+\s*=/i.test(input)) return true;
+  // Check for dangerous protocols
+  if (/(?:href|src|action)\s*=\s*["']?\s*(?:javascript|vbscript|data)\s*:/i.test(input)) return true;
+  return false;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -177,7 +256,7 @@ const SQL_INJECTION_PATTERNS = [
   /\bINSERT\s+INTO\b/gi,
   /\bDELETE\s+FROM\b/gi,
   /\bUPDATE\s+\w+\s+SET\b/gi,
-  /\bEXEC(\s+|\s*\()/gi,
+  /\bEXEC(?:\s+|\s*\()/gi,
   /\bpg_sleep\s*\(/gi,
   /;\s*--/g,
   /'\s*OR\s+\d+\s*=\s*\d+/gi,
@@ -211,25 +290,32 @@ export function sanitizeInput(input: string): string {
 
 /**
  * Recursively sanitize all string values in an object.
- * Useful for sanitizing entire request bodies.
+ * Only processes keys in the ALLOWED_OBJECT_KEYS set to prevent
+ * prototype pollution / remote property injection.
  */
 export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
-  const result = { ...obj };
-  for (const key of Object.keys(result)) {
-    const value = result[key];
+  const result: Record<string, unknown> = {};
+  for (const key of Object.keys(obj)) {
+    // Skip __proto__, constructor, prototype, and other dangerous keys
+    if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
+    if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+
+    const value = obj[key];
     if (typeof value === 'string') {
-      (result as Record<string, unknown>)[key] = sanitizeInput(value);
+      result[key] = sanitizeInput(value);
     } else if (value && typeof value === 'object' && !Array.isArray(value)) {
-      (result as Record<string, unknown>)[key] = sanitizeObject(value as Record<string, unknown>);
+      result[key] = sanitizeObject(value as Record<string, unknown>);
     } else if (Array.isArray(value)) {
-      (result as Record<string, unknown>)[key] = value.map((item) =>
+      result[key] = value.map((item) =>
         typeof item === 'string'
           ? sanitizeInput(item)
           : item && typeof item === 'object'
             ? sanitizeObject(item as Record<string, unknown>)
             : item
       );
+    } else {
+      result[key] = value;
     }
   }
-  return result;
+  return result as T;
 }

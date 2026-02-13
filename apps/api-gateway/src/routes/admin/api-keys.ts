@@ -1,12 +1,16 @@
 import type { FastifyInstance } from 'fastify';
-import { randomBytes, createHash } from 'crypto';
+import { randomBytes, createHmac, timingSafeEqual } from 'crypto';
+
+/** Secret used for HMAC — falls back to a deploy-unique random value */
+const HMAC_SECRET = process.env.API_KEY_HMAC_SECRET || randomBytes(32).toString('hex');
 
 function generateApiKey(): string {
   return 'ccd_' + randomBytes(32).toString('hex');
 }
 
+/** HMAC-SHA-256 keyed hash — prevents offline brute-force without the secret */
 function hashKey(key: string): string {
-  return createHash('sha256').update(key).digest('hex');
+  return createHmac('sha256', HMAC_SECRET).update(key).digest('hex');
 }
 
 export async function adminApiKeysRoutes(fastify: FastifyInstance) {

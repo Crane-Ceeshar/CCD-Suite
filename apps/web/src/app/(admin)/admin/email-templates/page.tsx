@@ -20,6 +20,19 @@ interface EmailTemplate {
   is_customized: boolean;
 }
 
+/** Sanitize HTML for safe preview rendering — strips script/iframe/event handlers */
+function sanitizePreviewHtml(html: string): string {
+  return html
+    // Remove script/iframe/object/embed tags and their content
+    .replace(/<\s*(?:script|iframe|object|embed)[^>]*>[\s\S]*?<\s*\/\s*(?:script|iframe|object|embed)\s*>/gi, '')
+    // Remove any remaining self-closing dangerous tags
+    .replace(/<\s*(?:script|iframe|object|embed)[^>]*\/?>/gi, '')
+    // Remove event handler attributes
+    .replace(/\s+on[a-z]+\s*=\s*(?:"[^"]*"|'[^']*'|\S+)/gi, '')
+    // Remove javascript:/vbscript: protocols
+    .replace(/(?:href|src|action)\s*=\s*["']?\s*(?:javascript|vbscript)\s*:/gi, 'data-blocked=');
+}
+
 export default function AdminEmailTemplatesPage() {
   const [templates, setTemplates] = React.useState<EmailTemplate[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -165,7 +178,7 @@ export default function AdminEmailTemplatesPage() {
                     <label className="text-xs font-medium text-muted-foreground">Preview</label>
                     <div
                       className="rounded-lg border bg-white p-6 min-h-[300px] text-sm text-gray-900"
-                      dangerouslySetInnerHTML={{ __html: bodyHtml }}
+                      dangerouslySetInnerHTML={{ __html: sanitizePreviewHtml(bodyHtml) }}
                     />
                   </div>
                 ) : (

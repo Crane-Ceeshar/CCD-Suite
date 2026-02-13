@@ -240,7 +240,7 @@ export default function OrganizationSettingsPage() {
             <p className="text-xs text-muted-foreground">
               Enter a URL for your organization logo. This will be shown in the sidebar and portal.
             </p>
-            {logoUrl && (
+            {logoUrl && /^https?:\/\//i.test(logoUrl) && (
               <div className="mt-2 flex items-center gap-3">
                 <div className="h-12 w-12 rounded-lg border overflow-hidden bg-muted flex items-center justify-center">
                   {/* eslint-disable-next-line @next/next/no-img-element */}

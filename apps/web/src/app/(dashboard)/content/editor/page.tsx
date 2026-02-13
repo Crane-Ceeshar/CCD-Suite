@@ -749,7 +749,14 @@ export default function ContentEditorPage() {
   );
 }
 
-/** Strip HTML tags for excerpt generation */
+/** Strip HTML tags for excerpt generation (char-by-char, no regex backtracking) */
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, '').trim();
+  let result = '';
+  let inTag = false;
+  for (let i = 0; i < html.length; i++) {
+    if (html[i] === '<') inTag = true;
+    else if (html[i] === '>') inTag = false;
+    else if (!inTag) result += html[i];
+  }
+  return result.trim();
 }

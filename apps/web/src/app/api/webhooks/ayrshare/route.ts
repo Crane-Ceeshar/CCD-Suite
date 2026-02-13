@@ -93,8 +93,8 @@ export async function POST(request: NextRequest) {
       }
 
       default:
-        // Unknown event type — log and ignore
-        console.log('Unknown Ayrshare webhook event:', eventType, body);
+        // Unknown event type — log sanitized type and ignore
+        console.log('Unknown Ayrshare webhook event:', String(eventType).replace(/[\r\n]/g, '').slice(0, 100));
     }
 
     return NextResponse.json({ received: true });
