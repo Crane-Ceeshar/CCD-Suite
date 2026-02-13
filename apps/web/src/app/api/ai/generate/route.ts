@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
 
-    const res = await fetch(`${GATEWAY_URL}/ai/generate`, {
+    const res = await fetch(`${GATEWAY_URL}/api/ai/generate`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

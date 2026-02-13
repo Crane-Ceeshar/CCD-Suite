@@ -87,7 +87,7 @@ async function executeAutomation(
   }
 
   try {
-    const res = await fetch(`${GATEWAY_URL}/ai/automation/run`, {
+    const res = await fetch(`${GATEWAY_URL}/api/ai/automation/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

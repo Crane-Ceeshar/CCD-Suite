@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
   try {
     const { data: { session } } = await supabase.auth.getSession();
 
-    const embedRes = await fetch(`${GATEWAY_URL}/ai/embed`, {
+    const embedRes = await fetch(`${GATEWAY_URL}/api/ai/embed`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from datetime import datetime, timezone
 
 from .config import settings
-from .routers import chat_router, generate_router, analyze_router, insights_router, embed_router
+from .routers import chat_router, generate_router, analyze_router, insights_router, embed_router, automation_router
 
 app = FastAPI(
     title=settings.app_name,
@@ -29,6 +29,7 @@ app.include_router(generate_router)
 app.include_router(analyze_router)
 app.include_router(insights_router)
 app.include_router(embed_router)
+app.include_router(automation_router)
 
 
 @app.get("/health")

@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
     if (kbCount && kbCount > 0) {
       // Generate embedding for the user's message
-      const embedRes = await fetch(`${GATEWAY_URL}/ai/embed`, {
+      const embedRes = await fetch(`${GATEWAY_URL}/api/ai/embed`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -217,7 +217,7 @@ export async function POST(request: NextRequest) {
       }
 
       try {
-        const gatewayRes = await fetch(`${GATEWAY_URL}/ai/chat/stream`, {
+        const gatewayRes = await fetch(`${GATEWAY_URL}/api/ai/chat/stream`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -228,7 +228,7 @@ export async function POST(request: NextRequest) {
 
         if (!gatewayRes.ok || !gatewayRes.body) {
           // Gateway returned an error — fall back to non-streaming gateway
-          const fallbackRes = await fetch(`${GATEWAY_URL}/ai/chat`, {
+          const fallbackRes = await fetch(`${GATEWAY_URL}/api/ai/chat`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

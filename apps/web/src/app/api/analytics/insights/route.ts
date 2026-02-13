@@ -124,7 +124,7 @@ export async function POST(request: NextRequest) {
 
     // ── Send to AI gateway ────────────────────────────────────────
     try {
-      const res = await fetch(`${GATEWAY_URL}/ai/analyze`, {
+      const res = await fetch(`${GATEWAY_URL}/api/ai/analyze`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

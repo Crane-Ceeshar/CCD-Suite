@@ -101,7 +101,7 @@ async function generateEmbeddings(
   for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
     const batch = chunks.slice(i, i + BATCH_SIZE);
 
-    const res = await fetch(`${GATEWAY_URL}/ai/embed`, {
+    const res = await fetch(`${GATEWAY_URL}/api/ai/embed`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ texts: batch }),
@@ -110,7 +110,7 @@ async function generateEmbeddings(
     if (!res.ok) {
       // Try one at a time as fallback
       for (const chunk of batch) {
-        const singleRes = await fetch(`${GATEWAY_URL}/ai/embed`, {
+        const singleRes = await fetch(`${GATEWAY_URL}/api/ai/embed`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text: chunk }),

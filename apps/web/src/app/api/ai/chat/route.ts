@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
       const { data: { session: embedSession } } = await supabase.auth.getSession();
 
       // Generate embedding for the user's message
-      const embedRes = await fetch(`${GATEWAY_URL}/ai/embed`, {
+      const embedRes = await fetch(`${GATEWAY_URL}/api/ai/embed`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -178,7 +178,7 @@ export async function POST(request: NextRequest) {
       model: aiSettings.preferred_model,
     };
 
-    const res = await fetch(`${GATEWAY_URL}/ai/chat`, {
+    const res = await fetch(`${GATEWAY_URL}/api/ai/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

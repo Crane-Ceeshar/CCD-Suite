@@ -63,7 +63,7 @@ export async function POST(
     try {
       const { data: { session } } = await supabase.auth.getSession();
 
-      const res = await fetch(`${GATEWAY_URL}/ai/automation/run`, {
+      const res = await fetch(`${GATEWAY_URL}/api/ai/automation/run`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
