@@ -11,6 +11,12 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
 const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const GATEWAY_URL = Deno.env.get('API_GATEWAY_URL') || 'http://localhost:4000';
 
+// CORS headers — required for browser-invoked edge functions
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
 // ~500 tokens is roughly 2000 characters
 const CHUNK_SIZE = 2000;
 const CHUNK_OVERLAP = 200;
@@ -136,11 +142,16 @@ async function generateEmbeddings(
 }
 
 Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { status: 204, headers: corsHeaders });
+  }
+
   try {
     // Verify the request
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response('Unauthorized', { status: 401 });
+      return new Response('Unauthorized', { status: 401, headers: corsHeaders });
     }
 
     let body: { knowledge_base_id?: string };
@@ -149,14 +160,14 @@ Deno.serve(async (req) => {
     } catch {
       return new Response(JSON.stringify({ error: 'Invalid JSON body' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
     if (!body.knowledge_base_id) {
       return new Response(JSON.stringify({ error: 'knowledge_base_id is required' }), {
         status: 400,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -172,7 +183,7 @@ Deno.serve(async (req) => {
     if (docErr || !doc) {
       return new Response(JSON.stringify({ error: 'Document not found' }), {
         status: 404,
-        headers: { 'Content-Type': 'application/json' },
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
@@ -270,7 +281,7 @@ Deno.serve(async (req) => {
           document_id: doc.id,
           chunk_count: chunks.length,
         }),
-        { headers: { 'Content-Type': 'application/json' } }
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     } catch (processErr) {
       console.error(`Failed to process document ${doc.id}:`, processErr);
@@ -292,14 +303,14 @@ Deno.serve(async (req) => {
           error: processErr instanceof Error ? processErr.message : 'Processing failed',
           document_id: doc.id,
         }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
   } catch (err) {
     console.error('process-knowledge-base error:', err);
     return new Response(
       JSON.stringify({ error: err instanceof Error ? err.message : 'Internal error' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
 });

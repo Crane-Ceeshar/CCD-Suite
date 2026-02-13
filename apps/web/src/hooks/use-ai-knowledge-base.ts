@@ -60,6 +60,14 @@ export function useUploadDocument() {
     setError(null);
 
     try {
+      // Check file size limit before anything else (100 MB = bucket limit)
+      const MAX_FILE_SIZE = 100 * 1024 * 1024;
+      if (file.size > MAX_FILE_SIZE) {
+        throw new Error(
+          `File size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds the 100 MB limit per file.`
+        );
+      }
+
       const supabase = createClient();
 
       // Get user session for tenant context
