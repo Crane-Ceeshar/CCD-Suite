@@ -1,5 +1,12 @@
 import type { PlanTier } from '../types/tenant';
 
+export interface StorageAddon {
+  /** Amount of extra storage per add-on unit (in GB) */
+  unitGb: number;
+  /** Price per add-on unit per month */
+  pricePerUnit: number;
+}
+
 export interface PlanFeatures {
   name: string;
   description: string;
@@ -10,6 +17,7 @@ export interface PlanFeatures {
     maxModules: number;
     maxStorageGb: number;
   };
+  storageAddon: StorageAddon;
   features: string[];
   highlighted: boolean;
 }
@@ -23,13 +31,15 @@ export const PLAN_FEATURES: Record<Exclude<PlanTier, 'custom'>, PlanFeatures> = 
     limits: {
       maxUsers: 5,
       maxModules: 3,
-      maxStorageGb: 5,
+      maxStorageGb: 1,
     },
+    storageAddon: { unitGb: 1, pricePerUnit: 0.5 },
     features: [
       'Up to 5 team members',
       'Choose any 3 modules',
       '1,000 contacts',
-      '5 GB storage',
+      '1 GB storage',
+      'Extra storage: $0.50/mo per 1 GB',
       'Email support',
       'Basic analytics',
     ],
@@ -43,13 +53,15 @@ export const PLAN_FEATURES: Record<Exclude<PlanTier, 'custom'>, PlanFeatures> = 
     limits: {
       maxUsers: 25,
       maxModules: 9,
-      maxStorageGb: 50,
+      maxStorageGb: 10,
     },
+    storageAddon: { unitGb: 5, pricePerUnit: 1.5 },
     features: [
       'Up to 25 team members',
       'All 9 modules included',
       '10,000 contacts',
-      '50 GB storage',
+      '10 GB storage',
+      'Extra storage: $1.50/mo per 5 GB',
       'Priority support',
       'Advanced analytics & AI',
       'Client portal access',
@@ -65,14 +77,16 @@ export const PLAN_FEATURES: Record<Exclude<PlanTier, 'custom'>, PlanFeatures> = 
     limits: {
       maxUsers: -1, // unlimited
       maxModules: 11,
-      maxStorageGb: 500,
+      maxStorageGb: 50,
     },
+    storageAddon: { unitGb: 10, pricePerUnit: 1 },
     features: [
       'Everything in Professional',
       'Unlimited team members',
       'All 9 modules + custom modules',
       'Unlimited contacts',
-      '500 GB storage',
+      '50 GB storage',
+      'Extra storage: $1/mo per 10 GB',
       'Webhooks & integrations',
       'Custom fields',
       'White-label branding',
