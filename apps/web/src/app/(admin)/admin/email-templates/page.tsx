@@ -20,44 +20,30 @@ interface EmailTemplate {
   is_customized: boolean;
 }
 
-/** Dangerous tag names removed during preview sanitization */
-const DANGEROUS_PREVIEW_TAGS = new Set([
-  'script', 'iframe', 'object', 'embed', 'form', 'link', 'meta',
-  'style', 'svg', 'math', 'base', 'applet',
-]);
+/**
+ * Render an HTML email preview inside a sandboxed iframe.
+ * The sandbox attribute prevents script execution, form submission,
+ * and all other active content — no manual sanitisation needed.
+ */
+function SandboxedPreview({ html }: { html: string }) {
+  const iframeRef = React.useRef<HTMLIFrameElement>(null);
 
-/** Sanitize HTML for safe preview rendering using browser-native DOMParser */
-function sanitizePreviewHtml(html: string): string {
-  if (typeof window === 'undefined') return '';
-  const doc = new DOMParser().parseFromString(html, 'text/html');
+  React.useEffect(() => {
+    const iframe = iframeRef.current;
+    if (!iframe) return;
+    // Write into the sandboxed iframe via srcdoc — scripts cannot execute
+    iframe.srcdoc = html;
+  }, [html]);
 
-  // Remove dangerous elements
-  for (const tag of Array.from(DANGEROUS_PREVIEW_TAGS)) {
-    const els = doc.body.querySelectorAll(tag);
-    for (let i = els.length - 1; i >= 0; i--) {
-      els[i].remove();
-    }
-  }
-
-  // Remove on* event handler attributes and dangerous protocols from all elements
-  const allEls = doc.body.querySelectorAll('*');
-  for (let i = 0; i < allEls.length; i++) {
-    const el = allEls[i];
-    const attrs = Array.from(el.attributes);
-    for (const attr of attrs) {
-      const name = attr.name.toLowerCase();
-      if (name.startsWith('on')) {
-        el.removeAttribute(attr.name);
-      } else if (
-        (name === 'href' || name === 'src' || name === 'action') &&
-        /^\s*(?:javascript|vbscript|data)\s*:/i.test(attr.value)
-      ) {
-        el.removeAttribute(attr.name);
-      }
-    }
-  }
-
-  return doc.body.innerHTML;
+  return (
+    <iframe
+      ref={iframeRef}
+      sandbox=""
+      title="Email template preview"
+      className="w-full rounded-lg border bg-white min-h-[300px]"
+      style={{ border: 'none' }}
+    />
+  );
 }
 
 export default function AdminEmailTemplatesPage() {
@@ -203,10 +189,7 @@ export default function AdminEmailTemplatesPage() {
                 {showPreview ? (
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-muted-foreground">Preview</label>
-                    <div
-                      className="rounded-lg border bg-white p-6 min-h-[300px] text-sm text-gray-900"
-                      dangerouslySetInnerHTML={{ __html: sanitizePreviewHtml(bodyHtml) }}
-                    />
+                    <SandboxedPreview html={bodyHtml} />
                   </div>
                 ) : (
                   <div className="space-y-1">

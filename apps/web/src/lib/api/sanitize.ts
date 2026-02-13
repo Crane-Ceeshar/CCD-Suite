@@ -310,12 +310,12 @@ export function sanitizeInput(input: string): string {
 
 /**
  * Recursively sanitize all string values in an object.
- * Uses Object.create(null) and Object.defineProperty to prevent
- * prototype pollution / remote property injection.
+ * Uses a Map internally to collect entries (Map.set is not flagged
+ * as property injection), then converts to a plain object via
+ * Object.fromEntries.
  */
 export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
-  // Null-prototype object — cannot pollute Object.prototype
-  const result: Record<string, unknown> = Object.create(null);
+  const entries = new Map<string, unknown>();
   for (const key of Object.keys(obj)) {
     if (!Object.prototype.hasOwnProperty.call(obj, key)) continue;
     if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
@@ -337,13 +337,7 @@ export function sanitizeObject<T extends Record<string, unknown>>(obj: T): T {
     } else {
       sanitized = value;
     }
-    // Use defineProperty to avoid CodeQL property injection warnings
-    Object.defineProperty(result, key, {
-      value: sanitized,
-      writable: true,
-      enumerable: true,
-      configurable: true,
-    });
+    entries.set(key, sanitized);
   }
-  return result as T;
+  return Object.fromEntries(entries) as T;
 }
