@@ -1,21 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
 import { dbError, success } from '@/lib/api/responses';
+import { validateBody, validateQuery } from '@/lib/api/validate';
+import { createActivitySchema, activityListQuerySchema } from '@/lib/api/schemas/crm';
+import { rateLimit } from '@/lib/api/rate-limit';
+import { validateCsrf } from '@/lib/api/csrf';
+import { logAudit } from '@/lib/api/audit';
 import { sanitizeObject } from '@/lib/api/sanitize';
 
 export async function GET(request: NextRequest) {
-  const { error, supabase } = await requireAuth();
+  const { error, supabase, user } = await requireAuth();
   if (error) return error;
 
-  const { searchParams } = new URL(request.url);
-  const type = searchParams.get('type') ?? '';
-  const dealId = searchParams.get('deal_id') ?? '';
-  const contactId = searchParams.get('contact_id') ?? '';
-  const companyId = searchParams.get('company_id') ?? '';
-  const limit = parseInt(searchParams.get('limit') ?? '100', 10);
-  const offset = parseInt(searchParams.get('offset') ?? '0', 10);
+  const { limited, response: limitResp } = rateLimit(user.id, { max: 100, keyPrefix: 'crm:activities:list' });
+  if (limited) return limitResp!;
 
-  let query = supabase
+  const { data: query, error: queryValidationError } = validateQuery(
+    request.nextUrl.searchParams,
+    activityListQuerySchema
+  );
+  if (queryValidationError) return queryValidationError;
+
+  const { type, deal_id: dealId, contact_id: contactId, company_id: companyId, limit, offset } = query!;
+
+  let dbQuery = supabase
     .from('activities')
     .select(
       '*, deal:deals(id, title), contact:contacts(id, first_name, last_name), company:companies(id, name)',
@@ -25,12 +33,12 @@ export async function GET(request: NextRequest) {
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  if (type) query = query.eq('type', type);
-  if (dealId) query = query.eq('deal_id', dealId);
-  if (contactId) query = query.eq('contact_id', contactId);
-  if (companyId) query = query.eq('company_id', companyId);
+  if (type) dbQuery = dbQuery.eq('type', type);
+  if (dealId) dbQuery = dbQuery.eq('deal_id', dealId);
+  if (contactId) dbQuery = dbQuery.eq('contact_id', contactId);
+  if (companyId) dbQuery = dbQuery.eq('company_id', companyId);
 
-  const { data, error: queryError, count } = await query;
+  const { data, error: queryError, count } = await dbQuery;
 
   if (queryError) return dbError(queryError, 'Failed to fetch activities');
 
@@ -38,10 +46,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const csrfError = validateCsrf(request);
+  if (csrfError) return csrfError;
+
   const { error, supabase, user, profile } = await requireAuth();
   if (error) return error;
 
-  const body = sanitizeObject(await request.json());
+  const { limited, response: limitResp } = rateLimit(user.id, { max: 50, keyPrefix: 'crm:activities:create' });
+  if (limited) return limitResp!;
+
+  const { data: rawBody, error: bodyError } = await validateBody(request, createActivitySchema);
+  if (bodyError) return bodyError;
+  const body = sanitizeObject(rawBody as Record<string, unknown>) as typeof rawBody;
 
   const { data, error: insertError } = await supabase
     .from('activities')
@@ -62,6 +78,13 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (insertError) return dbError(insertError, 'Failed to create activity');
+
+  logAudit(supabase, profile.tenant_id, user.id, {
+    action: 'activity.created',
+    resource_type: 'activity',
+    resource_id: data.id,
+    details: { title: body.title, type: body.type },
+  });
 
   return success(data, 201);
 }

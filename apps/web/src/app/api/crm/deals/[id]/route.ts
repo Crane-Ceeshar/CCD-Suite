@@ -2,14 +2,22 @@ import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
 import { dbError, success } from '@/lib/api/responses';
 import { validateUuid } from '@/lib/api/security';
+import { validateBody } from '@/lib/api/validate';
+import { updateDealSchema } from '@/lib/api/schemas/crm';
+import { rateLimit } from '@/lib/api/rate-limit';
+import { validateCsrf } from '@/lib/api/csrf';
+import { logAudit } from '@/lib/api/audit';
 import { sanitizeObject } from '@/lib/api/sanitize';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error, supabase } = await requireAuth();
+  const { error, supabase, user } = await requireAuth();
   if (error) return error;
+
+  const { limited, response: limitResp } = rateLimit(user.id, { max: 100, keyPrefix: 'crm:deals:get' });
+  if (limited) return limitResp!;
 
   const { id } = await params;
   const uuidError = validateUuid(id, 'Deal');
@@ -32,14 +40,22 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error, supabase } = await requireAuth();
+  const csrfError = validateCsrf(request);
+  if (csrfError) return csrfError;
+
+  const { error, supabase, user, profile } = await requireAuth();
   if (error) return error;
+
+  const { limited, response: limitResp } = rateLimit(user.id, { max: 50, keyPrefix: 'crm:deals:update' });
+  if (limited) return limitResp!;
 
   const { id } = await params;
   const uuidError = validateUuid(id, 'Deal');
   if (uuidError) return uuidError;
 
-  const body = sanitizeObject(await request.json());
+  const { data: rawBody, error: bodyError } = await validateBody(request, updateDealSchema);
+  if (bodyError) return bodyError;
+  const body = sanitizeObject(rawBody as Record<string, unknown>) as typeof rawBody;
 
   const updateFields: Record<string, unknown> = {};
   if (body.title !== undefined) updateFields.title = body.title;
@@ -71,15 +87,27 @@ export async function PATCH(
 
   if (updateError) return dbError(updateError, 'Deal');
 
+  logAudit(supabase, profile.tenant_id, user.id, {
+    action: 'deal.updated',
+    resource_type: 'deal',
+    resource_id: id,
+  });
+
   return success(data);
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error, supabase } = await requireAuth();
+  const csrfError = validateCsrf(request);
+  if (csrfError) return csrfError;
+
+  const { error, supabase, user, profile } = await requireAuth();
   if (error) return error;
+
+  const { limited, response: limitResp } = rateLimit(user.id, { max: 30, keyPrefix: 'crm:deals:delete' });
+  if (limited) return limitResp!;
 
   const { id } = await params;
   const uuidError = validateUuid(id, 'Deal');
@@ -93,6 +121,12 @@ export async function DELETE(
     .single();
 
   if (deleteError) return dbError(deleteError, 'Deal');
+
+  logAudit(supabase, profile.tenant_id, user.id, {
+    action: 'deal.deleted',
+    resource_type: 'deal',
+    resource_id: id,
+  });
 
   return success(deleted);
 }

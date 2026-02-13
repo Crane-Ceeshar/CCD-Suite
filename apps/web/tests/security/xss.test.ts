@@ -1,4 +1,5 @@
 import { test, expect, APIRequestContext } from '@playwright/test';
+import { createResourceTracker, cleanupResources, extractCreatedId, CreatedResources } from './cleanup';
 
 /**
  * XSS (Cross-Site Scripting) Security Tests
@@ -22,6 +23,9 @@ const XSS_PAYLOADS = {
   htmlEntities: '&lt;script&gt;alert(1)&lt;/script&gt;',
   nestedScript: '<<script>script>alert(1)<</script>/script>',
 };
+
+// Track all created resources for cleanup
+const tracked: CreatedResources = createResourceTracker();
 
 /** Check that a response body does not contain raw dangerous XSS patterns */
 function assertNoRawXSS(body: string, context: string) {
@@ -60,12 +64,10 @@ test.describe('XSS — HR Endpoints', () => {
         status: 'active',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.employees.push(id);
     const status = res.status();
-    if (status === 400 || status === 422) {
-      // Server rejected the input — good
-      return;
-    }
-    // If the server accepted it, verify the response body is sanitized
+    if (status === 400 || status === 422) return;
     const body = await res.text();
     assertNoRawXSS(body, 'POST /api/hr/employees (first_name)');
   });
@@ -80,6 +82,8 @@ test.describe('XSS — HR Endpoints', () => {
         status: 'active',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.employees.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -93,6 +97,8 @@ test.describe('XSS — HR Endpoints', () => {
         description: 'XSS test department',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.departments.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -106,6 +112,8 @@ test.describe('XSS — HR Endpoints', () => {
         description: XSS_PAYLOADS.svgOnload,
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.departments.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -121,6 +129,8 @@ test.describe('XSS — HR Endpoints', () => {
         reason: XSS_PAYLOADS.scriptTag,
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.leaveRequests.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -138,6 +148,8 @@ test.describe('XSS — HR Endpoints', () => {
         goals: XSS_PAYLOADS.imgOnerror,
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.performanceReviews.push(id);
     const status = res.status();
     if (status === 400 || status === 422 || status === 404) return;
     const body = await res.text();
@@ -153,6 +165,8 @@ test.describe('XSS — HR Endpoints', () => {
         status: 'draft',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.contracts.push(id);
     const status = res.status();
     if (status === 400 || status === 422 || status === 404) return;
     const body = await res.text();
@@ -167,6 +181,8 @@ test.describe('XSS — HR Endpoints', () => {
         category: 'employment',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.contractTemplates.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -187,6 +203,8 @@ test.describe('XSS — CRM Endpoints', () => {
         status: 'active',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.companies.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -202,6 +220,8 @@ test.describe('XSS — CRM Endpoints', () => {
         status: 'active',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.companies.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -217,6 +237,8 @@ test.describe('XSS — CRM Endpoints', () => {
         status: 'active',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.contacts.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -232,6 +254,8 @@ test.describe('XSS — CRM Endpoints', () => {
         status: 'open',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.deals.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -246,6 +270,8 @@ test.describe('XSS — CRM Endpoints', () => {
         description: XSS_PAYLOADS.imgOnerror,
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.activities.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -262,6 +288,8 @@ test.describe('XSS — CRM Endpoints', () => {
         is_active: true,
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.products.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -306,6 +334,8 @@ test.describe('XSS — Content Endpoints', () => {
         excerpt: XSS_PAYLOADS.imgOnerror,
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.content.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -320,6 +350,8 @@ test.describe('XSS — Content Endpoints', () => {
         color: '#FF0000',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.contentCategories.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -335,6 +367,8 @@ test.describe('XSS — Content Endpoints', () => {
         description: XSS_PAYLOADS.imgOnerror,
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.contentTemplates.push(id);
     const status = res.status();
     if (status === 400 || status === 422 || status === 500) return;
     const body = await res.text();
@@ -362,6 +396,8 @@ test.describe('XSS — Finance Endpoints', () => {
         items: [{ description: XSS_PAYLOADS.svgOnload, quantity: 1, unit_price: 100 }],
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.invoices.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -378,6 +414,8 @@ test.describe('XSS — Finance Endpoints', () => {
         vendor: XSS_PAYLOADS.imgOnerror,
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.expenses.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -396,6 +434,8 @@ test.describe('XSS — Advanced Payloads', () => {
         status: 'active',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.companies.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -413,6 +453,8 @@ test.describe('XSS — Advanced Payloads', () => {
         status: 'active',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.companies.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
@@ -430,9 +472,19 @@ test.describe('XSS — Advanced Payloads', () => {
         status: 'active',
       },
     });
+    const id = await extractCreatedId(res);
+    if (id) tracked.employees.push(id);
     const status = res.status();
     if (status === 400 || status === 422) return;
     const body = await res.text();
     assertNoRawXSS(body, 'POST /api/hr/employees (multiple vectors)');
+  });
+});
+
+// ─── Cleanup ─────────────────────────────────────────────────────────────────
+
+test.describe('XSS — Cleanup', () => {
+  test('delete all resources created during XSS tests', async ({ request }) => {
+    await cleanupResources(request, tracked);
   });
 });

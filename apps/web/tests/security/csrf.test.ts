@@ -1,4 +1,5 @@
 import { test, expect, APIRequestContext } from '@playwright/test';
+import { CreatedResources, createResourceTracker, cleanupResources, extractCreatedId } from './cleanup';
 
 /**
  * CSRF (Cross-Site Request Forgery) Security Tests
@@ -15,6 +16,9 @@ import { test, expect, APIRequestContext } from '@playwright/test';
  * Note: In development mode, CSRF protections may be relaxed. These tests
  * verify the behavior and document whether CSRF checks are active.
  */
+
+// Track all created resources for cleanup
+const tracked: CreatedResources = createResourceTracker();
 
 const VALID_ORIGIN = 'http://localhost:3000';
 const MALICIOUS_ORIGIN = 'http://evil-attacker-site.com';
@@ -49,6 +53,10 @@ test.describe('CSRF — Wrong Origin Header', () => {
       },
     });
     const status = res.status();
+
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.companies.push(id);
 
     if (status === 403) {
       // CSRF protection is working — great
@@ -121,6 +129,10 @@ test.describe('CSRF — Wrong Origin Header', () => {
     });
     const status = res.status();
 
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.employees.push(id);
+
     if (status === 403) {
       console.log('CSRF protection active on HR endpoints');
     }
@@ -144,6 +156,10 @@ test.describe('CSRF — Wrong Origin Header', () => {
       },
     });
     const status = res.status();
+
+    // Track created ID for cleanup (unlikely due to CHECK constraint on category)
+    const id = await extractCreatedId(res);
+    if (id) tracked.expenses.push(id);
 
     if (status === 403) {
       console.log('CSRF protection active on Finance endpoints');
@@ -172,6 +188,10 @@ test.describe('CSRF — Different Localhost Port', () => {
     });
     const status = res.status();
 
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.companies.push(id);
+
     if (status === 403) {
       console.log('CSRF protection correctly rejects requests from different localhost port');
     }
@@ -199,6 +219,11 @@ test.describe('CSRF — Valid Origin Header', () => {
       },
     });
     const status = res.status();
+
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.companies.push(id);
+
     // Should succeed with valid origin
     expect(
       [200, 201].includes(status),
@@ -222,6 +247,11 @@ test.describe('CSRF — Referer Header Fallback', () => {
       },
     });
     const status = res.status();
+
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.companies.push(id);
+
     // Should succeed because Referer matches the valid origin
     expect(
       [200, 201, 400, 422].includes(status),
@@ -241,6 +271,10 @@ test.describe('CSRF — Referer Header Fallback', () => {
       },
     });
     const status = res.status();
+
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.companies.push(id);
 
     if (status === 403) {
       console.log('CSRF protection active: malicious Referer correctly rejected');
@@ -267,6 +301,10 @@ test.describe('CSRF — No Origin or Referer', () => {
       },
     });
     const status = res.status();
+
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.companies.push(id);
 
     // Document the behavior
     if (status === 403) {
@@ -307,5 +345,15 @@ test.describe('CSRF — GET Requests Unaffected', () => {
       },
     });
     expect(res.status()).toBe(200);
+  });
+});
+
+// ─── Cleanup ─────────────────────────────────────────────────────────────────
+
+test.describe('CSRF — Cleanup', () => {
+  test.setTimeout(60_000);
+
+  test('delete all resources created during CSRF tests', async ({ request }) => {
+    await cleanupResources(request, tracked);
   });
 });

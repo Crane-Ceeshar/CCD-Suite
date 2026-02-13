@@ -1,4 +1,5 @@
 import { test, expect, APIRequestContext } from '@playwright/test';
+import { extractCreatedId } from './cleanup';
 
 /**
  * Rate Limiting Security Tests
@@ -17,6 +18,9 @@ import { test, expect, APIRequestContext } from '@playwright/test';
  * that gap by verifying that all 150+ requests return 200 (which indicates
  * no rate limiting is in place).
  */
+
+// Track created resources for cleanup
+const createdCompanyIds: string[] = [];
 
 // ─── Rate Limit Detection ──────────────────────────────────────────────────
 
@@ -131,6 +135,10 @@ test.describe('Rate Limiting — Rapid Request Flood', () => {
       requestCount++;
       const status = res.status();
 
+      // Track created IDs for cleanup
+      const id = await extractCreatedId(res);
+      if (id) createdCompanyIds.push(id);
+
       if (status === 429) {
         got429 = true;
         console.log(`POST rate limit triggered after ${requestCount} requests`);
@@ -234,5 +242,22 @@ test.describe('Rate Limiting — Headers on Normal Requests', () => {
         'Rate limiting may not be implemented or headers may only appear near the limit.'
       );
     }
+  });
+});
+
+// ─── Cleanup ─────────────────────────────────────────────────────────────────
+
+test.describe('Rate Limiting — Cleanup', () => {
+  test.setTimeout(120_000);
+
+  test('delete all companies created during rate limit tests', async ({ request }) => {
+    if (createdCompanyIds.length === 0) return;
+
+    let deleted = 0;
+    for (const id of createdCompanyIds) {
+      const res = await request.delete(`/api/crm/companies/${id}`);
+      if ([200, 204, 404].includes(res.status())) deleted++;
+    }
+    console.log(`[Cleanup] Deleted ${deleted}/${createdCompanyIds.length} rate-limit test companies`);
   });
 });

@@ -1,4 +1,5 @@
 import { test, expect, APIRequestContext } from '@playwright/test';
+import { CreatedResources, createResourceTracker, cleanupResources, extractCreatedId } from './cleanup';
 
 /**
  * SQL Injection Security Tests
@@ -14,6 +15,9 @@ import { test, expect, APIRequestContext } from '@playwright/test';
  *   - The server returns a normal success response without leaking extra data
  *   - The server does NOT return raw SQL error messages
  */
+
+// Track all created resources for cleanup
+const tracked: CreatedResources = createResourceTracker();
 
 // ─── SQL Injection Payloads ────────────────────────────────────────────────
 
@@ -101,6 +105,10 @@ test.describe('SQL Injection — HR Endpoints', () => {
     const status = res.status();
     const body = await res.text();
 
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.employees.push(id);
+
     // Should either reject or safely store the literal string
     expect(
       [200, 201, 400, 422].includes(status),
@@ -118,6 +126,10 @@ test.describe('SQL Injection — HR Endpoints', () => {
     });
     const status = res.status();
     const body = await res.text();
+
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.departments.push(id);
 
     expect(
       [200, 201, 400, 422].includes(status),
@@ -212,6 +224,10 @@ test.describe('SQL Injection — CRM Endpoints', () => {
     const status = res.status();
     const body = await res.text();
 
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.companies.push(id);
+
     expect(
       [200, 201, 400, 422].includes(status),
       `Unexpected status ${status} for SQL injection in CRM company creation`
@@ -230,6 +246,10 @@ test.describe('SQL Injection — CRM Endpoints', () => {
     });
     const status = res.status();
     const body = await res.text();
+
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.contacts.push(id);
 
     expect(
       [200, 201, 400, 422].includes(status),
@@ -335,6 +355,10 @@ test.describe('SQL Injection — Content Endpoints', () => {
     const status = res.status();
     const body = await res.text();
 
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.content.push(id);
+
     expect(
       [200, 201, 400, 422].includes(status),
       `Unexpected status ${status} for SQL injection in content creation`
@@ -358,6 +382,10 @@ test.describe('SQL Injection — Finance Endpoints', () => {
     const status = res.status();
     const body = await res.text();
 
+    // Track created ID for cleanup (unlikely due to CHECK constraint on category)
+    const id = await extractCreatedId(res);
+    if (id) tracked.expenses.push(id);
+
     expect(
       [200, 201, 400, 422].includes(status),
       `Unexpected status ${status} for SQL injection in expense creation`
@@ -378,6 +406,10 @@ test.describe('SQL Injection — Finance Endpoints', () => {
     });
     const status = res.status();
     const body = await res.text();
+
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.invoices.push(id);
 
     expect(
       [200, 201, 400, 422].includes(status),
@@ -401,6 +433,10 @@ test.describe('SQL Injection — Alternative Quote Styles', () => {
     const status = res.status();
     const body = await res.text();
 
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.companies.push(id);
+
     expect(
       [200, 201, 400, 422].includes(status),
       `Unexpected status ${status} for double-quote SQL injection`
@@ -420,10 +456,24 @@ test.describe('SQL Injection — Alternative Quote Styles', () => {
     const status = res.status();
     const body = await res.text();
 
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) tracked.contacts.push(id);
+
     expect(
       [200, 201, 400, 422].includes(status),
       `Unexpected status ${status} for closing-paren SQL injection`
     ).toBe(true);
     assertNoSQLErrorLeak(body, 'POST /api/crm/contacts (closing paren)');
+  });
+});
+
+// ─── Cleanup ─────────────────────────────────────────────────────────────────
+
+test.describe('SQL Injection — Cleanup', () => {
+  test.setTimeout(60_000);
+
+  test('delete all resources created during SQL injection tests', async ({ request }) => {
+    await cleanupResources(request, tracked);
   });
 });

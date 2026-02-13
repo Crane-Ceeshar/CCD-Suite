@@ -1,4 +1,5 @@
 import { test, expect, APIRequestContext } from '@playwright/test';
+import { extractCreatedId } from './cleanup';
 
 /**
  * Tenant Isolation Security Tests
@@ -10,6 +11,9 @@ import { test, expect, APIRequestContext } from '@playwright/test';
  *   - PATCH/DELETE operations on cross-tenant resource IDs
  *   - Response bodies leaking tenant_id information
  */
+
+// Track created resources for cleanup
+const createdCompanyIds: string[] = [];
 
 // A UUID that does not belong to the authenticated user's tenant.
 // This simulates a resource belonging to a different organization.
@@ -261,6 +265,10 @@ test.describe('Tenant Isolation — Query Param Bypass Attempts', () => {
     });
     const status = res.status();
 
+    // Track created ID for cleanup
+    const id = await extractCreatedId(res);
+    if (id) createdCompanyIds.push(id);
+
     if (status === 201 || status === 200) {
       const body = await res.json();
       // If created, verify the tenant_id was NOT set to the injected value
@@ -358,5 +366,20 @@ test.describe('Tenant Isolation — No Tenant ID Leakage in Responses', () => {
         ).toBe(1);
       }
     }
+  });
+});
+
+// ─── Cleanup ─────────────────────────────────────────────────────────────────
+
+test.describe('Tenant Isolation — Cleanup', () => {
+  test('delete all companies created during tenant isolation tests', async ({ request }) => {
+    if (createdCompanyIds.length === 0) return;
+
+    let deleted = 0;
+    for (const id of createdCompanyIds) {
+      const res = await request.delete(`/api/crm/companies/${id}`);
+      if ([200, 204, 404].includes(res.status())) deleted++;
+    }
+    console.log(`[Cleanup] Deleted ${deleted}/${createdCompanyIds.length} tenant isolation test companies`);
   });
 });

@@ -1,14 +1,22 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
+import { dbError, success } from '@/lib/api/responses';
+import { validateUuid } from '@/lib/api/security';
+import { rateLimit } from '@/lib/api/rate-limit';
 
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { error, supabase } = await requireAuth();
+  const { error, supabase, user } = await requireAuth();
   if (error) return error;
 
+  const { limited, response: limitResp } = rateLimit(user.id, { max: 100, keyPrefix: 'crm:pipelines:get' });
+  if (limited) return limitResp!;
+
   const { id } = await params;
+  const uuidError = validateUuid(id, 'Pipeline');
+  if (uuidError) return uuidError;
 
   const { data, error: queryError } = await supabase
     .from('pipelines')
@@ -18,12 +26,7 @@ export async function GET(
     .eq('id', id)
     .single();
 
-  if (queryError) {
-    return NextResponse.json(
-      { success: false, error: { message: queryError.message } },
-      { status: 404 }
-    );
-  }
+  if (queryError) return dbError(queryError, 'Pipeline');
 
   // Sort stages by position, and deals within each stage by position
   interface DealWithPosition {
@@ -48,5 +51,5 @@ export async function GET(
       })),
   };
 
-  return NextResponse.json({ success: true, data: pipeline });
+  return success(pipeline);
 }

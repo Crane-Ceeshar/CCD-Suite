@@ -1,20 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
 import { dbError, success } from '@/lib/api/responses';
+import { validateBody, validateQuery } from '@/lib/api/validate';
+import { createDealSchema, dealListQuerySchema } from '@/lib/api/schemas/crm';
+import { rateLimit } from '@/lib/api/rate-limit';
+import { validateCsrf } from '@/lib/api/csrf';
+import { logAudit } from '@/lib/api/audit';
 import { sanitizeObject, sanitizeSearchQuery } from '@/lib/api/sanitize';
 
 export async function GET(request: NextRequest) {
-  const { error, supabase } = await requireAuth();
+  const { error, supabase, user } = await requireAuth();
   if (error) return error;
 
-  const { searchParams } = new URL(request.url);
-  const search = searchParams.get('search') ?? '';
-  const status = searchParams.get('status') ?? '';
-  const stageId = searchParams.get('stage_id') ?? '';
-  const limit = parseInt(searchParams.get('limit') ?? '100', 10);
-  const offset = parseInt(searchParams.get('offset') ?? '0', 10);
+  const { limited, response: limitResp } = rateLimit(user.id, { max: 100, keyPrefix: 'crm:deals:list' });
+  if (limited) return limitResp!;
 
-  let query = supabase
+  const { data: query, error: queryValidationError } = validateQuery(
+    request.nextUrl.searchParams,
+    dealListQuerySchema
+  );
+  if (queryValidationError) return queryValidationError;
+
+  const { search, status, stage_id: stageId, company_id: companyId, contact_id: contactId, limit, offset } = query!;
+
+  let dbQuery = supabase
     .from('deals')
     .select(
       '*, company:companies(id, name), contact:contacts(id, first_name, last_name), stage:pipeline_stages(id, name, color)',
@@ -23,27 +32,24 @@ export async function GET(request: NextRequest) {
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
-  const companyId = searchParams.get('company_id') ?? '';
-  const contactId = searchParams.get('contact_id') ?? '';
-
   if (search) {
     const safe = sanitizeSearchQuery(search);
-    query = query.ilike('title', `%${safe}%`);
+    dbQuery = dbQuery.ilike('title', `%${safe}%`);
   }
   if (status) {
-    query = query.eq('status', status);
+    dbQuery = dbQuery.eq('status', status);
   }
   if (stageId) {
-    query = query.eq('stage_id', stageId);
+    dbQuery = dbQuery.eq('stage_id', stageId);
   }
   if (companyId) {
-    query = query.eq('company_id', companyId);
+    dbQuery = dbQuery.eq('company_id', companyId);
   }
   if (contactId) {
-    query = query.eq('contact_id', contactId);
+    dbQuery = dbQuery.eq('contact_id', contactId);
   }
 
-  const { data, error: queryError, count } = await query;
+  const { data, error: queryError, count } = await dbQuery;
 
   if (queryError) return dbError(queryError, 'Failed to fetch deals');
 
@@ -51,10 +57,18 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const csrfError = validateCsrf(request);
+  if (csrfError) return csrfError;
+
   const { error, supabase, user, profile } = await requireAuth();
   if (error) return error;
 
-  const body = sanitizeObject(await request.json());
+  const { limited, response: limitResp } = rateLimit(user.id, { max: 50, keyPrefix: 'crm:deals:create' });
+  if (limited) return limitResp!;
+
+  const { data: rawBody, error: bodyError } = await validateBody(request, createDealSchema);
+  if (bodyError) return bodyError;
+  const body = sanitizeObject(rawBody as Record<string, unknown>) as typeof rawBody;
 
   // Determine position: last in the stage
   const { count } = await supabase
@@ -86,6 +100,13 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (insertError) return dbError(insertError, 'Failed to create deal');
+
+  logAudit(supabase, profile.tenant_id, user.id, {
+    action: 'deal.created',
+    resource_type: 'deal',
+    resource_id: data.id,
+    details: { title: body.title, value: body.value },
+  });
 
   return success(data, 201);
 }
