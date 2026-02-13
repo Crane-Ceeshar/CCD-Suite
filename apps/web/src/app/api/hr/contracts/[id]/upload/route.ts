@@ -3,6 +3,7 @@ import { requireAuth } from '@/lib/supabase/auth-helpers';
 import { success, dbError } from '@/lib/api/responses';
 import { rateLimit } from '@/lib/api/rate-limit';
 import { logAudit } from '@/lib/api/audit';
+import { checkStorageQuota } from '@/lib/api/storage-quota';
 
 export async function POST(
   request: NextRequest,
@@ -22,6 +23,21 @@ export async function POST(
     return NextResponse.json(
       { success: false, error: { message: 'No file provided' } },
       { status: 400 }
+    );
+  }
+
+  // Storage quota check
+  const quota = await checkStorageQuota(profile.tenant_id, file.size);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: {
+          message: `Storage quota exceeded. Using ${quota.usedGb} GB of ${quota.limitGb} GB. Upgrade your plan for more storage.`,
+          code: 'STORAGE_QUOTA_EXCEEDED',
+        },
+      },
+      { status: 403 }
     );
   }
 

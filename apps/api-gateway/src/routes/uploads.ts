@@ -1,5 +1,9 @@
 import type { FastifyInstance } from 'fastify';
 import { requireAuth } from '../middleware/auth.js';
+import { PLAN_FEATURES } from '@ccd/shared';
+import type { PlanTier } from '@ccd/shared';
+
+const BYTES_PER_GB = 1024 * 1024 * 1024;
 
 const BUCKET_LIMITS: Record<string, { maxSize: number; allowedTypes?: string[] }> = {
   avatars: {
@@ -60,6 +64,35 @@ export async function uploadRoutes(fastify: FastifyInstance) {
         },
       });
       return;
+    }
+
+    // Storage quota check (skip avatars — tiny files)
+    if (bucket !== 'avatars' && fileSize) {
+      const { data: usedBytes } = await fastify.supabase.rpc('get_tenant_storage_bytes', {
+        p_tenant_id: request.tenantId,
+      });
+      const { data: tenant } = await fastify.supabase
+        .from('tenants')
+        .select('plan')
+        .eq('id', request.tenantId)
+        .single();
+
+      const plan: PlanTier = (tenant?.plan as PlanTier) ?? 'starter';
+      const maxGb = plan === 'custom' ? 500 : PLAN_FEATURES[plan].limits.maxStorageGb;
+      const limitBytes = maxGb * BYTES_PER_GB;
+      const used = (usedBytes as number) ?? 0;
+
+      if (used + fileSize > limitBytes) {
+        const usedGb = (used / BYTES_PER_GB).toFixed(2);
+        reply.status(403).send({
+          success: false,
+          error: {
+            code: 'STORAGE_QUOTA_EXCEEDED',
+            message: `Storage quota exceeded. Using ${usedGb} GB of ${maxGb} GB. Upgrade your plan for more storage.`,
+          },
+        });
+        return;
+      }
     }
 
     // Generate file path: tenantId/userId/timestamp-filename

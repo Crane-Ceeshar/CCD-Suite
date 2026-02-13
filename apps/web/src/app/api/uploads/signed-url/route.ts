@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/lib/supabase/auth-helpers';
 import { createServiceClient } from '@/lib/supabase/service-client';
 import { rateLimit } from '@/lib/api/rate-limit';
+import { checkStorageQuota } from '@/lib/api/storage-quota';
 
 /**
  * POST /api/uploads/signed-url
@@ -54,6 +55,23 @@ export async function POST(request: NextRequest) {
       { success: false, error: { message: `File exceeds maximum size of ${MAX_FILE_SIZE / (1024 * 1024)}MB` } },
       { status: 400 }
     );
+  }
+
+  // Storage quota check (skip for avatars — tiny files, not worth blocking)
+  if (bucket !== 'avatars' && fileSize) {
+    const quota = await checkStorageQuota(profile!.tenant_id, fileSize);
+    if (!quota.allowed) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            message: `Storage quota exceeded. Using ${quota.usedGb} GB of ${quota.limitGb} GB. Upgrade your plan for more storage.`,
+            code: 'STORAGE_QUOTA_EXCEEDED',
+          },
+        },
+        { status: 403 }
+      );
+    }
   }
 
   // Build a tenant-scoped storage path

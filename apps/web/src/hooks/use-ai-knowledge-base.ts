@@ -68,6 +68,17 @@ export function useUploadDocument() {
         throw new Error('Not authenticated');
       }
 
+      // Check storage quota before uploading
+      const storageRes = await apiGet<{ usedBytes: number; limitGb: number; usedGb: number }>(
+        '/api/settings/storage'
+      );
+      const limitBytes = storageRes.data.limitGb * 1024 * 1024 * 1024;
+      if (storageRes.data.usedBytes + file.size > limitBytes) {
+        throw new Error(
+          `Storage quota exceeded. Using ${storageRes.data.usedGb} GB of ${storageRes.data.limitGb} GB. Upgrade your plan for more storage.`
+        );
+      }
+
       // Upload file to Supabase Storage
       const timestamp = Date.now();
       const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');

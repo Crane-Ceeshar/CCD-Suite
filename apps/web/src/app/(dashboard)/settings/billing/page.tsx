@@ -56,12 +56,16 @@ export default function BillingSettingsPage() {
   const [paymentOpen, setPaymentOpen] = React.useState(false);
   const [memberCount, setMemberCount] = React.useState<number>(0);
   const [loadingMembers, setLoadingMembers] = React.useState(true);
+  const [storageUsedGb, setStorageUsedGb] = React.useState<number | null>(null);
+  const [storageLimitGb, setStorageLimitGb] = React.useState<number | null>(null);
+  const [storagePercent, setStoragePercent] = React.useState<number>(0);
 
   const planInfo = getPlanInfo(plan);
   const modulesEnabled = session?.tenant?.settings?.modules_enabled?.length ?? 0;
 
   React.useEffect(() => {
     let cancelled = false;
+
     async function fetchMembers() {
       try {
         const res = await apiGet<{ members: unknown[] }>('/api/team/members');
@@ -75,11 +79,33 @@ export default function BillingSettingsPage() {
         if (!cancelled) setLoadingMembers(false);
       }
     }
+
+    async function fetchStorage() {
+      try {
+        const res = await apiGet<{ usedGb: number; limitGb: number; percentUsed: number }>(
+          '/api/settings/storage'
+        );
+        if (!cancelled) {
+          setStorageUsedGb(res.data.usedGb);
+          setStorageLimitGb(res.data.limitGb);
+          setStoragePercent(res.data.percentUsed);
+        }
+      } catch {
+        // Fall back to plan limit if fetch fails
+        if (!cancelled) {
+          setStorageUsedGb(0);
+          setStorageLimitGb(planInfo.limits.maxStorageGb);
+        }
+      }
+    }
+
     fetchMembers();
+    fetchStorage();
+
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [planInfo.limits.maxStorageGb]);
 
   const maxUsersLabel =
     planInfo.limits.maxUsers === -1
@@ -155,11 +181,36 @@ export default function BillingSettingsPage() {
             value={`${modulesEnabled} / ${planInfo.limits.maxModules}`}
             icon={<Package className="h-5 w-5 text-muted-foreground" />}
           />
-          <StatCard
-            label="Storage"
-            value={`0.2 GB / ${planInfo.limits.maxStorageGb} GB`}
-            icon={<HardDrive className="h-5 w-5 text-muted-foreground" />}
-          />
+          <div className="space-y-2">
+            <StatCard
+              label="Storage"
+              value={
+                storageUsedGb !== null
+                  ? `${storageUsedGb} GB / ${storageLimitGb} GB`
+                  : '...'
+              }
+              icon={<HardDrive className="h-5 w-5 text-muted-foreground" />}
+            />
+            {storageUsedGb !== null && (
+              <div className="px-4">
+                <div className="h-2 w-full rounded-full bg-muted">
+                  <div
+                    className={`h-2 rounded-full transition-all ${
+                      storagePercent > 90
+                        ? 'bg-destructive'
+                        : storagePercent > 70
+                          ? 'bg-yellow-500'
+                          : 'bg-primary'
+                    }`}
+                    style={{ width: `${Math.min(storagePercent, 100)}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground text-right">
+                  {storagePercent}% used
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
