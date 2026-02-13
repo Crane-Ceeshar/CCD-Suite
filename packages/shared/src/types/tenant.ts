@@ -1,4 +1,4 @@
-import type { ModuleId } from './auth';
+import type { ModuleId } from './auth.js';
 
 export type PlanTier = 'starter' | 'professional' | 'enterprise' | 'custom';
 

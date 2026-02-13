@@ -1,4 +1,4 @@
-import type { ModuleId } from '../types/auth';
+import type { ModuleId } from '../types/auth.js';
 
 export interface ModuleDefinition {
   id: ModuleId;

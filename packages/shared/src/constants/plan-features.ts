@@ -1,4 +1,4 @@
-import type { PlanTier } from '../types/tenant';
+import type { PlanTier } from '../types/tenant.js';
 
 export interface StorageAddon {
   /** Amount of extra storage per add-on unit (in GB) */

@@ -1,4 +1,4 @@
-import type { PredefinedUserType, ModuleId } from '../types/auth';
+import type { PredefinedUserType, ModuleId } from '../types/auth.js';
 
 export const USER_TYPE_MODULE_ACCESS: Record<PredefinedUserType, ModuleId[]> = {
   admin: [
