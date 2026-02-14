@@ -34,6 +34,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { isOnAdminSubdomain, transformAdminHref } from '@/lib/admin-subdomain';
 import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { AnnouncementBanner } from '@/components/ui/announcement-banner';
 
@@ -89,10 +90,14 @@ export function AdminShell({ user, tenant, children }: AdminShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const supabase = createClient();
+  const onSubdomain = isOnAdminSubdomain();
+
+  // Transform hrefs: on admin subdomain, /admin/users → /users
+  const toHref = (href: string) => transformAdminHref(href, onSubdomain);
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
-    router.push('/admin/login');
+    router.push(toHref('/admin/login'));
     router.refresh();
   };
 
@@ -101,7 +106,7 @@ export function AdminShell({ user, tenant, children }: AdminShellProps) {
       {/* Admin Header */}
       <header className="sticky top-0 z-50 flex h-14 items-center gap-4 border-b border-red-200 bg-gradient-to-r from-red-50/90 via-red-50/70 to-red-50/90 backdrop-blur-xl px-4 md:px-6 shadow-[0_1px_3px_0_rgb(0_0_0/0.04)] dark:border-red-900/50 dark:from-red-950/60 dark:via-red-950/40 dark:to-red-950/60">
         {/* Left: Logo + Admin badge */}
-        <Link href="/admin" className="flex items-center gap-3 shrink-0">
+        <Link href={toHref('/admin')} className="flex items-center gap-3 shrink-0">
           <div className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 shadow-sm shadow-red-600/20">
               <Shield className="h-4 w-4 text-white" />
@@ -168,13 +173,14 @@ export function AdminShell({ user, tenant, children }: AdminShellProps) {
                   </p>
                 </div>
                 {section.items.map((item) => {
+                  const href = toHref(item.href);
                   const isActive = item.exact
-                    ? pathname === item.href
-                    : pathname.startsWith(item.href) && !item.exact;
+                    ? pathname === href
+                    : pathname.startsWith(href) && href !== '/';
                   return (
                     <Link
                       key={item.href}
-                      href={item.href}
+                      href={href}
                       className={cn(
                         'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200',
                         isActive

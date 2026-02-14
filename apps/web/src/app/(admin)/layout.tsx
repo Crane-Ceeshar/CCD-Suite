@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation';
+import { headers } from 'next/headers';
 import { createClient } from '@/lib/supabase/server';
+import { isAdminSubdomain } from '@/lib/admin-subdomain';
 import { AdminShell } from '@/components/layout/admin-shell';
 import { QueryProvider } from '@/providers/query-provider';
 
@@ -8,6 +10,12 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const headersList = await headers();
+  const hostname = headersList.get('host') || '';
+  const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'ccdsuite.com';
+  const onAdminSubdomain = isAdminSubdomain(hostname, baseDomain);
+  const loginPath = onAdminSubdomain ? '/login' : '/admin/login';
+
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -25,12 +33,12 @@ export default async function AdminLayout({
     .single();
 
   if (!profile) {
-    redirect('/admin/login');
+    redirect(loginPath);
   }
 
   // Only admins can access the admin portal
   if (profile.user_type !== 'admin') {
-    redirect('/admin/login');
+    redirect(loginPath);
   }
 
   return (

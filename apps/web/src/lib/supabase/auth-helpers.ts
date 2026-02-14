@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { getCookieDomain } from './cookie-domain';
 
 /**
  * Creates an authenticated Supabase client and verifies the user is logged in.
@@ -20,8 +21,9 @@ export async function requireAuth() {
         },
         setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
           try {
+            const domain = getCookieDomain();
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, { ...options, domain })
             );
           } catch {
             // Called from Server Component — ignored

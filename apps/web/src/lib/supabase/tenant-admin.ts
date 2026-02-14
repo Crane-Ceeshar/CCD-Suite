@@ -1,6 +1,7 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { getCookieDomain } from './cookie-domain';
 
 // Re-export the service client for convenience
 export { createAdminServiceClient } from './admin';
@@ -23,8 +24,9 @@ export async function requireTenantAdmin() {
         },
         setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
           try {
+            const domain = getCookieDomain();
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, { ...options, domain })
             );
           } catch {
             // Called from Server Component — ignored

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
+import { isAdminSubdomain } from '@/lib/admin-subdomain';
 
 // Module access control mapping (mirrors @ccd/shared/constants/user-types)
 const USER_TYPE_MODULE_ACCESS: Record<string, string[]> = {
@@ -30,7 +31,7 @@ const MODULE_ROUTES: Record<string, string> = {
 const PUBLIC_ROUTES = ['/', '/login', '/register', '/forgot-password', '/auth/callback', '/admin/login', '/portal/verify', '/client', '/api/portal/verify', '/api/portal/session', '/api/client', '/api/health', '/api/csp-report'];
 
 export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  let pathname = request.nextUrl.pathname;
   const hostname = request.headers.get('host') || '';
   const baseDomain = process.env.NEXT_PUBLIC_BASE_DOMAIN || 'ccdsuite.com';
 
@@ -46,8 +47,40 @@ export async function middleware(request: NextRequest) {
   // Parse subdomain (skip localhost and dev environments)
   let tenantSlug: string | null = null;
   const isLocalhost = hostname.startsWith('localhost') || hostname.startsWith('127.0.0.1');
+  const isAdminHost = !isLocalhost && isAdminSubdomain(hostname, baseDomain);
 
-  if (!isLocalhost && hostname !== baseDomain && hostname !== `www.${baseDomain}`) {
+  // ── Admin subdomain routing ──
+  // When on admin.ccdsuite.com, internally prefix paths with /admin
+  // so existing route guards and page resolution work unchanged.
+  let adminRewriteApplied = false;
+  if (isAdminHost) {
+    const isApiRoute = pathname.startsWith('/api/');
+    const isAuthCallback = pathname.startsWith('/auth/');
+
+    if (!isApiRoute && !isAuthCallback) {
+      // Rewrite: /users → /admin/users, / → /admin, /login → /admin/login
+      request.nextUrl.pathname = `/admin${pathname === '/' ? '' : pathname}`;
+      pathname = request.nextUrl.pathname;
+      adminRewriteApplied = true;
+    } else if (isApiRoute && !pathname.startsWith('/api/admin/') && !pathname.startsWith('/api/health') && !pathname.startsWith('/api/csp-report')) {
+      // Block non-admin API routes on admin subdomain
+      return NextResponse.json(
+        { success: false, error: { message: 'Not found' } },
+        { status: 404 }
+      );
+    }
+  }
+
+  // ── Redirect /admin on main domain to admin subdomain ──
+  if (!isAdminHost && !isLocalhost && pathname.startsWith('/admin')) {
+    const adminPath = pathname.replace(/^\/admin/, '') || '/';
+    const url = new URL(`https://admin.${baseDomain}${adminPath}`);
+    request.nextUrl.searchParams.forEach((value, key) => url.searchParams.set(key, value));
+    return NextResponse.redirect(url, 301);
+  }
+
+  // Tenant subdomain detection (skip admin subdomain)
+  if (!isLocalhost && !isAdminHost && hostname !== baseDomain && hostname !== `www.${baseDomain}`) {
     const sub = hostname.replace(`.${baseDomain}`, '');
     if (sub && sub !== hostname && !sub.includes('.')) {
       tenantSlug = sub;
@@ -72,6 +105,9 @@ export async function middleware(request: NextRequest) {
       }
     }
     const { response } = await updateSession(request);
+    if (adminRewriteApplied) {
+      return createRewriteResponse(request, response);
+    }
     return response;
   }
 
@@ -83,7 +119,7 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     // Admin routes redirect to admin login
     if (pathname.startsWith('/admin')) {
-      url.pathname = '/admin/login';
+      url.pathname = isAdminHost ? '/login' : '/admin/login';
     } else {
       url.pathname = '/login';
       url.searchParams.set('redirect', pathname);
@@ -151,8 +187,11 @@ export async function middleware(request: NextRequest) {
 
       if (profile?.user_type === 'admin') {
         const url = request.nextUrl.clone();
-        url.pathname = '/admin';
+        url.pathname = isAdminHost ? '/' : '/admin';
         return NextResponse.redirect(url);
+      }
+      if (adminRewriteApplied) {
+        return createRewriteResponse(request, response);
       }
       return response;
     }
@@ -165,8 +204,11 @@ export async function middleware(request: NextRequest) {
 
     if (!profile || profile.user_type !== 'admin') {
       const url = request.nextUrl.clone();
-      url.pathname = '/admin/login';
+      url.pathname = isAdminHost ? '/login' : '/admin/login';
       return NextResponse.redirect(url);
+    }
+    if (adminRewriteApplied) {
+      return createRewriteResponse(request, response);
     }
     return response;
   }
@@ -206,6 +248,25 @@ export async function middleware(request: NextRequest) {
   }
 
   return response;
+}
+
+/**
+ * Creates a rewrite response for the admin subdomain, preserving
+ * cookies and headers set by updateSession.
+ */
+function createRewriteResponse(request: NextRequest, sessionResponse: NextResponse): NextResponse {
+  const rewriteResponse = NextResponse.rewrite(request.nextUrl);
+  // Copy session cookies from updateSession response
+  sessionResponse.cookies.getAll().forEach((cookie) => {
+    rewriteResponse.cookies.set(cookie.name, cookie.value, cookie);
+  });
+  // Copy custom headers
+  sessionResponse.headers.forEach((value, key) => {
+    if (!key.startsWith('x-middleware')) {
+      rewriteResponse.headers.set(key, value);
+    }
+  });
+  return rewriteResponse;
 }
 
 export const config = {

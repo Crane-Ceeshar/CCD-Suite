@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button, Input, Label } from '@ccd/ui';
 import { createClient } from '@/lib/supabase/client';
+import { isOnAdminSubdomain } from '@/lib/admin-subdomain';
 import { Shield, Mail, Lock, ArrowRight, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 const formVariants = {
@@ -65,7 +66,7 @@ export default function AdminLoginPage() {
       }
     }
 
-    router.push('/admin');
+    router.push(isOnAdminSubdomain() ? '/' : '/admin');
     router.refresh();
   };
 

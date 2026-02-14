@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { apiGet } from '@/lib/api';
+import { isOnAdminSubdomain, transformAdminHref } from '@/lib/admin-subdomain';
 
 const MODULE_COLOR = '#DC2626';
 
@@ -31,6 +32,9 @@ const quickLinks = [
 ];
 
 export default function AdminOverviewPage() {
+  const onSubdomain = isOnAdminSubdomain();
+  const toHref = (href: string) => transformAdminHref(href, onSubdomain);
+
   const [stats, setStats] = React.useState<{
     total_users: number;
     active_users: number;
@@ -97,7 +101,7 @@ export default function AdminOverviewPage() {
       {/* Quick links */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {quickLinks.map((link) => (
-          <Link key={link.href} href={link.href}>
+          <Link key={link.href} href={toHref(link.href)}>
             <Card className="cursor-pointer transition-all hover:shadow-md hover:border-red-200 h-full">
               <CardHeader className="pb-2">
                 <div className="flex items-center gap-2">

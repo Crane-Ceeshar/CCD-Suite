@@ -2,6 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { createClient as createServiceRoleClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { getCookieDomain } from './cookie-domain';
 
 /**
  * Creates an authenticated Supabase client and verifies the user is an admin.
@@ -21,8 +22,9 @@ export async function requireAdmin() {
         },
         setAll(cookiesToSet: { name: string; value: string; options?: CookieOptions }[]) {
           try {
+            const domain = getCookieDomain();
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, { ...options, domain })
             );
           } catch {
             // Called from Server Component — ignored
